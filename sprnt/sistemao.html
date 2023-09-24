@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/sistemao.css">
+    
+    
+    <title>Home</title>
+</head>
+<body>
+    <header>
+        <nav class="menu">
+            <div class="logo">
+                <a href="sistemao.html"><img src="img/logo.png" alt=""></a>
+            </div>
+            <div class="lista">
+                <ul class="lista-feita">
+                    <li class="item"><a href="ativos.html" class="link">Ativos</a></li>
+                    <li class="item"><a href="chamados1.html" class="link">Chamados</a></li>
+                    <li class="item"><a href="estoque.html" class="link"> Estoque</a></li>
+                </ul>
+            </div>
+
+
+
+
+
+            
+            <div class="botao-entrar">
+                <button onclick="lowFunction()" id="lowBtn" title="descer"><a>Pacotes</a></button>
+            </div>
+
+            <!--  Modal form para login 
+<div id="start" class="modal">
+    <span onclick="document.getElementById('start').style.display='none'" class="fechar" title="Close Modal"><img src="img/close_white_36dp.svg" alt=""></span>
+    <form class="modal-caixa" action="/action_page.php" >
+      <div class="container">
+        <h1>LOGIN</h1>
+        <hr>
+        <label for="cpf"><b>CPF</b></label>
+        <input type="text" placeholder="Digite seu CPF" name="cpf" required>
+  
+        <label for="senha"><b>Senha</b></label>
+        <input type="password" placeholder="Digite sua Senha" name="senha" required>
+
+        <div class="botoes">
+          <button type="submit" class="entrar">Entrar</button>
+          <button type="button" onclick="document.getElementById('start').style.display='none'" class="cancelar">Cancelar</button>
+          <a href="cadastro.html" target="_blank" style="color:dodgerblue">Não tenho conta</a>
+        </div>
+        
+      </div>
+      
+    </form>
+  </div>
+
+  acabou modal-->
+
+
+
+
+
+
+
+            <div class="iconeCel">
+                <button onclick="menuShow()"><img class="icon" src="img/menu_white_36dp.svg" alt=""></button>
+            </div>
+        </nav>
+        <div class="menuCel">
+            <ul>
+                <li class="item"><a href="ativos.html" class="link">Ativos</a></li>
+                <li class="item"><a href="chamados1.html" class="link">Chamados</a></li>
+                <li class="item"><a href="estoque.html" class="link">Estoque</a></li>
+            </ul>
+
+            <div class="botao-entrar">
+                <button onclick="lowFunction()"><a>Pacotes</a></button> <!--aqui é para quando for um celular ou uma tela menor-->
+            </div>
+        </div>
+    </header>
+
+
+    <!-- div dos slides -->
+<div class="slideshow">
+
+    <!-- largura das imagens  -->
+    <div class="slide">
+      <img src="img/1.png" style="width:100%">
+    </div>
+  
+    <div class="slide">
+      <img src="img/2.png" style="width:100%">
+    </div>
+  
+    <div class="slide">
+      <img src="img/3.png" style="width:100%">
+    </div>
+  
+    <!-- para avançar nas setas 
+    <a class="antes" onclick="plusSlides(-1)">&#10094;</a>
+    <a class="proximo" onclick="plusSlides(1)">&#10095;</a> -->
+  </div>
+  
+
+
+
+<!--corpo do site-->
+
+<section class="sobre">
+  <div class="main">
+    <img src="img/competitive-intelligence-animate.svg">
+    <div class="sobre-texto">
+      <h2>Sobre Nós</h2>
+      <p>A EsAtch é uma empresa com o objetivo de atuar dentro de empresas para facilitar a organização e agilidade. Pensando no nosso lema, tempo é dinheiro, que foi possível deselvolver esse software, e nele é possivel realizar três operações: Abrir chamados, verificar estoque e os ativos da empresa, se quiser saber mais sobre o sistema clique aqui no saiba mais ou confira logo à baixo.
+      </p>
+      <a href="sobre.html"> <button type="button" id="talvez"> Saiba Mais </button> </a>
+    </div>
+  </div>
+</section>
+
+
+<div class="servicos">
+  <div class="titulo">
+    <h2>Pacotes</h2>
+  </div>
+
+  <div class="caixona">
+    <div class="caixinha">
+      <i class="fa-solid fa-medal" style="color: #e1c10d;"></i>
+      <h5 id="negrito">Ouro</h5>
+      <div class="pra">
+        <p>Com esse pacote você terá acesso a um sistema de sua escolha </p>
+
+        <ul class="opcoes">
+          <li class="produto"> ->Sistema de Ativos </li>
+          <li class="produto"> ->Sistema de Chamados </li>
+          <li class="produto"> ->Sistema de Estoques </li>
+        </ul> <br>
+
+        <h2 style="color: white;">R$ 100,00</h2>
+        <br>
+        <p style="text-align: center;">
+          <a class="botaoIr" href="pacotes.html">Adquirir agora</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="caixinha">
+      <i class="fa-solid fa-medal" style="color: #78f778;"></i>
+      <h5 id="negrito">Platina</h5>
+      <div class="pra">
+        <p>Com esse pacote você poderá escolher 2 sistemas abaixo</p>
+
+        <ul class="opcoes">
+          <li class="produto"> ->Sistema de Ativos </li>
+          <li class="produto"> ->Sistema de Chamados </li>
+          <li class="produto"> ->Sistema de Estoques </li>
+        </ul> <br>
+
+        <h2 style="color: white;">R$ 180,00</h2>
+        <br>
+
+        <p style="text-align: center;">
+          <a class="botaoIr" href="pacotes.html">Adquirir agora</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="caixinha">
+      <i class="fa-solid fa-medal" style="color: #85ddf0;"></i>
+      <h5 id="negrito">Diamante</h5>
+      <div class="pra">
+        <p>Com esse pacote você terá acesso a todos os sistemas disponiveis </p>
+
+        <ul class="opcoes">
+          <li class="produto"> ->Sistema de Ativos </li>
+          <li class="produto"> ->Sistema de Chamados </li>
+          <li class="produto"> ->Sistema de Estoques </li>
+        </ul> <br>
+
+        <h2 style="color: white;">R$ 260,00</h2>
+        <br>
+
+        <p style="text-align: center;">
+          <a class="botaoIr" href="pacotes.html">Adquirir agora</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!--rodape-->
+<footer>
+  <div class="rodape">
+    <div class="esquerda espaco">
+      <h6> Redes Sociais</h6>
+      <div class="caixa-tudo">
+        <div class="social">
+          <a href="https://pt-br.facebook.com/" target="_blank"><span class="fab fa-facebook-f"></span></a>
+          <a href="https://twitter.com/?lang=pt-br" target="_blank"><span class="fab fa-twitter"></span></a>
+          <a href="https://www.instagram.com/" target="_blank"><span class="fab fa-instagram"></span></a>
+          <a href="https://www.linkedin.com/login/pt" target="_blank"><span class="fab fa-linkedin"></span></a>
+        </div>
+      </div>
+    </div><!--left box-->
+    <div class="centro espaco">
+      <h6>Endereço</h6>
+      <div class="caixa-tudo">
+        <br>
+        <div class="maps">
+          <span class="fas fa-map-marker"></span>
+          <span class="texto-rodape">Av. da Saudade, 125 - Pte. Preta</span>
+        </div>
+
+        <div class="cel">
+          <span class="fas fas fa-phone-alt"></span>
+          <span class="texto-rodape">+55 99 9999-9999</span>
+        </div>
+
+        <div class="email">
+          <span class="fas fa-envelope"></span>
+          <span class="texto-rodape"> exemplo@exemplo.com</span>
+        </div>
+      </div>
+    </div>
+    <div class="direita espaco">
+      <h6>Contato</h6>
+      <div class="caixa-tudo">
+        <form action="#">
+          <div class="email">
+            <br>
+            <div class="texto-rodape">Email *</div>
+            <input style="border-radius: 5px;" type="email" placeholder="Digite seu email" required>
+          </div><br>
+          <div class="msg">
+            <div class="texto-rodape">Mensagem *</div>
+            <textarea style="border-radius: 5px; padding-top: 5px;" rows="2" cols="25" required placeholder="Digite sua mensagem"></textarea>
+          </div>
+          <div class="btn">
+            <button type="submit"><a href="#"> Enviar </a></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div><!--main-content-->
+  <div class="EmBaixo">
+    <div class="centro">
+      <span class="creditos">Criado por alunos do SENAI ©2022 Senai-Euryclides-da-Cunha-Zerbini</span>
+      
+    </div>
+  </div>
+</footer>
+
+<button onclick="topFunction()" id="myBtn" title="Voltar"><h1> &#8593 </h1></button>
+
+  
+
+
+    <script src="js/sistemao.js"></script>
+    
+</body>
+<script src="https://kit.fontawesome.com/079fbdccaf.js" crossorigin="anonymous"></script>
+
+
+</html>

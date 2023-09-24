@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/pacotes.css">
+    <title>Pacote Ouro</title>
+</head>
+
+<style>
+    body {
+        background-image: url(img/fundo.png);
+        background-size: cover;
+    }
+</style>
+<body>
+    
+
+
+<div class="container">
+
+    <form action="">
+
+        <div class="horizontal">
+
+            <div class="coluna">
+
+                <h3 class="titulo">Dados do Pagamento</h3>
+
+                <div class="inputCaixa">
+                    <span>Nome Completo :</span>
+                    <input type="text" placeholder="Digite seu nome">
+                </div>
+                <div class="inputCaixa">
+                    <span>email :</span>
+                    <input type="email" placeholder="example@example.com">
+                </div>
+                <div class="inputCaixa">
+                    <span>CEP :</span>
+                    <input id="cep" type="text" placeholder="11111-111" maxlength="9">
+                </div>
+                <div class="inputCaixa">
+                    <span>Cidade :</span>
+                    <input type="text" placeholder="Campinas">
+                </div>
+
+                <div class="lado">
+                    <div class="inputCaixa">
+                        <span>País :</span>
+                        <input type="text" placeholder="Brasil">
+                    </div>
+                    <div class="inputCaixa">
+                        <span>CVV :</span>
+                        <input type="text" placeholder="Codigo cartão" maxlength="4">
+                    </div>
+                    
+                
+                </div>
+                
+
+            </div>
+
+            <div class="coluna">
+
+                <h3 class="titulo"> Pagamento</h3>
+
+                <div class="inputCaixa">
+                    <span> Bandeiras Aceitas :</span>
+                    <img src="img/bandeiras.png" alt="">
+                </div>
+                <div class="inputCaixa">
+                    <span>Nome no Cartão :</span>
+                    <input type="text" placeholder="Digite o nome no cartão" >
+                </div>
+                <div class="inputCaixa">
+                    <span>Numero do Cartão :</span>
+                    <input id="numeroCartao" type="text" placeholder="1111-2222-3333-4444" maxlength="19">
+                </div>
+                <div class="inputCaixa">
+                    <span>Validade :</span>
+                    <input id="validade" type="text" placeholder="dd/mm" maxlength="5">
+                </div>
+                
+
+                
+
+            </div>
+            
+            
+        </div>
+        <div class="escolha">
+            <label for="" class="label1"> Escolha seu Pacote :</label>
+            <input type="checkbox" id="opcaoEstoque" onclick="estoque()"> Sistema Estoque
+            <input type="checkbox" id="opcaoAtivo" onclick="ativo()"> Sistema Ativos
+            <input type="checkbox" id="opcaoChamado" onclick="chamado()"> Sistema Chamados
+        </div> <br>
+        <div class="valor">
+                    <label for=""> VALOR : </label> <label id="valor" for="ativo()"> </label>
+                    <label for=""> Pacote : </label> <label id="pacote"> </label>
+                    
+        </div>
+        
+
+        <input type="submit" value="COMPRAR" class="submit-btn">
+
+    </form>
+    
+</div>
+
+<div class="voltar">
+   <a href="sistemao.html"> <i class="fa-solid fa-circle-left"></i> </a>
+</div>
+
+
+
+
+</body>
+<script src="js/pacotes.js"></script>
+<script src="https://kit.fontawesome.com/079fbdccaf.js" crossorigin="anonymous"></script>
+</html>

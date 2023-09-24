@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre</title>
+    <link rel="stylesheet" href="css/sistemao.css">
+    <link rel="stylesheet" href="css/sobre.css">
+</head>
+
+<style>
+    body {
+        background-color: #102129;
+    }
+</style>
+
+<body>
+    <header>
+        <nav class="menu">
+            <div class="logo">
+                <a href="sistemao.html"><img src="img/logo.png" alt=""></a>
+            </div>
+            <div class="lista">
+                <ul class="lista-feita">
+                    <li class="item"><a href="ativos.html" class="link">Ativos</a></li>
+                    <li class="item"><a href="chamados1.html" class="link">Chamados</a></li>
+                    <li class="item"><a href="estoque.html" class="link"> Estoque</a></li>
+                </ul>
+            </div>
+
+            <div class="botao-entrar">
+                <button onclick="document.getElementById('start').style.display='block'"><a>Entrar</a></button>
+            </div>
+
+            <!--  Modal Sign Up form -->
+<div id="start" class="modal">
+    <span onclick="document.getElementById('start').style.display='none'" class="fechar" title="Close Modal"><img src="img/close_white_36dp.svg" alt=""></span>
+    <form class="modal-caixa" action="/action_page.php" >
+      <div class="container">
+        <h1>LOGIN</h1>
+        <hr>
+        <label for="cpf"><b>CPF</b></label>
+        <input type="text" placeholder="Digite seu CPF" name="cpf" required>
+  
+        <label for="senha"><b>Senha</b></label>
+        <input type="password" placeholder="Digite sua Senha" name="senha" required>
+
+        <div class="botoes">
+          <button type="submit" class="entrar">Entrar</button>
+          <button type="button" onclick="document.getElementById('start').style.display='none'" class="cancelar">Cancelar</button>
+          <a href="cadastro.html" target="_blank" style="color:dodgerblue">Não tenho conta</a>
+        </div>
+        
+      </div>
+      
+    </form>
+  </div>
+
+
+    <div class="iconeCel">
+        <button onclick="menuShow()"><img class="icon" src="img/menu_white_36dp.svg" alt=""></button>
+    </div>
+    </nav>
+        
+    <div class="menuCel">
+        <ul>
+            <li class="item"><a href="#" class="link">Ativos</a></li>
+            <li class="item"><a href="#" class="link">Chamados</a></li>
+            <li class="item"><a href="#" class="link">Estoque</a></li>
+        </ul>
+
+    <div class="botao-entrar">
+        <button><a href="#">Entrar</a></button>
+    </div>
+    </div>
+    </header>
+   
+    <div class="caixa3">
+        <div class="caixa4">
+            <br>
+            <h5>Sobre nós</h5>
+        </div>
+        <div class="texto">
+            <br><br>
+            <h3>Nós somos uma equipe desenvolvedora de sistemas do Senai Dr. Prof Euryclides de Jesus Zerbini, <br> o grupo é formado por quatro integrantes e
+                nosso objetivo é produzir um sitema onde será possível uma <br> melhor organização dentro de uma empresa. 
+                
+                 O sistema em si pode ser chamado de sistemão ou até mesmo EsAtch, <br> que é o nome de nosso software. E você sabe o que significa EsAtch? 
+                 EsAtch basicamente é a junção dos três <br> sistemas do site: Es que significa: estoque, At que significa: ativos e por último Ch que significa: 
+                 Estoque. 
+                 <br>
+                    Então vamos descobrir para que serve cada sistema:
+                 <br>
+                    Estoque: O estoque basicamente tem o obejtivo de mostar o estoque de forma detalhada, <br> mostrando o que é materia-prima e o que não é mais.
+                 <br>
+                    Ativos: O sistema de ativos serve para que o funcionario possa visualizar o que está em <br> ativo, ou seja, qual equipamento, está em uso
+                    <br>
+                    Chamados: O software de chamados serve para que algum funcionario dentro da empresa possa <br> relatar problemas e podendo envia-lo de forma
+                 mais detalhada. 
+                 <br>
+
+
+               
+     
+            </h3>
+          
+        </div>
+    </div>
+    
+  
+  <script src="js/chamados.js"></script>
+</body>
+</html>

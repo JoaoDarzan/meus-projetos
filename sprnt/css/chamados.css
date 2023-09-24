@@ -1,0 +1,403 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap');
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+
+
+header {
+    background-color: #102129;
+    box-shadow: 0px 3px 10px #464646;
+    
+}
+
+.menu {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.8rem 6rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  height: 3.3rem;
+}
+
+.logo img {
+  height: 10rem;
+}
+
+
+.logo h1 {
+    color: #fff;
+}
+
+.lista {
+    display: flex;
+    align-items: center;
+}
+
+.lista ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    
+}
+
+.item {
+    margin: 0 50px;
+}
+
+.item:hover {
+  transform: scale(1.05);
+}
+
+.link {
+    text-decoration: none;
+    font-size: 1.15rem;
+    color: #fff;
+    font-weight: 400;
+}
+
+.botao-entrar button {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    background-color: #ed7117;
+}
+
+.botao-entrar button a {
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.iconeCel {
+    display: none;
+}
+
+.menuCel {
+    display: none;
+}
+
+@media screen and (max-width: 1130px) {
+    .menu {
+        padding: 1.5rem 4rem;
+    }
+    .item {
+        display: none;
+    }
+    .botao-entrar {
+        display: none;
+    }
+    .iconeCel {
+        display: block;
+    }
+    .iconeCel button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+    }
+    .menuCel ul {
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        padding-bottom: 1rem;
+    }
+    .menuCel .item {
+        display: block;
+        padding-top: 1.2rem;
+    }
+    .menuCel .botao-entrar {
+        display: block;
+        padding: 1rem 2rem;
+    }
+    .menuCel .botao-entrar button {
+        width: 100%;
+    }
+    .open {
+        display: block;
+    }
+}
+
+
+
+/* modal do site qunado clicar em entrar */
+/* inputs */
+.texto {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 15px 0;
+  display: inline-block;
+  border: none;
+  background: #dfd9d9;
+  border-radius: 12px;
+}
+
+.senha {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 15px 0;
+  display: inline-block;
+  border: none;
+  background: #dfd9d9;
+  border-radius: 12px;
+}
+
+
+.botoes a {
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  display: flex;
+  font-size: 13px;
+  padding: 0.6rem;
+}
+
+.master h1 {
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  display: flex;
+  font-size: 27px;
+}
+
+/* Add um background color focus ao clicar */
+
+
+/* estilo de todos os botões */
+.entrar {
+ background-color: #04AA6D;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+  border-radius: 12px;
+}
+
+.entrar-laranja {
+    color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+  border-radius: 12px;
+}
+
+button:active {
+  transform: translateY(4px);
+}
+
+/* estilo do botão cancelar */
+.cancelar {
+  padding: 14px 20px;
+  background-color: #f44336;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+  border-radius: 12px;
+  color: white;
+}
+
+/* dimensionar os botões */
+.cancelar, .entrarbtn {
+  /* float: left; */
+  width: 100%;
+}
+
+/* Add padding para os elementos do container  */
+.master {
+  padding:  4.5em 5em 8em; /* o primeiro mexe na altura, o do meio mexe na largura de todos os elemntos no modal */
+}
+
+/*  Modal background */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 1; /* vai para frente */
+  left: 0;
+  top: 0;
+  width: 100%; /* 100% width */
+  height: 100%; /* 100% height */
+  overflow: hidden; 
+  padding-top: 50px;
+  backdrop-filter: blur(10px); /*desfoca o fundo*/
+}
+
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 10em auto 10em auto; 
+  border: 1px solid #888;
+  width: 30rem; 
+  height: 35rem;
+  -webkit-animation-name: animatetop;
+  -webkit-animation-duration: 0.9s;
+  animation-name: animatetop;
+  animation-duration: 0.9s;
+  border-radius: 25px;
+}
+
+/* a linha horizontal do login */
+#linha {
+  border: 1px solid #f1f1f1;
+  margin-bottom: 25px;
+}
+
+/* botão de fechar (x) */
+.fechar {
+  position: absolute;
+  right: 35px;
+  top: 15px;
+  font-size: 40px;
+  font-weight: bold;
+  color: #f1f1f1;
+}
+
+.fechar:hover,
+.fechar:focus {
+  color: #a54039;
+  cursor: pointer;
+}
+
+/* limpar oq foi feito */
+.botoes::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+/* estilos do botão cancelar e entrar */
+@media screen and (max-width: 300px) {
+  .cancelar, .entrarbtn {
+    width: 100%;
+  }
+}
+
+/* Add Animação */
+@-webkit-keyframes animatetop {
+    from {top:-300px; opacity:0} 
+    to {top:0; opacity:1}
+  }
+  
+  @keyframes animatetop {
+    from {top:-300px; opacity:0}
+    to {top:0; opacity:1}
+  }
+
+
+
+
+
+
+  /* forms */
+  .caixa{
+    color: white;
+    position: absolute;
+    top: 57%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    background-color: #102129;
+    padding: 25px;
+    border-radius: 15px;
+    width: 50%;
+    z-index: -1000;
+    
+}
+fieldset{
+    border: 3px solid #ed7117;
+    padding: 20px 20px 20px;
+    border-radius: 10px;
+}
+legend{
+    border: 1px solid #ed7117;
+    padding: 10px;
+    text-align: center;
+    background-color: #ed7117;
+    border-radius: 8px;
+}
+.inputs1{
+    position: relative;
+}
+.inputs2{
+    background: none;
+    border: none;
+    border-bottom: 1px solid white;
+    outline: none;
+    color: white;
+    font-size: 15px;
+    width: 100%;
+    letter-spacing: 2px; /* espça as letras */
+}
+.inputs2:focus {
+  border-color: #ed7117;
+}
+
+.labelInput{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    pointer-events: none;
+    transition: .5s;
+    color: rgba(255, 255, 255, 0.418);
+}
+.inputs2:focus ~ .labelInput,
+.inputs2:valid ~ .labelInput{
+    top: -20px;
+    font-size: 12px;
+    color: white;
+    border-color: #ed7117;
+}
+#data_nascimento{
+    border: none;
+    padding: 8px;
+    border-radius: 10px;
+    outline: none;
+    font-size: 15px;
+}
+#botao{
+    background-color: #ed7117;
+    width: 100%;
+    border: none;
+    padding: 15px;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+
+/* responsividade */
+@media screen and (max-width: 0px) {
+  .caixa {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    
+  }
+}
+
+#botao:active {
+  transform: translateY(4px);
+}
+
+/* estilo de focuss para os inputs, somente teste, n usavel ainda 
+input[type=text]:focus {
+    border: 3px solid #555;
+  } 
+
+
+
+  

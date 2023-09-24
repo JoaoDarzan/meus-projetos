@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATIVOS</title>
+    <link rel="stylesheet" href="css/sistemao.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<style>
+    body {
+    background-image: url(img/fundoAtivoEstoque.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: initial;
+    height: auto;
+    }
+</style>
+
+<body>
+    <header>
+        <nav class="menu">
+            <div class="logo">
+                <a href="sistemao.html"><img src="img/logo.png" alt=""></a>
+            </div>
+            <div class="lista">
+                <ul class="lista-feita">
+                    <li class="item"><a href="ativos.html" class="link">Ativos</a></li>
+                    <li class="item"><a href="chamados1.html" class="link">Chamados</a></li>
+                    <li class="item"><a href="estoque.html" class="link"> Estoque</a></li>
+                </ul>
+            </div>
+
+            <div class="botao-entrar">
+                <button onclick="document.getElementById('start').style.display='block'"><a>Entrar</a></button>
+            </div>
+
+            <!--  Modal Sign Up form -->
+<div id="start" class="modal">
+    <span onclick="document.getElementById('start').style.display='none'" class="fechar" title="Close Modal"><img src="img/close_white_36dp.svg" alt=""></span>
+    <form class="modal-caixa" action="/action_page.php" >
+      <div class="container">
+        <h1>LOGIN</h1>
+        <hr>
+        <label for="cpf"><b>CPF</b></label>
+        <input type="text" placeholder="Digite seu CPF" name="cpf" required>
+  
+        <label for="senha"><b>Senha</b></label>
+        <input type="password" placeholder="Digite sua Senha" name="senha" required>
+
+        <div class="botoes">
+          <button type="submit" class="entrar">Entrar</button>
+          <button type="button" onclick="document.getElementById('start').style.display='none'" class="cancelar">Cancelar</button>
+          <a href="cadastro.html" target="_blank" style="color:dodgerblue">Não tenho conta</a>
+        </div>
+        
+      </div>
+      
+    </form>
+  </div>
+
+
+    <div class="iconeCel">
+        <button onclick="menuShow()"><img class="icon" src="img/menu_white_36dp.svg" alt=""></button>
+    </div>
+    </nav>
+        
+    <div class="menuCel">
+        <ul>
+            <li class="item"><a href="ativos.html" class="link">Ativos</a></li>
+            <li class="item"><a href="chamados1.html" class="link">Chamados</a></li>
+            <li class="item"><a href="estoque.html" class="link">Estoque</a></li>
+        </ul>
+
+    <div class="botao-entrar">
+        <button onclick="document.getElementById('start').style.display='block'"><a>Entrar</a></button> <!--aqui é para quando for um celular ou uma tela menor-->
+    </div>
+    </div>
+    </header>
+       
+    <div class="caixa1">
+        <div class="caixa2">
+            <br>
+            <h1>ATIVOS</h1>
+        </div>
+      
+    </div>
+    
+    <script src="js/chamados.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,104 @@
+/* geral */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Helvetica, sans-serif;
+    color: #323232;
+    border: none;
+    
+  }
+  
+  input, label {
+    display: block;
+    outline: none;
+    width: 100%;
+  }
+  
+  
+  
+  /* form */
+  #geral {
+    width: 55rem;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #FFF;
+    border-radius: 25px;
+    padding: 5rem;
+  }
+  
+  #geral h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 2.6rem;
+    
+  }
+  
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .grande {
+    flex: 1 1 100%;
+    position: relative;
+  }
+  
+  .pequeno {
+    flex: 1 1 45%;
+    position: relative;
+  }
+  
+  .espacamento {
+    margin-right: 7.5%;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: .9rem;
+  }
+  
+  input {
+    border-bottom: 2px solid #323232;
+    padding: 10px;
+    font-size: .9rem;
+    margin-bottom: 40px;
+  }
+  
+  input:focus {
+    border-color: #ed7117;
+  }
+  
+  input[type="submit"] {
+    background-color: #ed7117;
+    color: #FFF;
+    border: none;
+    border-radius: 20px;
+    height: 40px;
+    cursor: pointer;
+  }
+  
+  #agreement {
+    margin-right: 5px;
+  }
+  
+  #agreement, #agreement-label {
+    display: inline-block;
+    width: auto;
+  }
+  
+  .erro {
+    color: #ff1a1a;
+    position: absolute;
+    top: 57px;
+    font-size: 12px;
+  }
+  
+  .template {
+    display: none;
+  }
+
+  #entrar:active {
+    transform: translateY(4px);
+  }
