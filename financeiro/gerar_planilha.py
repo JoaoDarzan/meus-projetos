@@ -85,6 +85,7 @@ listas = {
     'G': ('Situação do equipamento', ['Em uso', 'Vendido', 'Quebrado / perdido']),
     'H': ('Sim / Não', ['Sim', 'Não']),
     'I': ('Forma de pagamento', ['Pix', 'Dinheiro', 'Cartão de crédito', 'Cartão de débito', 'Parcelado', 'Boleto']),
+    'J': ('Serviços', ['Filme cinematográfico', 'Teaser', 'Cerimônia na íntegra', 'Vídeo com motion', 'Vídeo para empresa', 'Storymaker', 'Pacote (vários serviços)']),
 }
 LIST_LAST = 30
 def lref(col): return f"=Listas!${col}$5:${col}${LIST_LAST}"
@@ -96,14 +97,15 @@ ws = wb.active; ws.title = 'Como usar'
 ws.sheet_view.showGridLines = False
 ws.column_dimensions['A'].width = 4; ws.column_dimensions['B'].width = 30; ws.column_dimensions['C'].width = 90
 ws['B2'] = 'Controle Financeiro — Darzan Produções'; ws['B2'].font = f_title
-ws['B3'] = 'Storymaker & Videomaker · Campinas e região'; ws['B3'].font = f_sub
+ws['B3'] = 'João Darzan · Videomaker & Storymaker · Campinas e região'; ws['B3'].font = f_sub
 guia = [
     ('COMO FUNCIONA', None),
     ('1. Você só anota', 'Preencha as abas de lançamento (Trabalhos, Orçamentos, Clientes, Freelancers, Gastos e Equipamentos). O Resumo e a Agenda se calculam sozinhos.'),
     ('2. Cores das colunas', 'Colunas BRANCAS = você digita. Colunas CINZAS = automáticas, não digite nelas. Célula AMARELA no Resumo = ano que você quer ver.'),
     ('3. Menus', 'Várias colunas têm uma setinha com opções (tipo de evento, status...). Para mudar as opções, edite a aba "Listas".'),
     ('4. Código do trabalho', 'Cada trabalho tem um código (T001, T002, T003...). Use o mesmo código em Freelancers e Gastos para o sistema saber de qual trabalho é cada gasto.'),
-    ('5. Linhas de exemplo', 'As linhas marcadas com "EXEMPLO" servem só para você ver como funciona. Apague essas linhas (selecione e aperte Delete) antes de começar a usar de verdade.'),
+    ('5. Serviço principal', 'Em Trabalhos e Orçamentos, escolha o serviço (filme, teaser, cerimônia na íntegra, motion, empresa, storymaker). Se o cliente fechou vários, escolha "Pacote (vários serviços)" e detalhe em Observações.'),
+    ('6. Linhas de exemplo', 'As linhas marcadas com "EXEMPLO" servem só para você ver como funciona. Apague essas linhas (selecione e aperte Delete) antes de começar a usar de verdade.'),
     ('', None),
     ('O QUE ANOTAR EM CADA ABA', None),
     ('Resumo', 'Seu painel: ganho bruto, lucro, gastos com freelancer, taxa de fechamento de orçamentos, resultados por mês e por tipo de evento.'),
@@ -145,29 +147,29 @@ tcols = [('Código', 10, 'input'), ('Data do evento', 14, 'input'), ('Horário',
          ('Cliente', 26, 'input'), ('Tipo de evento', 16, 'input'), ('Local / cidade', 22, 'input'),
          ('Valor cobrado', 15, 'input'), ('Valor recebido', 15, 'input'), ('A receber', 14, 'auto'),
          ('Freelancers', 14, 'auto'), ('Outros gastos', 14, 'auto'), ('Lucro', 14, 'auto'),
-         ('Pagamento', 12, 'auto'), ('Observações', 30, 'input'), ('Ordem agenda', 9, 'auto')]
+         ('Pagamento', 12, 'auto'), ('Serviço principal', 24, 'input'), ('Observações', 30, 'input'), ('Ordem agenda', 9, 'auto')]
 header(tw, 'Trabalhos fechados', 'Um evento por linha. Colunas cinzas são automáticas. Use T001, T002, T003... no código.', tcols)
-style_rows(tw, tcols, {2: DATE, 3: 'hh:mm', 7: BRL, 8: BRL, 9: BRL, 10: BRL, 11: BRL, 12: BRL, 15: INT})
+style_rows(tw, tcols, {2: DATE, 3: 'hh:mm', 7: BRL, 8: BRL, 9: BRL, 10: BRL, 11: BRL, 12: BRL, 16: INT})
 for r in range(FIRST, LAST + 1):
     tw[f'I{r}'] = f'=IF(G{r}="","",G{r}-H{r})'
     tw[f'J{r}'] = f'=IF(A{r}="","",SUMIFS(Freelancers!$E${FIRST}:$E${LAST},Freelancers!$B${FIRST}:$B${LAST},A{r}))'
     tw[f'K{r}'] = f'=IF(A{r}="","",SUMIFS(Gastos!$D${FIRST}:$D${LAST},Gastos!$E${FIRST}:$E${LAST},A{r}))'
     tw[f'L{r}'] = f'=IF(G{r}="","",G{r}-N(J{r})-N(K{r}))'
     tw[f'M{r}'] = f'=IF(G{r}="","",IF(H{r}>=G{r},"Pago",IF(H{r}>0,"Parcial","Pendente")))'
-    tw[f'O{r}'] = (f'=IF(OR(B{r}="",B{r}<TODAY()),"",COUNTIFS($B${FIRST}:$B${LAST},">="&TODAY(),$B${FIRST}:$B${LAST},"<"&B{r})'
+    tw[f'P{r}'] = (f'=IF(OR(B{r}="",B{r}<TODAY()),"",COUNTIFS($B${FIRST}:$B${LAST},">="&TODAY(),$B${FIRST}:$B${LAST},"<"&B{r})'
                    f'+COUNTIFS($B${FIRST}:B{r},B{r}))')
-tw.column_dimensions['O'].hidden = True
-dv_list(tw, lref('A'), 'E')
+tw.column_dimensions['P'].hidden = True
+dv_list(tw, lref('A'), 'E'); dv_list(tw, lref('J'), 'N')
 dv_list(tw, f"=Clientes!$A${FIRST}:$A${LAST}", 'D', 'Escolha um cliente da aba Clientes ou digite o nome.')
 tw.conditional_formatting.add(f'M{FIRST}:M{LAST}', CellIsRule(operator='equal', formula=['"Pago"'], fill=PatternFill('solid', fgColor='D7F0DD'), font=Font(name=F, color='1E7B34', bold=True)))
 tw.conditional_formatting.add(f'M{FIRST}:M{LAST}', CellIsRule(operator='equal', formula=['"Parcial"'], fill=PatternFill('solid', fgColor='FFF0C2'), font=Font(name=F, color='8A6100', bold=True)))
 tw.conditional_formatting.add(f'M{FIRST}:M{LAST}', CellIsRule(operator='equal', formula=['"Pendente"'], fill=PatternFill('solid', fgColor='FBDADA'), font=Font(name=F, color='A12828', bold=True)))
 fill(tw, [
-    ['T001', date(2026, 3, 14), '16:00', 'Cliente Exemplo 1', 'Casamento', 'Campinas', 3500, 3500, None, None, None, None, None, 'EXEMPLO — apague esta linha'],
-    ['T002', date(2026, 6, 20), '19:00', 'Empresa Exemplo', 'Empresa', 'Valinhos', 1800, 1800, None, None, None, None, None, 'EXEMPLO — apague esta linha'],
-    ['T003', date(2026, 8, 9), '15:00', 'Cliente Exemplo 2', 'Chá revelação', 'Campinas', 900, 900, None, None, None, None, None, 'EXEMPLO — apague esta linha'],
-    ['T004', date(2026, 11, 21), '20:00', 'Cliente Exemplo 3', 'Aniversário', 'Hortolândia', 1200, 600, None, None, None, None, None, 'EXEMPLO — apague esta linha'],
-    ['T005', date(2026, 12, 5), '17:00', 'Cliente Exemplo 4', 'Casamento', 'Indaiatuba', 4200, 2100, None, None, None, None, None, 'EXEMPLO — apague esta linha'],
+    ['T001', date(2026, 3, 14), '16:00', 'Cliente Exemplo 1', 'Casamento', 'Campinas', 3500, 3500, None, None, None, None, None, 'Pacote (vários serviços)', 'EXEMPLO — apague esta linha (filme + teaser + storymaker)'],
+    ['T002', date(2026, 6, 20), '19:00', 'Empresa Exemplo', 'Empresa', 'Valinhos', 1800, 1800, None, None, None, None, None, 'Vídeo para empresa', 'EXEMPLO — apague esta linha'],
+    ['T003', date(2026, 8, 9), '15:00', 'Cliente Exemplo 2', 'Chá revelação', 'Campinas', 900, 900, None, None, None, None, None, 'Storymaker', 'EXEMPLO — apague esta linha'],
+    ['T004', date(2026, 11, 21), '20:00', 'Cliente Exemplo 3', 'Aniversário', 'Hortolândia', 1200, 600, None, None, None, None, None, 'Teaser', 'EXEMPLO — apague esta linha'],
+    ['T005', date(2026, 12, 5), '17:00', 'Cliente Exemplo 4', 'Casamento', 'Indaiatuba', 4200, 2100, None, None, None, None, None, 'Filme cinematográfico', 'EXEMPLO — apague esta linha'],
 ])
 for r in range(FIRST, FIRST + 5):  # horário como hora de verdade
     h, m = tw[f'C{r}'].value.split(':'); from datetime import time; tw[f'C{r}'] = time(int(h), int(m))
@@ -177,23 +179,23 @@ for r in range(FIRST, FIRST + 5):  # horário como hora de verdade
 # =========================================================
 ow = wb.create_sheet('Orçamentos')
 ocols = [('Data do envio', 14, 'input'), ('Cliente', 26, 'input'), ('Tipo de evento', 16, 'input'),
-         ('Data do evento', 14, 'input'), ('Valor orçado', 15, 'input'), ('Status', 13, 'input'), ('Observações', 40, 'input')]
+         ('Data do evento', 14, 'input'), ('Valor orçado', 15, 'input'), ('Status', 13, 'input'), ('Serviço principal', 24, 'input'), ('Observações', 40, 'input')]
 header(ow, 'Orçamentos passados', 'Anote TODOS os orçamentos, fechando ou não. É isso que mostra a sua taxa de fechamento.', ocols)
 style_rows(ow, ocols, {1: DATE, 4: DATE, 5: BRL})
-dv_list(ow, lref('A'), 'C'); dv_list(ow, lref('B'), 'F')
+dv_list(ow, lref('A'), 'C'); dv_list(ow, lref('B'), 'F'); dv_list(ow, lref('J'), 'G')
 dv_list(ow, f"=Clientes!$A${FIRST}:$A${LAST}", 'B', 'Escolha um cliente da aba Clientes ou digite o nome.')
 for val, bg, fg in [('Fechado', 'D7F0DD', '1E7B34'), ('Aguardando', 'FFF0C2', '8A6100'), ('Recusado', 'FBDADA', 'A12828')]:
     ow.conditional_formatting.add(f'F{FIRST}:F{LAST}', CellIsRule(operator='equal', formula=[f'"{val}"'], fill=PatternFill('solid', fgColor=bg), font=Font(name=F, color=fg, bold=True)))
 EX = 'EXEMPLO — apague esta linha'
 fill(ow, [
-    [date(2026, 1, 20), 'Cliente Exemplo 1', 'Casamento', date(2026, 3, 14), 3500, 'Fechado', EX],
-    [date(2026, 2, 3), 'Cliente Exemplo 5', 'Casamento', date(2026, 5, 9), 3800, 'Recusado', EX + ' (achou caro)'],
-    [date(2026, 5, 12), 'Empresa Exemplo', 'Empresa', date(2026, 6, 20), 1800, 'Fechado', EX],
-    [date(2026, 6, 28), 'Cliente Exemplo 2', 'Chá revelação', date(2026, 8, 9), 900, 'Fechado', EX],
-    [date(2026, 7, 15), 'Cliente Exemplo 6', 'Aniversário', date(2026, 9, 12), 1100, 'Recusado', EX + ' (data ocupada)'],
-    [date(2026, 8, 30), 'Cliente Exemplo 3', 'Aniversário', date(2026, 11, 21), 1200, 'Fechado', EX],
-    [date(2026, 9, 10), 'Cliente Exemplo 4', 'Casamento', date(2026, 12, 5), 4200, 'Fechado', EX],
-    [date(2026, 10, 2), 'Cliente Exemplo 7', 'Chá revelação', date(2027, 1, 16), 950, 'Aguardando', EX],
+    [date(2026, 1, 20), 'Cliente Exemplo 1', 'Casamento', date(2026, 3, 14), 3500, 'Fechado', 'Pacote (vários serviços)', EX],
+    [date(2026, 2, 3), 'Cliente Exemplo 5', 'Casamento', date(2026, 5, 9), 3800, 'Recusado', 'Filme cinematográfico', EX + ' (achou caro)'],
+    [date(2026, 5, 12), 'Empresa Exemplo', 'Empresa', date(2026, 6, 20), 1800, 'Fechado', 'Vídeo para empresa', EX],
+    [date(2026, 6, 28), 'Cliente Exemplo 2', 'Chá revelação', date(2026, 8, 9), 900, 'Fechado', 'Storymaker', EX],
+    [date(2026, 7, 15), 'Cliente Exemplo 6', 'Aniversário', date(2026, 9, 12), 1100, 'Recusado', 'Teaser', EX + ' (data ocupada)'],
+    [date(2026, 8, 30), 'Cliente Exemplo 3', 'Aniversário', date(2026, 11, 21), 1200, 'Fechado', 'Teaser', EX],
+    [date(2026, 9, 10), 'Cliente Exemplo 4', 'Casamento', date(2026, 12, 5), 4200, 'Fechado', 'Filme cinematográfico', EX],
+    [date(2026, 10, 2), 'Cliente Exemplo 7', 'Chá revelação', date(2027, 1, 16), 950, 'Aguardando', 'Vídeo com motion', EX + ' (convite animado)'],
 ])
 
 # =========================================================
@@ -271,23 +273,23 @@ fill(ew, [
 # =========================================================
 aw = wb.create_sheet('Agenda', 1)
 acols = [('#', 5, 'auto'), ('Data', 14, 'auto'), ('Faltam (dias)', 12, 'auto'), ('Horário', 10, 'auto'), ('Cliente', 26, 'auto'),
-         ('Tipo de evento', 16, 'auto'), ('Local / cidade', 22, 'auto'), ('Código', 10, 'auto'), ('A receber', 14, 'auto')]
+         ('Tipo de evento', 16, 'auto'), ('Local / cidade', 22, 'auto'), ('Código', 10, 'auto'), ('A receber', 14, 'auto'), ('Serviço', 24, 'auto')]
 header(aw, 'Agenda — próximos eventos', 'Automática: puxa da aba Trabalhos todos os eventos de hoje em diante, em ordem de data.', acols)
 N_AG = 40
 for k in range(1, N_AG + 1):
     r = FIRST + k - 1
     aw[f'A{r}'] = k
-    m = f'MATCH($A{r},{rng(T,"O")},0)'
+    m = f'MATCH($A{r},{rng(T,"P")},0)'
     def pull(col): return f'=IFERROR(INDEX({rng(T,col)},{m}),"")'
     aw[f'B{r}'] = pull('B'); aw[f'D{r}'] = pull('C'); aw[f'E{r}'] = pull('D'); aw[f'F{r}'] = pull('E')
-    aw[f'G{r}'] = pull('F'); aw[f'H{r}'] = pull('A'); aw[f'I{r}'] = pull('I')
+    aw[f'G{r}'] = pull('F'); aw[f'H{r}'] = pull('A'); aw[f'I{r}'] = pull('I'); aw[f'J{r}'] = pull('N')
     aw[f'C{r}'] = f'=IF(B{r}="","",B{r}-TODAY())'
     for i, (n, w, kind) in enumerate(acols, 1):
         c = aw.cell(row=r, column=i); c.border = box; c.font = f_body; c.alignment = Alignment(vertical='center')
     aw[f'B{r}'].number_format = DATE; aw[f'D{r}'].number_format = 'hh:mm'; aw[f'I{r}'].number_format = BRL
     aw[f'C{r}'].number_format = '0'; aw[f'A{r}'].font = f_auto
-aw.conditional_formatting.add(f'A{FIRST}:I{FIRST+N_AG-1}', FormulaRule(formula=[f'AND($C{FIRST}<>"",$C{FIRST}<=7)'], fill=PatternFill('solid', fgColor='FFF0C2')))
-aw.conditional_formatting.add(f'A{FIRST}:I{FIRST+N_AG-1}', FormulaRule(formula=[f'$B{FIRST}=""'], font=Font(color='FFFFFF')))
+aw.conditional_formatting.add(f'A{FIRST}:J{FIRST+N_AG-1}', FormulaRule(formula=[f'AND($C{FIRST}<>"",$C{FIRST}<=7)'], fill=PatternFill('solid', fgColor='FFF0C2')))
+aw.conditional_formatting.add(f'A{FIRST}:J{FIRST+N_AG-1}', FormulaRule(formula=[f'$B{FIRST}=""'], font=Font(color='FFFFFF')))
 aw[f'A{FIRST+N_AG+1}'] = 'Linhas em amarelo = evento nos próximos 7 dias.'; aw[f'A{FIRST+N_AG+1}'].font = f_sub
 
 # =========================================================
@@ -415,6 +417,22 @@ for i in range(7):
     sw[f'C{r}'] = f'=COUNTIF({rng("Clientes","E")},$B{r})'
     sw[f'D{r}'] = f'=SUMIFS({rng("Clientes","G")},{rng("Clientes","E")},$B{r})'
     for col, fmt in zip('BCD', [None, INT, BRL]):
+        c = sw[f'{col}{r}']; c.border = box; c.font = f_body
+        if fmt: c.number_format = fmt
+
+# ---- Por serviço ----
+sw[f'F{CR-1}'] = 'Resultado por serviço (ano escolhido)'; sw[f'F{CR-1}'].font = Font(name=F, size=12, bold=True, color=DARK)
+head_row(CR, ['Serviço principal', 'Trabalhos', 'Ganho bruto', 'Lucro', 'Valor médio'], start=6)
+sw.column_dimensions['F'].width = 24
+for i in range(7):
+    r = CR + 1 + i
+    sw[f'F{r}'] = f'=Listas!$J${5+i}'
+    t = f',{rng(T,"N")},$F{r}'
+    sw[f'G{r}'] = '=' + cnt_yr(T, 'B', t)
+    sw[f'H{r}'] = '=' + yr(T, 'G', 'B', t)
+    sw[f'I{r}'] = '=' + yr(T, 'L', 'B', t)
+    sw[f'J{r}'] = f'=IF(G{r}=0,0,H{r}/G{r})'
+    for col, fmt in zip('FGHIJ', [None, INT, BRL, BRL, BRL]):
         c = sw[f'{col}{r}']; c.border = box; c.font = f_body
         if fmt: c.number_format = fmt
 
