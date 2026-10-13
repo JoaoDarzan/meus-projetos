@@ -12,13 +12,13 @@
 const SITE = {
   // Seu WhatsApp com DDI + DDD + número, só números. Ex: '5511987654321'
   // Enquanto estiver vazio, os botões de WhatsApp levam para o Instagram.
-  whatsapp: '',
+  whatsapp: '5519995273041',
 
   instagram: 'darzanproducoes',
 
   // Opcional: aparece na seção de contato
   email: '',
-  cidade: '', // ex: 'São Paulo - SP · Atendo em todo o estado'
+  cidade: 'Campinas e região · Atendo também outras cidades',
 
   // Vídeo que roda no FUNDO do topo do site (de preferência horizontal, curto e leve).
   // Ex: 'videos/showreel.mp4'
