@@ -27,7 +27,7 @@ Coloque em `VIDEOS`. O **primeiro** da lista aparece em destaque, maior.
 { titulo: 'Ana & Pedro', tipo: 'teaser',    evento: 'Casamento', video: 'https://vimeo.com/123456789', capa: '' },
 { titulo: 'Ana & Pedro', tipo: 'cerimonia', evento: 'Casamento', video: 'videos/cerimonia.mp4', capa: 'img/capa.jpg' },
 ```
-Tipos aceitos: `filme`, `teaser`, `cerimonia` (cerimônia na íntegra). Filmes longos ficam melhores no YouTube ou Vimeo.
+Tipos aceitos: `filme`, `teaser`, `cerimonia` (cerimônia na íntegra), `motion` (vídeos com motion) e `empresa` (vídeos para empresas). Filmes longos ficam melhores no YouTube ou Vimeo.
 
 ### 4. Storymaker (vídeos verticais)
 - `videoCelular`: vídeo vertical que aparece dentro do celular na seção Storymaker.

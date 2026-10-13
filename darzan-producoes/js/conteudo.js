@@ -28,12 +28,12 @@ const SITE = {
   // Ex: 'videos/story-destaque.mp4'
   videoCelular: '',
 
-  // Sua foto para a seção "Sobre". Ex: 'img/perfil.jpg'
+  // Sua foto (João Darzan) para a seção "Sobre". Ex: 'img/perfil.jpg'
   fotoPerfil: ''
 };
 
 /* ---------- FILMES (vídeos horizontais) ----------
-   tipo:   'filme' | 'teaser' | 'cerimonia'
+   tipo:   'filme' | 'teaser' | 'cerimonia' | 'motion' | 'empresa'
    evento: texto livre. Ex: 'Casamento', 'Empresa', 'Aniversário', 'Chá revelação'
 
    video: pode ser
@@ -49,10 +49,12 @@ const VIDEOS = [
   { titulo: 'Filme de casamento',       tipo: 'filme',     evento: 'Casamento',     video: '', capa: '' },
   { titulo: 'Teaser de casamento',      tipo: 'teaser',    evento: 'Casamento',     video: '', capa: '' },
   { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Filme institucional',      tipo: 'filme',     evento: 'Empresa',       video: '', capa: '' },
+  { titulo: 'Vídeo institucional',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
+  { titulo: 'Vinheta animada',          tipo: 'motion',    evento: 'Empresa',       video: '', capa: '' },
   { titulo: 'Teaser de aniversário',    tipo: 'teaser',    evento: 'Aniversário',   video: '', capa: '' },
   { titulo: 'Filme do chá revelação',   tipo: 'filme',     evento: 'Chá revelação', video: '', capa: '' },
-  { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' }
+  { titulo: 'Conteúdo para redes',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
+  { titulo: 'Convite animado',          tipo: 'motion',    evento: 'Casamento',     video: '', capa: '' }
 ];
 
 /* ---------- STORIES (vídeos verticais do storymaker) ----------

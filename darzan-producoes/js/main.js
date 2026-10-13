@@ -6,7 +6,9 @@
 const TIPOS = {
   'filme': 'Filme',
   'teaser': 'Teaser',
-  'cerimonia': 'Cerimônia na íntegra'
+  'cerimonia': 'Cerimônia na íntegra',
+  'motion': 'Vídeo com motion',
+  'empresa': 'Vídeo para empresa'
 };
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -90,7 +92,7 @@ function setupMedia() {
 
   const about = $('#aboutPhoto');
   about.innerHTML = SITE.fotoPerfil
-    ? `<img src="${esc(SITE.fotoPerfil)}" alt="Darzan Produções" loading="lazy">`
+    ? `<img src="${esc(SITE.fotoPerfil)}" alt="João Darzan" loading="lazy">`
     : `<div class="placeholder"><svg viewBox="0 0 24 24"><use href="#i-camera"/></svg><span>Sua foto aqui</span></div>`;
 }
 
@@ -150,7 +152,7 @@ function renderVideos() {
     lista: 'filmes',
     classe: `media-card film-card${i === 0 ? ' film-card--featured' : ''}`,
     tag: [TIPOS[v.tipo], v.evento].filter(Boolean).join(' · '),
-    vazio: `Espaço para ${(TIPOS[v.tipo] || 'vídeo').toLowerCase()}`
+    vazio: `Espaço para ${v.tipo === 'filme' || v.tipo === 'teaser' ? (TIPOS[v.tipo] || 'vídeo').toLowerCase() : 'vídeo'}`
   })).join('');
   bindCards(grid);
 }
