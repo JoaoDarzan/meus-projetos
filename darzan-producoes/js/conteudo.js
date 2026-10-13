@@ -10,8 +10,7 @@
 
 /* ---------- CONTATOS E INFORMAÇÕES GERAIS ---------- */
 const SITE = {
-  // Seu WhatsApp com DDI + DDD + número, só números. Ex: '5511987654321'
-  // Enquanto estiver vazio, os botões de WhatsApp levam para o Instagram.
+  // Seu WhatsApp com DDI + DDD + número, só números.
   whatsapp: '5519995273041',
 
   instagram: 'darzanproducoes',
@@ -20,42 +19,57 @@ const SITE = {
   email: '',
   cidade: 'Campinas e região · Atendo também outras cidades',
 
-  // Vídeo que roda no FUNDO do topo do site (de preferência horizontal, curto e leve).
-  // Ex: 'videos/showreel.mp4'
-  showreel: '',
+  // Vídeo que roda no FUNDO do topo do site, atrás dos textos.
+  // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
+  // Pode ser um arquivo seu ('videos/fundo.mp4') ou um link do YouTube.
+  videoFundo: '',
 
-  // Vídeo vertical que aparece DENTRO DO CELULAR no topo do site.
-  // Ex: 'videos/destaque.mp4'
-  videoDestaque: '',
+  // Vídeo vertical que aparece DENTRO DO CELULAR na seção Storymaker.
+  // Ex: 'videos/story-destaque.mp4'
+  videoCelular: '',
 
   // Sua foto para a seção "Sobre". Ex: 'img/perfil.jpg'
   fotoPerfil: ''
 };
 
-/* ---------- VÍDEOS ----------
-   categoria: 'casamentos' | 'empresas' | 'aniversarios' | 'cha-revelacao'
+/* ---------- FILMES (vídeos horizontais) ----------
+   tipo:   'filme' | 'teaser' | 'cerimonia'
+   evento: texto livre. Ex: 'Casamento', 'Empresa', 'Aniversário', 'Chá revelação'
 
    video: pode ser
-     - um arquivo seu:            'videos/casamento-1.mp4'
-     - um link do YouTube/Shorts: 'https://youtube.com/shorts/XXXXXXXX'
-     - um link de Reels:          'https://www.instagram.com/reel/XXXXXXXX/'
+     - um arquivo seu:            'videos/filme-ana-pedro.mp4'
+     - um link do YouTube:        'https://youtu.be/XXXXXXXXXXX'
+     - um link do Vimeo:          'https://vimeo.com/123456789'
 
-   capa (opcional): imagem de capa. Ex: 'img/capa-casamento-1.jpg'
+   capa (opcional): imagem de capa. Ex: 'img/capa-filme-1.jpg'
+   O PRIMEIRO filme da lista aparece em destaque (maior).
    Deixe video: '' para manter o espaço reservado.
 */
 const VIDEOS = [
-  { titulo: 'Casamento',              categoria: 'casamentos',    video: '', capa: '' },
-  { titulo: 'Making of da noiva',     categoria: 'casamentos',    video: '', capa: '' },
-  { titulo: 'Evento corporativo',     categoria: 'empresas',      video: '', capa: '' },
-  { titulo: 'Conteúdo para marca',    categoria: 'empresas',      video: '', capa: '' },
-  { titulo: 'Aniversário',            categoria: 'aniversarios',  video: '', capa: '' },
-  { titulo: 'Festa de 15 anos',       categoria: 'aniversarios',  video: '', capa: '' },
-  { titulo: 'Chá revelação',          categoria: 'cha-revelacao', video: '', capa: '' },
-  { titulo: 'Reações da família',     categoria: 'cha-revelacao', video: '', capa: '' }
+  { titulo: 'Filme de casamento',       tipo: 'filme',     evento: 'Casamento',     video: '', capa: '' },
+  { titulo: 'Teaser de casamento',      tipo: 'teaser',    evento: 'Casamento',     video: '', capa: '' },
+  { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' },
+  { titulo: 'Filme institucional',      tipo: 'filme',     evento: 'Empresa',       video: '', capa: '' },
+  { titulo: 'Teaser de aniversário',    tipo: 'teaser',    evento: 'Aniversário',   video: '', capa: '' },
+  { titulo: 'Filme do chá revelação',   tipo: 'filme',     evento: 'Chá revelação', video: '', capa: '' },
+  { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' }
+];
+
+/* ---------- STORIES (vídeos verticais do storymaker) ----------
+   video: arquivo seu ('videos/story-1.mp4'), link do YouTube Shorts
+          ou link de Reels do Instagram.
+   Deixe video: '' para manter o espaço reservado.
+*/
+const STORIES = [
+  { titulo: 'Making of da noiva',  evento: 'Casamento',     video: '', capa: '' },
+  { titulo: 'Entrada dos noivos',  evento: 'Casamento',     video: '', capa: '' },
+  { titulo: 'Bastidores',          evento: 'Empresa',       video: '', capa: '' },
+  { titulo: 'A revelação',         evento: 'Chá revelação', video: '', capa: '' }
 ];
 
 /* ---------- FOTOS ----------
    arquivo: caminho da foto. Ex: 'fotos/casamento-01.jpg'
+   categoria: 'casamentos' | 'empresas' | 'aniversarios' | 'cha-revelacao'
    Deixe arquivo: '' para manter o espaço reservado.
 */
 const FOTOS = [

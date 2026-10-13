@@ -3,11 +3,10 @@
    (para trocar vídeos, fotos e feedbacks edite js/conteudo.js)
    ===================================================================== */
 
-const CATEGORIAS = {
-  'casamentos': 'Casamento',
-  'empresas': 'Empresa',
-  'aniversarios': 'Aniversário',
-  'cha-revelacao': 'Chá revelação'
+const TIPOS = {
+  'filme': 'Filme',
+  'teaser': 'Teaser',
+  'cerimonia': 'Cerimônia na íntegra'
 };
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -24,8 +23,18 @@ function parseVideo(url) {
   if (yt) {
     return {
       tipo: 'youtube',
+      id: yt[1],
       embed: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&playsinline=1`,
+      fundo: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0`,
       thumb: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`
+    };
+  }
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vm) {
+    return {
+      tipo: 'vimeo',
+      embed: `https://player.vimeo.com/video/${vm[1]}?autoplay=1`,
+      fundo: `https://player.vimeo.com/video/${vm[1]}?background=1&autoplay=1&loop=1&muted=1`
     };
   }
   const ig = url.match(/instagram\.com\/(?:reel|reels|p|tv)\/([\w-]+)/);
@@ -51,24 +60,31 @@ function setupWhatsApp() {
   $('#contactExtra').innerHTML = extra.join(' · ');
 }
 
-/* ---------- Topo (vídeo de fundo + celular) ---------- */
-function setupHero() {
-  const bg = $('#heroBg');
-  if (SITE.showreel) {
-    bg.src = SITE.showreel;
-    bg.play().catch(() => {});
+/* ---------- Topo (vídeo de fundo), celular e foto ---------- */
+function setupMedia() {
+  const media = $('#heroMedia');
+  const info = parseVideo(SITE.videoFundo);
+  if (info) {
+    $('#heroHint').remove();
+    if (info.tipo === 'arquivo') {
+      media.innerHTML = `<video src="${esc(info.src)}" muted loop playsinline autoplay preload="auto"></video>`;
+      const v = $('video', media);
+      v.play().catch(() => {});
+    } else if (info.fundo) {
+      media.innerHTML = `<iframe src="${esc(info.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
+    }
   } else {
-    bg.remove();
+    media.classList.add('is-empty');
   }
 
-  const phone = $('#heroPhone');
-  if (SITE.videoDestaque) {
-    phone.innerHTML = `<video src="${esc(SITE.videoDestaque)}" muted loop playsinline autoplay></video>`;
+  const phone = $('#storyPhone');
+  if (SITE.videoCelular) {
+    phone.innerHTML = `<video src="${esc(SITE.videoCelular)}" muted loop playsinline autoplay></video>`;
   } else {
     phone.innerHTML = `
       <div class="placeholder placeholder--phone">
         <svg viewBox="0 0 24 24"><use href="#i-play"/></svg>
-        <span>Seu vídeo em destaque aqui</span>
+        <span>Seu vídeo de stories aqui</span>
       </div>`;
   }
 
@@ -78,55 +94,79 @@ function setupHero() {
     : `<div class="placeholder"><svg viewBox="0 0 24 24"><use href="#i-camera"/></svg><span>Sua foto aqui</span></div>`;
 }
 
-/* ---------- Vídeos ---------- */
-function renderVideos() {
-  const grid = $('#videoGrid');
-  grid.innerHTML = VIDEOS.map((v, i) => {
-    const info = parseVideo(v.video);
-    const cat = CATEGORIAS[v.categoria] || '';
-    let media;
+/* ---------- Cartão de vídeo (filmes e stories) ---------- */
+function videoCard(v, i, { lista, classe, tag, vazio }) {
+  const info = parseVideo(v.video);
+  let media;
 
-    if (!info) {
-      media = `
-        <div class="placeholder">
-          <svg viewBox="0 0 24 24"><use href="#i-play"/></svg>
-          <span>Espaço para vídeo</span>
-        </div>`;
-    } else if (v.capa || info.thumb) {
-      media = `<img src="${esc(v.capa || info.thumb)}" alt="${esc(v.titulo)}" loading="lazy">`;
-    } else if (info.tipo === 'arquivo') {
-      media = `<video src="${esc(info.src)}#t=0.5" muted loop playsinline preload="metadata"></video>`;
-    } else {
-      media = `<div class="placeholder placeholder--filled"><svg viewBox="0 0 24 24"><use href="#i-instagram"/></svg></div>`;
-    }
+  if (!info) {
+    media = `
+      <div class="placeholder">
+        <svg viewBox="0 0 24 24"><use href="#i-play"/></svg>
+        <span>${vazio}</span>
+      </div>`;
+  } else if (v.capa || info.thumb) {
+    media = `<img src="${esc(v.capa || info.thumb)}" alt="${esc(v.titulo)}" loading="lazy">`;
+  } else if (info.tipo === 'arquivo') {
+    media = `<video src="${esc(info.src)}#t=0.5" muted loop playsinline preload="metadata"></video>`;
+  } else {
+    media = `<div class="placeholder placeholder--filled"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></div>`;
+  }
 
-    const tag = info ? 'button' : 'div';
-    const attrs = info ? `type="button" data-video="${i}" aria-label="Assistir: ${esc(v.titulo)}"` : '';
+  const el = info ? 'button' : 'div';
+  const attrs = info ? `type="button" data-lista="${lista}" data-index="${i}" aria-label="Assistir: ${esc(v.titulo)}"` : '';
+  const cat = v.tipo ? `data-cat="${esc(v.tipo)}"` : '';
 
-    return `
-      <${tag} class="video-card reveal${info ? '' : ' is-empty'}" data-cat="${esc(v.categoria)}" ${attrs}>
-        <div class="video-card__media">${media}</div>
-        ${info ? '<span class="video-card__play"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>' : ''}
-        <div class="video-card__info">
-          <span class="video-card__cat">${esc(cat)}</span>
-          <strong>${esc(v.titulo)}</strong>
-        </div>
-      </${tag}>`;
-  }).join('');
+  return `
+    <${el} class="${classe} reveal${info ? '' : ' is-empty'}" ${cat} ${attrs}>
+      <div class="media-card__media">${media}</div>
+      ${info ? '<span class="media-card__play"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>' : ''}
+      <div class="media-card__info">
+        <span class="media-card__cat">${esc(tag)}</span>
+        <strong>${esc(v.titulo)}</strong>
+      </div>
+    </${el}>`;
+}
 
+function bindCards(grid) {
   // prévia ao passar o mouse (vídeos próprios)
-  $$('.video-card video', grid).forEach(video => {
-    const card = video.closest('.video-card');
+  $$('.media-card__media video', grid).forEach(video => {
+    const card = video.closest('[data-index]') || video.parentElement;
     card.addEventListener('mouseenter', () => video.play().catch(() => {}));
-    card.addEventListener('mouseleave', () => { video.pause(); });
+    card.addEventListener('mouseleave', () => video.pause());
   });
-
-  $$('[data-video]', grid).forEach(card => {
-    card.addEventListener('click', () => openVideo(VIDEOS[card.dataset.video]));
+  $$('[data-index]', grid).forEach(card => {
+    card.addEventListener('click', () => {
+      const vertical = card.dataset.lista === 'stories';
+      const item = (vertical ? STORIES : VIDEOS)[card.dataset.index];
+      openVideo(item, vertical);
+    });
   });
 }
 
-function openVideo(v) {
+function renderVideos() {
+  const grid = $('#videoGrid');
+  grid.innerHTML = VIDEOS.map((v, i) => videoCard(v, i, {
+    lista: 'filmes',
+    classe: `media-card film-card${i === 0 ? ' film-card--featured' : ''}`,
+    tag: [TIPOS[v.tipo], v.evento].filter(Boolean).join(' · '),
+    vazio: `Espaço para ${(TIPOS[v.tipo] || 'vídeo').toLowerCase()}`
+  })).join('');
+  bindCards(grid);
+}
+
+function renderStories() {
+  const grid = $('#storyGrid');
+  grid.innerHTML = STORIES.map((v, i) => videoCard(v, i, {
+    lista: 'stories',
+    classe: 'media-card story-card',
+    tag: v.evento || 'Stories',
+    vazio: 'Espaço para story'
+  })).join('');
+  bindCards(grid);
+}
+
+function openVideo(v, vertical) {
   const info = parseVideo(v.video);
   if (!info) return;
   let html;
@@ -135,7 +175,8 @@ function openVideo(v) {
   } else {
     html = `<iframe src="${esc(info.embed)}" title="${esc(v.titulo)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
   }
-  openModal(`<div class="modal__video modal__video--${info.tipo}">${html}</div>`);
+  const formato = vertical || info.tipo === 'instagram' ? 'vertical' : 'horizontal';
+  openModal(`<div class="modal__video modal__video--${formato} modal__video--${info.tipo}">${html}</div>`);
 }
 
 /* ---------- Fotos ---------- */
@@ -255,7 +296,7 @@ function setupFilters() {
       if (btn) applyFilter(group, btn.dataset.filter);
     });
   });
-  // links "Ver vídeos →" dos serviços já filtram a categoria
+  // links "Ver filmes →" dos serviços já filtram o tipo
   $$('[data-filter-link]').forEach(link => {
     link.addEventListener('click', () => {
       applyFilter($('.filters[data-target="videoGrid"]'), link.dataset.filterLink);
@@ -310,7 +351,9 @@ function setupMenu() {
   onScroll();
 }
 
-/* ---------- Animação ao rolar ---------- */
+/* ---------- Animação ao rolar ----------
+   Os elementos aparecem ao entrar na tela e "resetam" ao sair,
+   então a animação se repete sempre que você rola para cima ou para baixo. */
 function setupReveal() {
   const items = $$('.reveal');
   if (!('IntersectionObserver' in window)) {
@@ -319,12 +362,10 @@ function setupReveal() {
   }
   const io = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      }
+      if (entry.intersectionRatio >= 0.12) entry.target.classList.add('is-visible');
+      else if (!entry.isIntersecting) entry.target.classList.remove('is-visible');
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: [0, 0.12] });
   items.forEach(el => io.observe(el));
 }
 
@@ -332,8 +373,9 @@ function setupReveal() {
 document.addEventListener('DOMContentLoaded', () => {
   $('#year').textContent = new Date().getFullYear();
   setupWhatsApp();
-  setupHero();
+  setupMedia();
   renderVideos();
+  renderStories();
   renderFotos();
   renderFeedbacks();
   setupFilters();

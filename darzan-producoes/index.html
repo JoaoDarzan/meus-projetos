@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Darzan Produções | Storymaker & Videomaker</title>
-  <meta name="description" content="Darzan Produções — storymaker e videomaker em Campinas e região. Casamentos, eventos corporativos, aniversários e chá revelação contados em vídeos e stories entregues em tempo real.">
-  <meta property="og:title" content="Darzan Produções | Storymaker & Videomaker">
-  <meta property="og:description" content="Seus momentos contados como histórias. Casamentos, empresas, aniversários e chá revelação.">
+  <title>Darzan Produções | Videomaker & Storymaker em Campinas</title>
+  <meta name="description" content="Darzan Produções — videomaker em Campinas e região. Filmes cinematográficos, teasers, cerimônia na íntegra e storymaker para casamentos, empresas, aniversários e chá revelação.">
+  <meta property="og:title" content="Darzan Produções | Videomaker & Storymaker">
+  <meta property="og:description" content="Filmes cinematográficos, teasers e cerimônia na íntegra. Seu dia contado como cinema.">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0d0b0a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +27,8 @@
       <nav class="nav" id="nav" aria-label="Menu principal">
         <a href="#sobre">Sobre</a>
         <a href="#servicos">Serviços</a>
-        <a href="#videos">Vídeos</a>
+        <a href="#videos">Filmes</a>
+        <a href="#storymaker">Storymaker</a>
         <a href="#fotos">Fotos</a>
         <a href="#feedbacks">Feedbacks</a>
         <a href="#contato" class="btn btn--small btn--gold nav__cta">Orçamento</a>
@@ -41,52 +42,47 @@
 
   <main>
 
-    <!-- ===== HERO ===== -->
+    <!-- ===== TOPO COM VÍDEO DE FUNDO ===== -->
     <section class="hero" id="inicio">
-      <video class="hero__bg" id="heroBg" muted loop playsinline autoplay aria-hidden="true"></video>
+      <div class="hero__media" id="heroMedia" aria-hidden="true">
+        <!-- vídeo de fundo: preenchido via js/conteudo.js (SITE.videoFundo) -->
+      </div>
       <div class="hero__overlay"></div>
+      <div class="hero__bars" aria-hidden="true"></div>
 
       <div class="container hero__inner">
         <div class="hero__text reveal">
-          <p class="eyebrow">Storymaker &amp; Videomaker · Campinas</p>
-          <h1>Seus momentos <em>contados</em> como histórias</h1>
+          <p class="eyebrow">Videomaker · Campinas e região</p>
+          <h1>Seu dia contado como <em>cinema</em></h1>
           <p class="hero__lead">
-            Eu registro cada detalhe do seu evento em vídeos e stories feitos para o celular,
-            entregues no mesmo dia para você reviver e compartilhar enquanto a emoção ainda está no ar.
+            Filmes cinematográficos, teasers e cerimônia na íntegra para casamentos, empresas,
+            aniversários e chá revelação. Imagens feitas para emocionar hoje e daqui a muitos anos.
           </p>
           <div class="hero__actions">
-            <a href="#contato" class="btn btn--gold js-whatsapp" data-msg="Olá! Vim pelo site e gostaria de um orçamento.">
+            <a href="#videos" class="btn btn--gold">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg>
+              Assistir aos filmes
+            </a>
+            <a href="#contato" class="btn btn--ghost js-whatsapp" data-msg="Olá! Vim pelo site e gostaria de um orçamento.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-whatsapp"/></svg>
               Solicitar orçamento
             </a>
-            <a href="#videos" class="btn btn--ghost">Ver trabalhos</a>
           </div>
-          <ul class="hero__tags">
-            <li>Casamentos</li>
-            <li>Empresas</li>
-            <li>Aniversários</li>
-            <li>Chá revelação</li>
-          </ul>
         </div>
 
-        <div class="hero__phone reveal" aria-label="Vídeo em destaque">
-          <div class="phone">
-            <div class="phone__notch"></div>
-            <div class="phone__screen" id="heroPhone">
-              <!-- preenchido via js/conteudo.js (SITE.videoDestaque) -->
-            </div>
-          </div>
-          <div class="hero__badge">
-            <strong>Entrega</strong>
-            <span>no mesmo dia</span>
-          </div>
-        </div>
+        <ul class="hero__formats reveal">
+          <li>Filme cinematográfico</li>
+          <li>Teaser</li>
+          <li>Cerimônia na íntegra</li>
+          <li>Storymaker</li>
+        </ul>
       </div>
 
+      <p class="hero__hint" id="heroHint">Espaço para o seu vídeo de fundo</p>
       <a href="#sobre" class="hero__scroll" aria-label="Rolar para baixo"><span></span></a>
     </section>
 
-    <!-- ===== SOBRE / O QUE É STORYMAKER ===== -->
+    <!-- ===== SOBRE ===== -->
     <section class="section about" id="sobre">
       <div class="container about__grid">
         <div class="about__photo reveal">
@@ -98,23 +94,21 @@
 
         <div class="about__text reveal">
           <p class="eyebrow">Prazer, Darzan Produções</p>
-          <h2>O que faz um <em>storymaker</em>?</h2>
+          <h2>Cinema para os momentos <em>reais</em> da sua vida</h2>
           <p>
-            O storymaker é o profissional que acompanha o seu evento com o olhar de quem conta histórias.
-            Enquanto tudo acontece, eu capto os bastidores, as emoções e os detalhes e transformo tudo em
-            vídeos curtos, reels e stories prontos para postar.
+            Sou videomaker e transformo eventos em filmes. Cada trabalho é pensado como uma história:
+            com começo, meio e fim, trilha escolhida a dedo e uma edição que respeita o ritmo do seu dia.
           </p>
           <p>
-            Além dos stories, também produzo vídeos completos como videomaker: filmes de casamento,
-            vídeos institucionais para empresas, aniversários e chá revelação, com edição cuidadosa
-            e trilha pensada para emocionar.
+            Registro tudo com discrição, sem roubar a cena, para que você viva o momento e depois
+            possa assistir a ele quantas vezes quiser.
           </p>
 
           <ul class="about__list">
-            <li><span>01</span> Conteúdo vertical feito para Instagram, TikTok e WhatsApp</li>
-            <li><span>02</span> Stories e reels entregues ainda durante o evento</li>
-            <li><span>03</span> Vídeos completos com edição profissional</li>
-            <li><span>04</span> Discrição: registro sem atrapalhar o seu momento</li>
+            <li><span>Filme</span> Edição cinematográfica com trilha e narrativa</li>
+            <li><span>Teaser</span> Um resumo curto e emocionante para compartilhar</li>
+            <li><span>Íntegra</span> A cerimônia completa, do início ao fim</li>
+            <li><span>Stories</span> Vídeos verticais para reviver tudo no celular</li>
           </ul>
 
           <a href="https://www.instagram.com/darzanproducoes/" target="_blank" rel="noopener" class="link-arrow">
@@ -130,37 +124,121 @@
       <div class="container">
         <div class="section__head reveal">
           <p class="eyebrow">Serviços</p>
-          <h2>Para cada história, um <em>jeito</em> de contar</h2>
+          <h2>O que eu <em>entrego</em> para você</h2>
         </div>
 
         <div class="services__grid">
+          <article class="service service--main reveal">
+            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-film"/></svg></div>
+            <h3>Filme cinematográfico</h3>
+            <p>O seu evento contado como cinema: imagens marcantes, trilha sonora e uma edição que emociona do primeiro ao último segundo.</p>
+            <a href="#videos" class="service__link" data-filter-link="filme">Ver filmes →</a>
+          </article>
+
+          <article class="service reveal">
+            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg></div>
+            <h3>Teaser</h3>
+            <p>Um vídeo curto com os melhores momentos, perfeito para mostrar para a família e postar nas redes.</p>
+            <a href="#videos" class="service__link" data-filter-link="teaser">Ver teasers →</a>
+          </article>
+
           <article class="service reveal">
             <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-rings"/></svg></div>
-            <h3>Casamentos</h3>
-            <p>Do making of ao último brinde: stories em tempo real para os noivos e convidados, além do filme do grande dia.</p>
-            <a href="#videos" class="service__link" data-filter-link="casamentos">Ver vídeos →</a>
+            <h3>Cerimônia na íntegra</h3>
+            <p>A cerimônia completa, sem cortes: votos, entrada, alianças e cada palavra dita, para guardar para sempre.</p>
+            <a href="#videos" class="service__link" data-filter-link="cerimonia">Ver cerimônias →</a>
           </article>
 
           <article class="service reveal">
-            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-briefcase"/></svg></div>
-            <h3>Empresas</h3>
-            <p>Eventos corporativos, lançamentos, inaugurações e conteúdo para as redes sociais da sua marca.</p>
-            <a href="#videos" class="service__link" data-filter-link="empresas">Ver vídeos →</a>
+            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-phone"/></svg></div>
+            <h3>Storymaker</h3>
+            <p>Vídeos verticais feitos no celular durante o evento, para postar em tempo real ou guardar só para você.</p>
+            <a href="#storymaker" class="service__link">Entender como funciona →</a>
           </article>
+        </div>
 
-          <article class="service reveal">
-            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cake"/></svg></div>
-            <h3>Aniversários</h3>
-            <p>Festas infantis, 15 anos e celebrações de todas as idades registradas com leveza e muita emoção.</p>
-            <a href="#videos" class="service__link" data-filter-link="aniversarios">Ver vídeos →</a>
-          </article>
+        <div class="events reveal">
+          <p class="events__label">Para todo tipo de celebração</p>
+          <ul class="events__list">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-rings"/></svg> Casamentos</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-briefcase"/></svg> Empresas</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cake"/></svg> Aniversários</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg> Chá revelação</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
-          <article class="service reveal">
-            <div class="service__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg></div>
-            <h3>Chá revelação</h3>
-            <p>O segundo mais esperado capturado de todos os ângulos, com as reações de quem você ama.</p>
-            <a href="#videos" class="service__link" data-filter-link="cha-revelacao">Ver vídeos →</a>
-          </article>
+    <!-- ===== FILMES ===== -->
+    <section class="section portfolio" id="videos">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Portfólio</p>
+          <h2>Assista aos <em>filmes</em></h2>
+          <p class="section__sub">Clique em um vídeo para assistir em tela cheia.</p>
+        </div>
+
+        <div class="filters" role="tablist" aria-label="Filtrar vídeos" data-target="videoGrid">
+          <button class="filter is-active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+          <button class="filter" data-filter="filme" role="tab" aria-selected="false">Filmes</button>
+          <button class="filter" data-filter="teaser" role="tab" aria-selected="false">Teasers</button>
+          <button class="filter" data-filter="cerimonia" role="tab" aria-selected="false">Cerimônia na íntegra</button>
+        </div>
+
+        <div class="film-grid" id="videoGrid">
+          <!-- preenchido via js/conteudo.js (VIDEOS) -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== STORYMAKER ===== -->
+    <section class="section story" id="storymaker">
+      <div class="container">
+        <div class="story__grid">
+          <div class="story__phone reveal" aria-label="Vídeo de storymaker em destaque">
+            <div class="phone">
+              <div class="phone__notch"></div>
+              <div class="phone__screen" id="storyPhone">
+                <!-- preenchido via js/conteudo.js (SITE.videoCelular) -->
+              </div>
+            </div>
+            <div class="story__badge">
+              <strong>Pronto no</strong>
+              <span>mesmo dia</span>
+            </div>
+          </div>
+
+          <div class="story__text reveal">
+            <p class="eyebrow">Storymaker</p>
+            <h2>O seu dia na <em>palma da mão</em></h2>
+            <p>
+              O storymaker acompanha o evento filmando com o celular e transforma cada momento em vídeos
+              curtos e verticais: os bastidores, a emoção, os detalhes que passam rápido demais.
+              Tudo fica pronto ainda no dia, no formato perfeito para a tela do seu celular.
+            </p>
+            <p>Você escolhe como quer receber:</p>
+
+            <div class="story__options">
+              <article class="option">
+                <span class="option__tag">Em tempo real</span>
+                <h3>Para compartilhar</h3>
+                <p>Os stories e reels são entregues durante o evento para você postar na hora e os seus seguidores acompanharem tudo ao vivo.</p>
+              </article>
+              <article class="option option--private">
+                <span class="option__tag">Sem postar</span>
+                <h3>Só para você</h3>
+                <p>
+                  Vídeos que não são para o Instagram nem para outras pessoas verem. São seus:
+                  ficam guardados no seu celular para você reviver esse dia de um jeito fácil e rápido,
+                  sempre que estiver com o celular na mão.
+                </p>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-grid" id="storyGrid">
+          <!-- preenchido via js/conteudo.js (STORIES) -->
         </div>
       </div>
     </section>
@@ -182,42 +260,19 @@
           <li class="step reveal">
             <span class="step__num">2</span>
             <h3>Planejamento</h3>
-            <p>Alinhamos o roteiro, os momentos principais e o estilo dos vídeos.</p>
+            <p>Escolhemos juntos os formatos (filme, teaser, íntegra, stories) e os momentos principais.</p>
           </li>
           <li class="step reveal">
             <span class="step__num">3</span>
             <h3>Dia do evento</h3>
-            <p>Eu registro tudo e vou entregando stories e reels ao longo do evento.</p>
+            <p>Eu filmo tudo com discrição e, se tiver storymaker, entrego os stories ainda no dia.</p>
           </li>
           <li class="step reveal">
             <span class="step__num">4</span>
-            <h3>Entrega final</h3>
-            <p>Você recebe todo o material editado, pronto para guardar e compartilhar.</p>
+            <h3>Entrega dos filmes</h3>
+            <p>Você recebe o filme, o teaser e a cerimônia editados, prontos para assistir e guardar.</p>
           </li>
         </ol>
-      </div>
-    </section>
-
-    <!-- ===== VÍDEOS ===== -->
-    <section class="section portfolio" id="videos">
-      <div class="container">
-        <div class="section__head reveal">
-          <p class="eyebrow">Portfólio</p>
-          <h2>Assista aos <em>vídeos</em></h2>
-          <p class="section__sub">Toque em um vídeo para assistir em tela cheia.</p>
-        </div>
-
-        <div class="filters" role="tablist" aria-label="Filtrar vídeos" data-target="videoGrid">
-          <button class="filter is-active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
-          <button class="filter" data-filter="casamentos" role="tab" aria-selected="false">Casamentos</button>
-          <button class="filter" data-filter="empresas" role="tab" aria-selected="false">Empresas</button>
-          <button class="filter" data-filter="aniversarios" role="tab" aria-selected="false">Aniversários</button>
-          <button class="filter" data-filter="cha-revelacao" role="tab" aria-selected="false">Chá revelação</button>
-        </div>
-
-        <div class="video-grid" id="videoGrid">
-          <!-- preenchido via js/conteudo.js (VIDEOS) -->
-        </div>
       </div>
     </section>
 
@@ -276,12 +331,16 @@
 
         <div class="faq__list">
           <details class="reveal">
-            <summary>Em quanto tempo recebo os vídeos?</summary>
-            <p>Os stories e reels são entregues durante o próprio evento ou no mesmo dia. Vídeos completos e mais elaborados têm o prazo combinado no orçamento.</p>
+            <summary>Qual a diferença entre filme, teaser e cerimônia na íntegra?</summary>
+            <p>O filme é a história do seu evento editada como cinema, com trilha e narrativa. O teaser é um resumo curto com os melhores momentos. A cerimônia na íntegra é a gravação completa da cerimônia, sem cortes. Você pode escolher um, dois ou os três.</p>
           </details>
           <details class="reveal">
-            <summary>Storymaker substitui o fotógrafo ou o filmmaker?</summary>
-            <p>Não, ele complementa. O foco do storymaker é o conteúdo rápido e vertical para redes sociais, enquanto fotógrafo e filmmaker cuidam do material tradicional. Se quiser, também faço o vídeo completo do evento.</p>
+            <summary>Em quanto tempo recebo os vídeos?</summary>
+            <p>Os stories ficam prontos ainda no dia do evento. O filme, o teaser e a cerimônia na íntegra têm o prazo de entrega combinado no orçamento.</p>
+          </details>
+          <details class="reveal">
+            <summary>Sou obrigado(a) a postar os stories?</summary>
+            <p>Não. Você pode escolher a opção "só para você": os vídeos não vão para o Instagram e ficam guardados no seu celular para você reviver o dia sempre que quiser.</p>
           </details>
           <details class="reveal">
             <summary>Quais cidades você atende?</summary>
@@ -299,7 +358,7 @@
     <section class="section contact" id="contato">
       <div class="container contact__box reveal">
         <p class="eyebrow">Vamos conversar?</p>
-        <h2>Sua história merece ser <em>contada</em></h2>
+        <h2>Sua história merece virar <em>filme</em></h2>
         <p class="contact__lead">Me chama e reserve a data do seu evento. Respondo rapidinho!</p>
         <div class="contact__actions">
           <a href="#contato" class="btn btn--gold js-whatsapp" data-msg="Olá! Vim pelo site e gostaria de um orçamento.">
@@ -325,12 +384,13 @@
         <span class="logo__text">Darzan <em>Produções</em></span>
       </a>
       <nav class="footer__nav" aria-label="Rodapé">
-        <a href="#videos">Vídeos</a>
+        <a href="#videos">Filmes</a>
+        <a href="#storymaker">Storymaker</a>
         <a href="#fotos">Fotos</a>
         <a href="#feedbacks">Feedbacks</a>
         <a href="https://www.instagram.com/darzanproducoes/" target="_blank" rel="noopener">Instagram</a>
       </nav>
-      <p class="footer__copy">© <span id="year"></span> Darzan Produções · Storymaker &amp; Videomaker · Campinas e região</p>
+      <p class="footer__copy">© <span id="year"></span> Darzan Produções · Videomaker &amp; Storymaker · Campinas e região</p>
     </div>
   </footer>
 
@@ -351,6 +411,9 @@
     <symbol id="i-whatsapp" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.2-.5-.5-1-1.1-1.3-1.7-.1-.2 0-.4.1-.5l.4-.5.3-.4v-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.6.6-.9 1.4-.9 2.2.1.9.4 1.8 1 2.6 1.1 1.6 2.5 2.9 4.2 3.7.5.2.9.4 1.4.5.5.2 1 .2 1.6.1.6-.1 1.2-.5 1.5-1 .2-.4.2-.8.2-1.2l-.3-.1Z"/></symbol>
     <symbol id="i-instagram" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Z"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 8h4M3 12h4M3 16h4M17 8h4M17 12h4M17 16h4"/></g></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></g></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4"/><path d="M10.5 11v4l3.5-2z" fill="currentColor" stroke="none"/></g></symbol>
     <symbol id="i-rings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="14" r="6"/><circle cx="15" cy="14" r="6"/><path d="m10 4 2-2 2 2-2 2z"/></g></symbol>
     <symbol id="i-briefcase" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/></g></symbol>
     <symbol id="i-cake" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V13a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8M2 21h20M4 16c1.5 1 3 1 4 0s2.5-1 4 0 3 1 4 0 2.5-1 4 0M12 11V7"/><path d="M12 3c.8.8 1 1.6.6 2.3-.3.5-.9.7-1.2.7"/></g></symbol>

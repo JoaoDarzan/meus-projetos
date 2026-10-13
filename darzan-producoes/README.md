@@ -1,7 +1,7 @@
 # Darzan Produções — Site portfólio
 
-Site de portfólio para storymaker e videomaker, com seções de vídeos, fotos, feedbacks e contato.
-Atende casamentos, empresas, aniversários e chá revelação.
+Site de portfólio de videomaker (filmes cinematográficos, teasers e cerimônia na íntegra) e storymaker,
+com seções de filmes, stories, fotos, feedbacks e contato. Campinas e região.
 
 Para ver o site, abra o `index.html` no navegador.
 
@@ -11,37 +11,42 @@ Você só precisa editar **um arquivo**: `js/conteudo.js`.
 Tudo o que estiver vazio aparece no site como um "espaço reservado". Quando você preenche, o conteúdo aparece no lugar.
 
 ### 1. WhatsApp
-Coloque seu número com DDI e DDD, só números:
+Já configurado: `whatsapp: '5519995273041'`.
+
+### 2. Vídeo de fundo do topo
+É o vídeo que roda atrás dos textos logo que a pessoa entra no site. Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som):
 ```js
-whatsapp: '5511987654321',
+videoFundo: 'videos/fundo.mp4',              // arquivo seu (recomendado, até ~15 MB)
+videoFundo: 'https://youtu.be/XXXXXXXXXXX',  // ou um link do YouTube
 ```
-Enquanto o número estiver vazio, os botões de WhatsApp abrem o Instagram [@darzanproducoes](https://www.instagram.com/darzanproducoes/).
 
-### 2. Vídeos
-Para usar arquivos seus, coloque-os na pasta `videos/`. Você também pode usar links do YouTube/Shorts ou de Reels do Instagram:
+### 3. Filmes (vídeos horizontais)
+Coloque em `VIDEOS`. O **primeiro** da lista aparece em destaque, maior.
 ```js
-{ titulo: 'Casamento Ana & Pedro', categoria: 'casamentos', video: 'videos/casamento-ana.mp4', capa: '' },
-{ titulo: 'Chá revelação',         categoria: 'cha-revelacao', video: 'https://youtube.com/shorts/XXXXXXXXXXX', capa: '' },
-{ titulo: 'Evento da empresa X',   categoria: 'empresas', video: 'https://www.instagram.com/reel/XXXXXXX/', capa: 'img/capa-empresa.jpg' },
+{ titulo: 'Ana & Pedro', tipo: 'filme',     evento: 'Casamento', video: 'https://youtu.be/XXXXXXXXXXX', capa: '' },
+{ titulo: 'Ana & Pedro', tipo: 'teaser',    evento: 'Casamento', video: 'https://vimeo.com/123456789', capa: '' },
+{ titulo: 'Ana & Pedro', tipo: 'cerimonia', evento: 'Casamento', video: 'videos/cerimonia.mp4', capa: 'img/capa.jpg' },
 ```
-Categorias aceitas: `casamentos`, `empresas`, `aniversarios`, `cha-revelacao`.
-Para criar mais espaços, copie uma linha; para tirar um espaço, apague a linha.
+Tipos aceitos: `filme`, `teaser`, `cerimonia` (cerimônia na íntegra). Filmes longos ficam melhores no YouTube ou Vimeo.
 
-> Dica: comprima os vídeos antes de subir (até ~10 MB cada) para o site carregar rápido no celular.
-> Vídeos do Instagram não geram capa sozinhos, então coloque uma imagem em `capa`.
+### 4. Storymaker (vídeos verticais)
+- `videoCelular`: vídeo vertical que aparece dentro do celular na seção Storymaker.
+- `STORIES`: os stories que aparecem abaixo, com link do Reels, Shorts ou arquivo seu.
+```js
+{ titulo: 'Making of da noiva', evento: 'Casamento', video: 'https://www.instagram.com/reel/XXXXXXX/', capa: 'img/capa-story.jpg' },
+```
+Vídeos do Instagram não geram capa sozinhos, então coloque uma imagem em `capa`.
 
-### 3. Vídeos do topo
-- `showreel`: vídeo que roda no fundo do topo do site (curto, sem som, de preferência horizontal).
-- `videoDestaque`: vídeo vertical que aparece dentro do celular no topo.
+### 5. Sua foto
 - `fotoPerfil`: sua foto na seção "Sobre".
 
-### 4. Fotos
+### 6. Fotos
 Coloque as fotos na pasta `fotos/` e preencha:
 ```js
 { arquivo: 'fotos/casamento-01.jpg', categoria: 'casamentos', legenda: 'Casamento' },
 ```
 
-### 5. Feedbacks
+### 7. Feedbacks
 ```js
 { texto: 'O Darzan foi incrível, recebemos os stories na hora!', nome: 'Maria e João', evento: 'Casamento', foto: '' },
 ```
