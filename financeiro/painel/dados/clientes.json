@@ -1,0 +1,27 @@
+[
+ {
+  "nome": "Cliente Exemplo 1",
+  "cidade": "Campinas",
+  "origem": "Instagram"
+ },
+ {
+  "nome": "Empresa Exemplo",
+  "cidade": "Valinhos",
+  "origem": "Indicação"
+ },
+ {
+  "nome": "Cliente Exemplo 2",
+  "cidade": "Campinas",
+  "origem": "Instagram"
+ },
+ {
+  "nome": "Cliente Exemplo 3",
+  "cidade": "Hortolândia",
+  "origem": "Site"
+ },
+ {
+  "nome": "Cliente Exemplo 4",
+  "cidade": "Indaiatuba",
+  "origem": "Indicação"
+ }
+]

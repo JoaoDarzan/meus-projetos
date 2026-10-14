@@ -1,0 +1,82 @@
+[
+ {
+  "id": "O01",
+  "data_envio": "2026-01-20",
+  "cliente": "Cliente Exemplo 1",
+  "evento": "Casamento",
+  "data_evento": "2026-03-14",
+  "valor": 3500,
+  "status": "Fechado",
+  "servico": "Pacote (vários serviços)"
+ },
+ {
+  "id": "O02",
+  "data_envio": "2026-02-03",
+  "cliente": "Cliente Exemplo 5",
+  "evento": "Casamento",
+  "data_evento": "2026-05-09",
+  "valor": 3800,
+  "status": "Recusado",
+  "servico": "Filme cinematográfico"
+ },
+ {
+  "id": "O03",
+  "data_envio": "2026-05-12",
+  "cliente": "Empresa Exemplo",
+  "evento": "Empresa",
+  "data_evento": "2026-06-20",
+  "valor": 1800,
+  "status": "Fechado",
+  "servico": "Vídeo para empresa"
+ },
+ {
+  "id": "O04",
+  "data_envio": "2026-06-28",
+  "cliente": "Cliente Exemplo 2",
+  "evento": "Chá revelação",
+  "data_evento": "2026-08-09",
+  "valor": 900,
+  "status": "Fechado",
+  "servico": "Storymaker"
+ },
+ {
+  "id": "O05",
+  "data_envio": "2026-07-15",
+  "cliente": "Cliente Exemplo 6",
+  "evento": "Aniversário",
+  "data_evento": "2026-09-12",
+  "valor": 1100,
+  "status": "Recusado",
+  "servico": "Teaser"
+ },
+ {
+  "id": "O06",
+  "data_envio": "2026-08-30",
+  "cliente": "Cliente Exemplo 3",
+  "evento": "Aniversário",
+  "data_evento": "2026-11-21",
+  "valor": 1200,
+  "status": "Fechado",
+  "servico": "Teaser"
+ },
+ {
+  "id": "O07",
+  "data_envio": "2026-09-10",
+  "cliente": "Cliente Exemplo 4",
+  "evento": "Casamento",
+  "data_evento": "2026-12-05",
+  "valor": 4200,
+  "status": "Fechado",
+  "servico": "Filme cinematográfico"
+ },
+ {
+  "id": "O08",
+  "data_envio": "2026-10-02",
+  "cliente": "Cliente Exemplo 7",
+  "evento": "Chá revelação",
+  "data_evento": "2027-01-16",
+  "valor": 950,
+  "status": "Aguardando",
+  "servico": "Vídeo com motion"
+ }
+]

@@ -1,0 +1,57 @@
+[
+ {
+  "codigo": "T001",
+  "data": "2026-03-14",
+  "horario": "16:00",
+  "cliente": "Cliente Exemplo 1",
+  "evento": "Casamento",
+  "local": "Campinas",
+  "valor_cobrado": 3500,
+  "valor_recebido": 3500,
+  "servico": "Pacote (vários serviços)"
+ },
+ {
+  "codigo": "T002",
+  "data": "2026-06-20",
+  "horario": "19:00",
+  "cliente": "Empresa Exemplo",
+  "evento": "Empresa",
+  "local": "Valinhos",
+  "valor_cobrado": 1800,
+  "valor_recebido": 1800,
+  "servico": "Vídeo para empresa"
+ },
+ {
+  "codigo": "T003",
+  "data": "2026-08-09",
+  "horario": "15:00",
+  "cliente": "Cliente Exemplo 2",
+  "evento": "Chá revelação",
+  "local": "Campinas",
+  "valor_cobrado": 900,
+  "valor_recebido": 900,
+  "servico": "Storymaker"
+ },
+ {
+  "codigo": "T004",
+  "data": "2026-11-21",
+  "horario": "20:00",
+  "cliente": "Cliente Exemplo 3",
+  "evento": "Aniversário",
+  "local": "Hortolândia",
+  "valor_cobrado": 1200,
+  "valor_recebido": 600,
+  "servico": "Teaser"
+ },
+ {
+  "codigo": "T005",
+  "data": "2026-12-05",
+  "horario": "17:00",
+  "cliente": "Cliente Exemplo 4",
+  "evento": "Casamento",
+  "local": "Indaiatuba",
+  "valor_cobrado": 4200,
+  "valor_recebido": 2100,
+  "servico": "Filme cinematográfico"
+ }
+]
