@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Darzan Produções</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: barra de período no topo, abas, e cartões em grade — o mesmo clima de cinema do site. */
+:root {
+  --bg: #0d0b0a;
+  --panel: #17130f;
+  --panel-2: #201a15;
+  --line: rgba(232, 200, 150, .14);
+  --line-soft: rgba(232, 200, 150, .07);
+  --fg: #f4ede4;
+  --muted: #b3a798;
+  --faint: #7d7266;
+  --gold: #d6a85f;
+  --gold-2: #f0cf94;
+  --bronze: #8a6634;
+  --ok: #8fd1a5;
+  --warn: #f0c36a;
+  --bad: #ef8a78;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: radial-gradient(ellipse 60% 35% at 85% 0%, rgba(214, 168, 95, .12), transparent 70%), var(--bg);
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-block: 22px 60px;
+  padding-left: max(16px, 3vw);
+  padding-right: max(16px, 3vw);
+  display: grid;
+  gap: 20px;
+}
+
+/* Topo */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mark {
+  width: 46px; height: 46px; flex-shrink: 0; display: grid; place-items: center;
+  border: 1px solid var(--gold); border-radius: 50%;
+  font-family: var(--serif); font-style: italic; font-size: 24px; color: var(--gold);
+}
+.eyebrow { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+h1 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 3.6vw, 40px); line-height: 1.05; }
+h1 em { color: var(--gold); }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.select {
+  appearance: none;
+  background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d6a85f' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 34px 9px 16px; font-size: 14px; cursor: pointer;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 16px; font-size: 13.5px; cursor: pointer; transition: border-color .2s, color .2s;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold-2); }
+.btn svg { width: 15px; height: 15px; }
+.btn.is-loading svg { animation: girar 1s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.status { font-size: 12px; color: var(--faint); }
+.status.is-error { color: var(--bad); }
+.banner {
+  padding: 10px 16px; border-radius: 12px; font-size: 13px;
+  background: rgba(214, 168, 95, .1); border: 1px solid rgba(214, 168, 95, .35); color: var(--gold-2);
+}
+
+/* Abas */
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; background: none; border: 0; cursor: pointer;
+  color: var(--muted); font-size: 14px; font-weight: 500;
+  padding: 10px 14px 12px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { color: var(--gold-2); border-bottom-color: var(--gold); }
+.page { display: grid; gap: 18px; }
+.scope { margin: 0; font-size: 12.5px; color: var(--faint); }
+.scope b { color: var(--muted); font-weight: 600; }
+
+/* Números grandes */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr)); gap: 12px; }
+.kpi {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 18px; display: grid; gap: 4px; align-content: start; min-width: 0;
+}
+.kpi.hero { background: linear-gradient(160deg, rgba(214, 168, 95, .16), transparent 60%), var(--panel); border-color: rgba(214, 168, 95, .45); }
+.kpi-label { font-size: 12px; color: var(--muted); }
+.kpi-value { font-family: var(--serif); font-weight: 600; font-size: clamp(25px, 2.6vw, 33px); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.kpi.hero .kpi-value { color: var(--gold-2); }
+.kpi-note { font-size: 12px; color: var(--faint); }
+.kpis.small .kpi-value { font-size: clamp(20px, 2vw, 24px); }
+.delta { font-size: 12px; font-weight: 600; }
+.delta.up { color: var(--ok); }
+.delta.down { color: var(--bad); }
+.delta.flat { color: var(--faint); }
+
+/* Cartões */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 16px; }
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 20px; min-width: 0; display: grid; gap: 14px; align-content: start;
+}
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; }
+.card-title { margin: 0; font-size: 16px; font-weight: 600; }
+.card-note { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.chart { position: relative; min-height: 220px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.empty { margin: 0; padding: 14px 0; color: var(--faint); font-size: 13px; }
+
+/* Barras horizontais */
+.bars { display: grid; gap: 12px; }
+.bar-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.bar-top span { min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; }
+.bar-top b { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-sub { font-size: 12px; color: var(--faint); }
+.track { height: 9px; background: rgba(255, 255, 255, .05); border-radius: 999px; overflow: hidden; }
+.fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--bronze), var(--gold)); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* Rosca */
+.donut-wrap { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 20px; align-items: center; }
+.donut-legend { display: grid; gap: 8px; font-size: 13px; min-width: 0; }
+.donut-legend div { display: flex; align-items: center; gap: 8px; }
+.donut-legend span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.donut-legend b { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.donut-legend small { color: var(--faint); font-size: 12px; margin-left: 4px; }
+
+/* Calendário */
+.month-nav { display: flex; align-items: center; gap: 10px; }
+.month-nav strong { font-family: var(--serif); font-size: 26px; font-weight: 600; min-width: 210px; text-align: center; }
+.round { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 16px; }
+.round:hover { border-color: var(--gold); color: var(--gold-2); }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal-h { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); text-align: center; padding-bottom: 4px; }
+.cal-d {
+  min-height: 78px; border-radius: 10px; padding: 6px; background: rgba(255, 255, 255, .02);
+  border: 1px solid var(--line-soft); display: grid; align-content: start; gap: 4px; min-width: 0;
+}
+.cal-d.out { opacity: .3; }
+.cal-d.today { border-color: var(--gold); }
+.cal-n { font-size: 12px; color: var(--muted); }
+.cal-ev { font-size: 11px; line-height: 1.25; padding: 3px 6px; border-radius: 6px; color: #1a120a; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Listas de trabalhos */
+.jobs { display: grid; gap: 10px; }
+.job {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+  padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 12px;
+}
+.job-date { text-align: center; border-right: 1px solid var(--line); padding-right: 12px; }
+.job-date b { display: block; font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1; color: var(--gold-2); }
+.job-date span { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.job-main { min-width: 0; display: grid; gap: 3px; }
+.job-main strong { font-weight: 600; overflow-wrap: anywhere; }
+.job-deal { font-size: 13px; color: var(--gold-2); overflow-wrap: anywhere; }
+.job-meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.job-side { text-align: right; display: grid; gap: 4px; justify-items: end; }
+.job-side b { font-variant-numeric: tabular-nums; }
+
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.pill.ok { background: rgba(143, 209, 165, .14); color: var(--ok); }
+.pill.warn { background: rgba(240, 195, 106, .14); color: var(--warn); }
+.pill.bad { background: rgba(239, 138, 120, .14); color: var(--bad); }
+.pill.gold { background: rgba(214, 168, 95, .16); color: var(--gold-2); }
+.pill.svc { color: #1a120a; }
+
+/* Cartões de serviço */
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 16px; }
+.svc { border-top: 3px solid var(--c, var(--gold)); }
+.svc-name { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 24px; font-weight: 600; margin: 0; }
+.svc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+.svc-stats div { background: var(--panel-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.svc-stats span { font-size: 11.5px; color: var(--muted); }
+.svc-stats b { font-family: var(--serif); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.deals { display: grid; gap: 8px; }
+.deals h4 { margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.deal { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.deal-what { color: var(--gold-2); font-size: 14px; overflow-wrap: anywhere; }
+.deal-who { font-size: 12px; color: var(--muted); grid-column: 1; }
+.deal-val { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* Funil */
+.funnel { display: grid; gap: 10px; }
+.fstep { display: grid; grid-template-columns: minmax(88px, 130px) 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.fstep .track { height: 14px; }
+.fill.ok { background: linear-gradient(90deg, #4f8a63, var(--ok)); }
+.fill.bad { background: linear-gradient(90deg, #8f4a3f, var(--bad)); }
+.fill.warn { background: linear-gradient(90deg, #8c6a2b, var(--warn)); }
+
+/* Tabelas */
+.table-box { overflow: auto; max-height: 640px; border-radius: 10px; border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th {
+  position: sticky; top: 0; z-index: 1; background: var(--panel-2);
+  text-align: left; font-weight: 600; font-size: 12px; color: var(--gold-2);
+  padding: 10px 12px; white-space: nowrap; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none;
+}
+th[aria-sort="ascending"]::after { content: ' ▲'; font-size: 9px; }
+th[aria-sort="descending"]::after { content: ' ▼'; font-size: 9px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+td.wrap-cell { white-space: normal; min-width: 220px; }
+tbody tr:hover td { background: rgba(214, 168, 95, .05); }
+tr.total td { font-weight: 700; background: rgba(214, 168, 95, .08); }
+.num { text-align: right; }
+.neg { color: var(--bad); }
+.search { width: min(100%, 300px); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13.5px; }
+
+.progress .track { height: 16px; }
+.progress-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--faint); margin-top: 6px; }
+
+.tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: #241d17; border: 1px solid rgba(214, 168, 95, .35); border-radius: 10px;
+  padding: 8px 12px; font-size: 12px; line-height: 1.55; white-space: nowrap;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .7);
+}
+.tip .t { color: var(--muted); margin-bottom: 2px; }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+.foot { margin: 0; font-size: 12px; color: var(--faint); }
+
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .donut-wrap { grid-template-columns: 1fr; justify-items: center; }
+  .donut-legend { width: 100%; }
+  .job { grid-template-columns: 54px 1fr; }
+  .job-side { grid-column: 2; text-align: left; justify-items: start; }
+  .cal { gap: 3px; }
+  .cal-d { min-height: 54px; padding: 4px; }
+  .cal-ev { font-size: 0; height: 6px; padding: 0; }
+  .month-nav strong { min-width: 0; font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">D</span>
+      <div>
+        <p class="eyebrow">Darzan Produções · João Darzan</p>
+        <h1>Painel <em>financeiro</em></h1>
+      </div>
+    </div>
+    <div class="controls">
+      <label class="status" for="selAno">Ano</label>
+      <select class="select" id="selAno"></select>
+      <label class="status" for="selMes">Mês</label>
+      <select class="select" id="selMes"></select>
+      <button class="btn" id="btnAtualizar" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>
+        Atualizar
+      </button>
+      <span class="status" id="status">Carregando…</span>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden>Modo demonstração: estes são os dados de exemplo da planilha modelo. Instalado na sua planilha, o painel mostra os seus números.</div>
+
+  <nav class="tabs" role="tablist" aria-label="Abas do painel">
+    <button class="tab" role="tab" data-tab="ano" aria-selected="true">Visão do ano</button>
+    <button class="tab" role="tab" data-tab="mes" aria-selected="false">Visão do mês</button>
+    <button class="tab" role="tab" data-tab="servicos" aria-selected="false">Serviços</button>
+    <button class="tab" role="tab" data-tab="orcamentos" aria-selected="false">Orçamentos</button>
+    <button class="tab" role="tab" data-tab="clientes" aria-selected="false">Clientes</button>
+    <button class="tab" role="tab" data-tab="custos" aria-selected="false">Custos</button>
+    <button class="tab" role="tab" data-tab="equipamentos" aria-selected="false">Equipamentos</button>
+    <button class="tab" role="tab" data-tab="agenda" aria-selected="false">Agenda</button>
+  </nav>
+
+  <main id="conteudo"></main>
+
+  <p class="foot" id="rodape"></p>
+</div>
+
+<script>
+/* ===================== dados de demonstração (usados fora da planilha) ===================== */
+const DEMO = {"planilha": "", "atualizado": "", "abas": {"Trabalhos": [{"Data do evento": "2026-01-24", "Horário": "16:00", "Cliente": "Cliente Exemplo 1", "Tipo de serviço": "Casamento", "O que foi fechado": "Teaser + filme completo + 10 reels", "Local / cidade": "Campinas", "Valor fechado": 4800, "Valor recebido": 4800, "Forma de pagamento": "Pix", "Freelancers": "Freela A (2ª câmera)", "Custo com freelancers": 500, "Outros custos do trabalho": 120, "A receber": 0, "Lucro": 4180, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-02-14", "Horário": "20:00", "Cliente": "Cliente Exemplo 2", "Tipo de serviço": "Aniversário", "O que foi fechado": "Storymaker 4h + teaser", "Local / cidade": "Valinhos", "Valor fechado": 1200, "Valor recebido": 1200, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 40, "A receber": 0, "Lucro": 1160, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-03-07", "Horário": "09:00", "Cliente": "Empresa Exemplo", "Tipo de serviço": "Vídeo institucional", "O que foi fechado": "Vídeo institucional 2 min + 3 cortes para redes", "Local / cidade": "Campinas", "Valor fechado": 3500, "Valor recebido": 3500, "Forma de pagamento": "Transferência", "Freelancers": "Freela B (drone)", "Custo com freelancers": 400, "Outros custos do trabalho": 60, "A receber": 0, "Lucro": 3040, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-03-21", "Horário": "15:00", "Cliente": "Cliente Exemplo 3", "Tipo de serviço": "Chá revelação", "O que foi fechado": "Storymaker + vídeo da revelação", "Local / cidade": "Hortolândia", "Valor fechado": 900, "Valor recebido": 900, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 30, "A receber": 0, "Lucro": 870, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-04-11", "Horário": "17:00", "Cliente": "Cliente Exemplo 4", "Tipo de serviço": "Casamento", "O que foi fechado": "Filme completo + cerimônia na íntegra", "Local / cidade": "Indaiatuba", "Valor fechado": 5200, "Valor recebido": 5200, "Forma de pagamento": "Parcelado", "Freelancers": "Freela A (2ª câmera)", "Custo com freelancers": 500, "Outros custos do trabalho": 150, "A receber": 0, "Lucro": 4550, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-05-03", "Horário": "10:00", "Cliente": "Cliente Exemplo 5", "Tipo de serviço": "Fotografia", "O que foi fechado": "Ensaio externo · 60 fotos editadas", "Local / cidade": "Campinas", "Valor fechado": 750, "Valor recebido": 750, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 0, "A receber": 0, "Lucro": 750, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-05-20", "Horário": "", "Cliente": "Empresa Exemplo", "Tipo de serviço": "Edição", "O que foi fechado": "Edição de 8 reels", "Local / cidade": "Remoto", "Valor fechado": 960, "Valor recebido": 960, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 0, "A receber": 0, "Lucro": 960, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-06-13", "Horário": "19:00", "Cliente": "Cliente Exemplo 6", "Tipo de serviço": "Casamento", "O que foi fechado": "Teaser + storymaker + 15 reels", "Local / cidade": "Sumaré", "Valor fechado": 3900, "Valor recebido": 3900, "Forma de pagamento": "Pix", "Freelancers": "Freela C (storymaker)", "Custo com freelancers": 350, "Outros custos do trabalho": 90, "A receber": 0, "Lucro": 3460, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-07-18", "Horário": "21:00", "Cliente": "Cliente Exemplo 7", "Tipo de serviço": "Aniversário", "O que foi fechado": "Festa 15 anos · teaser + filme", "Local / cidade": "Campinas", "Valor fechado": 2400, "Valor recebido": 2400, "Forma de pagamento": "Cartão de crédito", "Freelancers": "Freela C (storymaker)", "Custo com freelancers": 300, "Outros custos do trabalho": 60, "A receber": 0, "Lucro": 2040, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-08-22", "Horário": "16:30", "Cliente": "Cliente Exemplo 8", "Tipo de serviço": "Casamento", "O que foi fechado": "Teaser + filme completo + drone", "Local / cidade": "Jaguariúna", "Valor fechado": 5600, "Valor recebido": 5600, "Forma de pagamento": "Parcelado", "Freelancers": "Freela A, Freela B", "Custo com freelancers": 900, "Outros custos do trabalho": 180, "A receber": 0, "Lucro": 4520, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-09-12", "Horário": "14:00", "Cliente": "Cliente Exemplo 9", "Tipo de serviço": "Storymaker", "O que foi fechado": "Storymaker 6h · 20 stories só para o casal", "Local / cidade": "Campinas", "Valor fechado": 1100, "Valor recebido": 1100, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 40, "A receber": 0, "Lucro": 1060, "Pagamento": "Pago", "Observações": "EXEMPLO"}, {"Data do evento": "2026-10-03", "Horário": "09:00", "Cliente": "Empresa Exemplo 2", "Tipo de serviço": "Vídeo institucional", "O que foi fechado": "Vídeo de lançamento + 5 reels", "Local / cidade": "Paulínia", "Valor fechado": 2800, "Valor recebido": 1400, "Forma de pagamento": "Transferência", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 50, "A receber": 1400, "Lucro": 2750, "Pagamento": "Parcial", "Observações": "EXEMPLO"}, {"Data do evento": "2026-10-25", "Horário": "15:00", "Cliente": "Cliente Exemplo 10", "Tipo de serviço": "Chá revelação", "O que foi fechado": "Teaser + fotos da revelação", "Local / cidade": "Valinhos", "Valor fechado": 1300, "Valor recebido": 650, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 0, "A receber": 650, "Lucro": 1300, "Pagamento": "Parcial", "Observações": "EXEMPLO"}, {"Data do evento": "2026-11-21", "Horário": "17:00", "Cliente": "Cliente Exemplo 11", "Tipo de serviço": "Casamento", "O que foi fechado": "Filme completo + teaser + storymaker", "Local / cidade": "Campinas", "Valor fechado": 6200, "Valor recebido": 3100, "Forma de pagamento": "Parcelado", "Freelancers": "Freela A (2ª câmera)", "Custo com freelancers": 500, "Outros custos do trabalho": 0, "A receber": 3100, "Lucro": 5700, "Pagamento": "Parcial", "Observações": "EXEMPLO"}, {"Data do evento": "2026-12-12", "Horário": "20:00", "Cliente": "Cliente Exemplo 12", "Tipo de serviço": "Aniversário", "O que foi fechado": "Storymaker 4h", "Local / cidade": "Americana", "Valor fechado": 1100, "Valor recebido": 0, "Forma de pagamento": "Pix", "Freelancers": "", "Custo com freelancers": 0, "Outros custos do trabalho": 0, "A receber": 1100, "Lucro": 1100, "Pagamento": "Pendente", "Observações": "EXEMPLO"}], "Orçamentos": [{"Data do envio": "2025-12-24", "Cliente": "Cliente Exemplo 1", "Tipo de serviço": "Casamento", "O que foi orçado": "Teaser + filme completo + 10 reels", "Data do evento": "2026-01-24", "Valor orçado": 4800, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-01-14", "Cliente": "Cliente Exemplo 2", "Tipo de serviço": "Aniversário", "O que foi orçado": "Storymaker 4h + teaser", "Data do evento": "2026-02-14", "Valor orçado": 1200, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-02-02", "Cliente": "Cliente Exemplo 13", "Tipo de serviço": "Casamento", "O que foi orçado": "Teaser + filme completo", "Data do evento": "2026-06-06", "Valor orçado": 6500, "Status": "Recusado", "Motivo / observações": "EXEMPLO · achou caro"}, {"Data do envio": "2026-02-07", "Cliente": "Empresa Exemplo", "Tipo de serviço": "Vídeo institucional", "O que foi orçado": "Vídeo institucional 2 min + 3 cortes para redes", "Data do evento": "2026-03-07", "Valor orçado": 3500, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-02-21", "Cliente": "Cliente Exemplo 3", "Tipo de serviço": "Chá revelação", "O que foi orçado": "Storymaker + vídeo da revelação", "Data do evento": "2026-03-21", "Valor orçado": 900, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-03-11", "Cliente": "Cliente Exemplo 4", "Tipo de serviço": "Casamento", "O que foi orçado": "Filme completo + cerimônia na íntegra", "Data do evento": "2026-04-11", "Valor orçado": 5200, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-04-03", "Cliente": "Cliente Exemplo 5", "Tipo de serviço": "Fotografia", "O que foi orçado": "Ensaio externo · 60 fotos editadas", "Data do evento": "2026-05-03", "Valor orçado": 750, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-04-15", "Cliente": "Cliente Exemplo 14", "Tipo de serviço": "Aniversário", "O que foi orçado": "Storymaker 3h", "Data do evento": "2026-05-30", "Valor orçado": 900, "Status": "Recusado", "Motivo / observações": "EXEMPLO · data ocupada"}, {"Data do envio": "2026-04-20", "Cliente": "Empresa Exemplo", "Tipo de serviço": "Edição", "O que foi orçado": "Edição de 8 reels", "Data do evento": "2026-05-20", "Valor orçado": 960, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-05-13", "Cliente": "Cliente Exemplo 6", "Tipo de serviço": "Casamento", "O que foi orçado": "Teaser + storymaker + 15 reels", "Data do evento": "2026-06-13", "Valor orçado": 3900, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-06-02", "Cliente": "Empresa Exemplo 3", "Tipo de serviço": "Vídeo institucional", "O que foi orçado": "Vídeo institucional 1 min", "Data do evento": "2026-07-10", "Valor orçado": 2500, "Status": "Recusado", "Motivo / observações": "EXEMPLO · fechou com outro"}, {"Data do envio": "2026-06-18", "Cliente": "Cliente Exemplo 7", "Tipo de serviço": "Aniversário", "O que foi orçado": "Festa 15 anos · teaser + filme", "Data do evento": "2026-07-18", "Valor orçado": 2400, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-07-22", "Cliente": "Cliente Exemplo 8", "Tipo de serviço": "Casamento", "O que foi orçado": "Teaser + filme completo + drone", "Data do evento": "2026-08-22", "Valor orçado": 5600, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-08-05", "Cliente": "Cliente Exemplo 15", "Tipo de serviço": "Fotografia", "O que foi orçado": "Ensaio de gestante", "Data do evento": "2026-09-01", "Valor orçado": 650, "Status": "Recusado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-08-12", "Cliente": "Cliente Exemplo 9", "Tipo de serviço": "Storymaker", "O que foi orçado": "Storymaker 6h · 20 stories só para o casal", "Data do evento": "2026-09-12", "Valor orçado": 1100, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-09-03", "Cliente": "Empresa Exemplo 2", "Tipo de serviço": "Vídeo institucional", "O que foi orçado": "Vídeo de lançamento + 5 reels", "Data do evento": "2026-10-03", "Valor orçado": 2800, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-09-25", "Cliente": "Cliente Exemplo 10", "Tipo de serviço": "Chá revelação", "O que foi orçado": "Teaser + fotos da revelação", "Data do evento": "2026-10-25", "Valor orçado": 1300, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-09-28", "Cliente": "Cliente Exemplo 16", "Tipo de serviço": "Casamento", "O que foi orçado": "Filme completo + storymaker", "Data do evento": "2027-03-20", "Valor orçado": 5900, "Status": "Aguardando", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-10-06", "Cliente": "Empresa Exemplo 4", "Tipo de serviço": "Edição", "O que foi orçado": "Edição de 12 reels por mês", "Data do evento": "2026-11-01", "Valor orçado": 1400, "Status": "Aguardando", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-10-21", "Cliente": "Cliente Exemplo 11", "Tipo de serviço": "Casamento", "O que foi orçado": "Filme completo + teaser + storymaker", "Data do evento": "2026-11-21", "Valor orçado": 6200, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}, {"Data do envio": "2026-11-12", "Cliente": "Cliente Exemplo 12", "Tipo de serviço": "Aniversário", "O que foi orçado": "Storymaker 4h", "Data do evento": "2026-12-12", "Valor orçado": 1100, "Status": "Fechado", "Motivo / observações": "EXEMPLO"}], "Clientes": [{"Nome": "Cliente Exemplo 1", "WhatsApp": "(19) 90000-0001", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Instagram", "Trabalhos": 1, "Total fechado": 4800, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 2", "WhatsApp": "(19) 90000-0002", "Instagram": "", "Cidade": "Valinhos", "Como conheceu": "Indicação", "Trabalhos": 1, "Total fechado": 1200, "Observações": "EXEMPLO"}, {"Nome": "Empresa Exemplo", "WhatsApp": "(19) 90000-0003", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Instagram", "Trabalhos": 2, "Total fechado": 4460, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 3", "WhatsApp": "(19) 90000-0004", "Instagram": "", "Cidade": "Hortolândia", "Como conheceu": "Site", "Trabalhos": 1, "Total fechado": 900, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 4", "WhatsApp": "(19) 90000-0005", "Instagram": "", "Cidade": "Indaiatuba", "Como conheceu": "Indicação", "Trabalhos": 1, "Total fechado": 5200, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 5", "WhatsApp": "(19) 90000-0006", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Instagram", "Trabalhos": 1, "Total fechado": 750, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 6", "WhatsApp": "(19) 90000-0007", "Instagram": "", "Cidade": "Sumaré", "Como conheceu": "Google", "Trabalhos": 1, "Total fechado": 3900, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 7", "WhatsApp": "(19) 90000-0008", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Indicação", "Trabalhos": 1, "Total fechado": 2400, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 8", "WhatsApp": "(19) 90000-0009", "Instagram": "", "Cidade": "Jaguariúna", "Como conheceu": "Instagram", "Trabalhos": 1, "Total fechado": 5600, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 9", "WhatsApp": "(19) 90000-0010", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Indicação", "Trabalhos": 1, "Total fechado": 1100, "Observações": "EXEMPLO"}, {"Nome": "Empresa Exemplo 2", "WhatsApp": "(19) 90000-0011", "Instagram": "", "Cidade": "Paulínia", "Como conheceu": "Instagram", "Trabalhos": 1, "Total fechado": 2800, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 10", "WhatsApp": "(19) 90000-0012", "Instagram": "", "Cidade": "Valinhos", "Como conheceu": "Site", "Trabalhos": 1, "Total fechado": 1300, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 11", "WhatsApp": "(19) 90000-0013", "Instagram": "", "Cidade": "Campinas", "Como conheceu": "Indicação", "Trabalhos": 1, "Total fechado": 6200, "Observações": "EXEMPLO"}, {"Nome": "Cliente Exemplo 12", "WhatsApp": "(19) 90000-0014", "Instagram": "", "Cidade": "Americana", "Como conheceu": "WhatsApp", "Trabalhos": 1, "Total fechado": 1100, "Observações": "EXEMPLO"}], "Despesas": [{"Data": "2026-01-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-02-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-03-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-03-10", "Categoria": "Anúncios / marketing", "Descrição": "Impulsionamento Instagram (EXEMPLO)", "Valor": 200, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-04-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-05-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-06-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-06-18", "Categoria": "Cursos", "Descrição": "Curso de color grading (EXEMPLO)", "Valor": 350, "Forma de pagamento": "Pix"}, {"Data": "2026-07-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-08-02", "Categoria": "Manutenção", "Descrição": "Limpeza de sensor (EXEMPLO)", "Valor": 180, "Forma de pagamento": "Pix"}, {"Data": "2026-08-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-09-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-09-09", "Categoria": "Anúncios / marketing", "Descrição": "Impulsionamento Instagram (EXEMPLO)", "Valor": 250, "Forma de pagamento": "Cartão de crédito"}, {"Data": "2026-10-05", "Categoria": "Aplicativos / software", "Descrição": "Assinatura app de edição (EXEMPLO)", "Valor": 60, "Forma de pagamento": "Cartão de crédito"}], "Equipamentos": [{"Equipamento": "Câmera (exemplo)", "Categoria": "Câmera", "Data da compra": "2025-09-15", "Valor pago": 9500, "Forma de pagamento": "Parcelado", "Situação": "Em uso", "Observações": "EXEMPLO"}, {"Equipamento": "Celular (exemplo)", "Categoria": "Celular", "Data da compra": "2025-11-10", "Valor pago": 7000, "Forma de pagamento": "Parcelado", "Situação": "Em uso", "Observações": "EXEMPLO"}, {"Equipamento": "Gimbal (exemplo)", "Categoria": "Estabilizador / gimbal", "Data da compra": "2025-11-10", "Valor pago": 900, "Forma de pagamento": "Pix", "Situação": "Em uso", "Observações": "EXEMPLO"}, {"Equipamento": "Microfone sem fio (exemplo)", "Categoria": "Áudio", "Data da compra": "2026-02-05", "Valor pago": 650, "Forma de pagamento": "Cartão de crédito", "Situação": "Em uso", "Observações": "EXEMPLO"}, {"Equipamento": "Drone (exemplo)", "Categoria": "Drone", "Data da compra": "2026-07-01", "Valor pago": 4200, "Forma de pagamento": "Parcelado", "Situação": "Em uso", "Observações": "EXEMPLO"}]}};
+
+/* ===================== formatação ===================== */
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const fBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const fPCT = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 });
+const fINT = new Intl.NumberFormat('pt-BR');
+const brl = (v) => fBRL.format(v || 0);
+const pct = (v) => fPCT.format(v || 0);
+const int = (v) => fINT.format(v || 0);
+const curto = (v) => {
+  const a = Math.abs(v);
+  const s = v < 0 ? '−' : '';
+  return a >= 1000 ? `${s}R$ ${fINT.format(Math.round(a / 100) / 10)} mil` : `${s}R$ ${fINT.format(a)}`;
+};
+const dataBR = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
+
+const CORES = {
+  'Casamento': '#d6a85f', 'Aniversário': '#e8896b', 'Edição': '#8fc1a2', 'Vídeo institucional': '#7fa6d9',
+  'Storymaker': '#c99ad9', 'Fotografia': '#efd29a', 'Chá revelação': '#e7a1a9', 'Outro': '#9a8f83',
+};
+const EXTRA = ['#b8c46a', '#6fc7c2', '#d98fc2', '#c7a17a'];
+const corServico = (s) => CORES[s] || EXTRA[[...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % EXTRA.length];
+
+/* ===================== leitura da planilha ===================== */
+const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+function campo(linha, ...nomes) {
+  const chaves = Object.keys(linha);
+  for (const n of nomes) {
+    const k = chaves.find((h) => norm(h) === norm(n));
+    if (k !== undefined && linha[k] !== '' && linha[k] != null) return linha[k];
+  }
+  return '';
+}
+function numero(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  let s = String(v ?? '').replace(/[^\d,.-]/g, '');
+  if (!s) return 0;
+  const virg = s.lastIndexOf(','), ponto = s.lastIndexOf('.');
+  if (virg > -1 && ponto > -1) s = virg > ponto ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  else if (virg > -1) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+}
+function dataISO(v) {
+  const s = String(v ?? '').trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return '';
+}
+const comData = (o, iso) => Object.assign(o, { data: iso, ano: iso ? +iso.slice(0, 4) : 0, mes: iso ? +iso.slice(5, 7) : 0 });
+
+function preparar(bruto) {
+  const abas = bruto.abas || {};
+  const T = (abas['Trabalhos'] || []).map((l) => {
+    const valor = numero(campo(l, 'Valor fechado', 'Valor'));
+    const recebido = numero(campo(l, 'Valor recebido', 'Recebido'));
+    const freelas = numero(campo(l, 'Custo com freelancers'));
+    const outros = numero(campo(l, 'Outros custos do trabalho', 'Outros custos'));
+    return comData({
+      horario: String(campo(l, 'Horário', 'Horario')),
+      cliente: String(campo(l, 'Cliente')).trim(),
+      servico: String(campo(l, 'Tipo de serviço', 'Serviço', 'Tipo')).trim() || 'Outro',
+      fechado: String(campo(l, 'O que foi fechado', 'O que foi fechado (observação)', 'Entregas')).trim(),
+      local: String(campo(l, 'Local / cidade', 'Local', 'Cidade')).trim(),
+      valor, recebido, areceber: Math.max(0, valor - recebido), freelas, outros, lucro: valor - freelas - outros,
+      pagto: String(campo(l, 'Forma de pagamento')),
+      freelasNomes: String(campo(l, 'Freelancers')).trim(),
+      obs: String(campo(l, 'Observações')).trim(),
+      situacao: recebido >= valor ? 'Pago' : recebido > 0 ? 'Parcial' : 'Pendente',
+    }, dataISO(campo(l, 'Data do evento', 'Data')));
+  }).filter((t) => t.data && (t.cliente || t.valor));
+
+  const O = (abas['Orçamentos'] || []).map((l) => comData({
+    cliente: String(campo(l, 'Cliente')).trim(),
+    servico: String(campo(l, 'Tipo de serviço', 'Serviço')).trim() || 'Outro',
+    orcado: String(campo(l, 'O que foi orçado')).trim(),
+    dataEvento: dataISO(campo(l, 'Data do evento')),
+    valor: numero(campo(l, 'Valor orçado', 'Valor')),
+    status: String(campo(l, 'Status')).trim() || 'Aguardando',
+    obs: String(campo(l, 'Motivo / observações', 'Observações')).trim(),
+  }, dataISO(campo(l, 'Data do envio', 'Data')))).filter((o) => o.data && (o.cliente || o.valor));
+
+  const C = (abas['Clientes'] || []).map((l) => ({
+    nome: String(campo(l, 'Nome', 'Cliente')).trim(),
+    whats: String(campo(l, 'WhatsApp')), insta: String(campo(l, 'Instagram')),
+    cidade: String(campo(l, 'Cidade')).trim(), origem: String(campo(l, 'Como conheceu')).trim() || 'Não informado',
+  })).filter((c) => c.nome);
+
+  const D = (abas['Despesas'] || []).map((l) => comData({
+    categoria: String(campo(l, 'Categoria')).trim() || 'Outro',
+    descricao: String(campo(l, 'Descrição', 'Descricao')).trim(),
+    valor: numero(campo(l, 'Valor')),
+    pagto: String(campo(l, 'Forma de pagamento')),
+  }, dataISO(campo(l, 'Data')))).filter((d) => d.data && d.valor);
+
+  const E = (abas['Equipamentos'] || []).map((l) => comData({
+    nome: String(campo(l, 'Equipamento')).trim(),
+    categoria: String(campo(l, 'Categoria')).trim() || 'Outro',
+    valor: numero(campo(l, 'Valor pago', 'Valor')),
+    pagto: String(campo(l, 'Forma de pagamento')),
+    situacao: String(campo(l, 'Situação', 'Situacao')).trim(),
+  }, dataISO(campo(l, 'Data da compra', 'Data')))).filter((e) => e.nome || e.valor);
+
+  return { T, O, C, D, E, hoje: bruto.hoje || hojeLocal(), atualizado: bruto.atualizado || '', planilha: bruto.planilha || '' };
+}
+function hojeLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/* ===================== contas ===================== */
+const soma = (lista, f) => lista.reduce((s, x) => s + (typeof f === 'function' ? f(x) : x[f] || 0), 0);
+function resumo(dados, filtro) {
+  const T = dados.T.filter(filtro), O = dados.O.filter(filtro), D = dados.D.filter(filtro);
+  const fat = soma(T, 'valor'), rec = soma(T, 'recebido'), freelas = soma(T, 'freelas'), outros = soma(T, 'outros'), desp = soma(D, 'valor');
+  const custos = freelas + outros + desp, lucro = fat - custos;
+  const orcF = O.filter((o) => o.status === 'Fechado').length;
+  return {
+    T, O, D, fat, rec, areceber: soma(T, 'areceber'), freelas, outros, desp, custos, lucro,
+    margem: fat ? lucro / fat : 0, n: T.length, ticket: T.length ? fat / T.length : 0,
+    orcN: O.length, orcF, orcR: O.filter((o) => o.status === 'Recusado').length,
+    orcA: O.filter((o) => o.status === 'Aguardando').length, taxa: O.length ? orcF / O.length : 0,
+    orcValorAberto: soma(O.filter((o) => o.status === 'Aguardando'), 'valor'),
+  };
+}
+const doAno = (ano) => (x) => x.ano === ano;
+const doMes = (ano, mes) => (x) => x.ano === ano && x.mes === mes;
+const doPeriodo = () => (estado.mes ? doMes(estado.ano, estado.mes) : doAno(estado.ano));
+const nomePeriodo = () => (estado.mes ? `${MESES[estado.mes - 1]} de ${estado.ano}` : `${estado.ano} inteiro`);
+function porServico(lista) {
+  const mapa = new Map();
+  lista.forEach((x) => { if (!mapa.has(x.servico)) mapa.set(x.servico, []); mapa.get(x.servico).push(x); });
+  return mapa;
+}
+
+/* ===================== estado e interface ===================== */
+const $ = (s, c = document) => c.querySelector(s);
+const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+let DADOS = null;
+const estado = { ano: new Date().getFullYear(), mes: 0, aba: 'ano', ordem: {}, busca: {} };
+const selAno = $('#selAno'), selMes = $('#selMes');
+
+function el(tag, attrs = {}, ...filhos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.setAttribute('style', v);
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  filhos.flat().forEach((f) => { if (f != null && f !== false) e.append(f instanceof Node ? f : String(f)); });
+  return e;
+}
+const vazio = (texto) => el('p', { class: 'empty' }, texto);
+const card = ({ titulo, nota, wide, extra }, ...corpo) => el('article', { class: `card${wide ? ' wide' : ''}` },
+  el('div', { class: 'card-head' }, el('div', {}, el('h2', { class: 'card-title' }, titulo), nota ? el('p', { class: 'card-note' }, nota) : null), extra || null),
+  ...corpo);
+function kpi(rotulo, valor, { hero, nota, delta } = {}) {
+  return el('div', { class: `kpi${hero ? ' hero' : ''}` },
+    el('span', { class: 'kpi-label' }, rotulo),
+    el('b', { class: `kpi-value${typeof valor === 'string' && valor.startsWith('-') ? ' neg' : ''}` }, valor),
+    delta || null,
+    nota ? el('span', { class: 'kpi-note' }, nota) : null);
+}
+function variacao(atual, anterior, rotulo, inverter) {
+  if (!anterior) return null;
+  const d = (atual - anterior) / Math.abs(anterior);
+  const bom = inverter ? d < 0 : d > 0;
+  const cls = Math.abs(d) < 0.005 ? 'flat' : bom ? 'up' : 'down';
+  return el('span', { class: `delta ${cls}` }, `${d > 0 ? '▲' : d < 0 ? '▼' : '•'} ${fPCT.format(Math.abs(d))} ${rotulo}`);
+}
+
+/* ---------- gráficos ---------- */
+function colunas(alvo, linhas, { series, fmt, eixo, onClick, extra }) {
+  const box = el('div', { class: 'chart' });
+  alvo.append(box);
+  requestAnimationFrame(() => desenharColunas(box, linhas, { series, fmt, eixo, onClick, extra }));
+  return box;
+}
+function desenharColunas(box, linhas, { series, fmt, eixo, onClick, extra }) {
+  box.replaceChildren();
+  const W = Math.max(280, Math.round(box.clientWidth || 600)), H = 250;
+  const m = { t: 12, r: 6, b: 28, l: 40 };
+  const vals = linhas.flatMap((l) => series.map((s) => l[s.key] || 0));
+  const lo = Math.min(0, ...vals), hiRaw = Math.max(0, ...vals);
+  const passoY = escala(hiRaw - lo || 1);
+  const hi = Math.ceil(hiRaw / passoY) * passoY || passoY, low = Math.floor(lo / passoY) * passoY;
+  const ticks = [];
+  for (let v = low; v <= hi + 1e-9; v += passoY) ticks.push(v);
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const S = (tag, a) => { const n = document.createElementNS(ns, tag); for (const k in a) n.setAttribute(k, a[k]); return n; };
+  box.append(svg);
+  // margem esquerda pelo maior rótulo
+  let larg = 0;
+  ticks.forEach((t) => { const tx = S('text', { 'font-size': 11 }); tx.textContent = eixo(t); svg.append(tx); larg = Math.max(larg, tx.getComputedTextLength()); tx.remove(); });
+  m.l = Math.ceil(larg) + 10;
+  const y = (v) => m.t + (hi - v) / (hi - low) * (H - m.t - m.b);
+  const bw = (W - m.l - m.r) / Math.max(1, linhas.length);
+  const inner = bw * 0.72, sw = inner / series.length;
+  ticks.forEach((t) => {
+    svg.append(S('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? 'rgba(232,200,150,.32)' : 'rgba(232,200,150,.08)' }));
+    const tx = S('text', { x: m.l - 8, y: y(t), dy: '0.32em', 'text-anchor': 'end', 'font-size': 11, fill: '#7d7266' });
+    tx.textContent = eixo(t); svg.append(tx);
+  });
+  const barras = [];
+  linhas.forEach((l, i) => {
+    const x0 = m.l + i * bw + (bw - inner) / 2;
+    series.forEach((s, j) => {
+      const v = l[s.key] || 0;
+      const r = S('rect', {
+        x: x0 + j * sw + 1, width: Math.max(1, sw - 2), y: y(Math.max(0, v)),
+        height: v ? Math.max(1, Math.abs(y(v) - y(0))) : 0, rx: Math.min(4, (sw - 2) / 2),
+        fill: v < 0 ? '#ef8a78' : (l.cor && j === 0 ? l.cor : s.color),
+      });
+      r.dataset.i = i; svg.append(r); barras.push(r);
+    });
+    const passo = Math.max(1, Math.ceil(linhas.length * 34 / (W - m.l)));
+    if (i % passo === 0) {
+      const tx = S('text', { x: m.l + i * bw + bw / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: '#b3a798' });
+      tx.textContent = l.rotulo; svg.append(tx);
+    }
+  });
+  const tip = el('div', { class: 'tip', hidden: true });
+  box.append(tip);
+  linhas.forEach((l, i) => {
+    const hit = S('rect', { x: m.l + i * bw, width: bw, y: m.t, height: H - m.t - m.b, fill: 'transparent', style: onClick ? 'cursor:pointer' : '' });
+    const mostrar = (ev) => {
+      barras.forEach((b) => b.setAttribute('opacity', +b.dataset.i === i ? 1 : 0.4));
+      tip.replaceChildren(el('div', { class: 't' }, l.titulo || l.rotulo),
+        ...series.map((s) => el('div', {}, el('i', { style: `background:${s.color}` }), `${s.label}: ${fmt(l[s.key] || 0)}`)),
+        ...(extra ? extra(l) : []).map((t) => el('div', {}, t)),
+        onClick ? el('div', { class: 't' }, 'Clique para abrir o mês') : null);
+      tip.hidden = false;
+      const r = box.getBoundingClientRect();
+      const px = ev.clientX - r.left, py = ev.clientY - r.top;
+      tip.style.left = `${Math.max(0, Math.min(box.clientWidth - tip.offsetWidth - 4, px + 14))}px`;
+      tip.style.top = `${Math.max(0, py - tip.offsetHeight - 10)}px`;
+    };
+    hit.addEventListener('mousemove', mostrar);
+    hit.addEventListener('mouseleave', () => { tip.hidden = true; barras.forEach((b) => b.setAttribute('opacity', 1)); });
+    hit.addEventListener('click', (ev) => (onClick ? onClick(l, i) : mostrar(ev)));
+    svg.append(hit);
+  });
+}
+function escala(amplitude) {
+  const bruto = amplitude / 4, p = Math.pow(10, Math.floor(Math.log10(bruto)));
+  const n = bruto / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+
+function rosca(itens, { total, rotuloCentro, fmt }) {
+  const wrap = el('div', { class: 'donut-wrap' });
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 200 200');
+  svg.style.maxWidth = '210px';
+  const S = (tag, a) => { const n = document.createElementNS(ns, tag); for (const k in a) n.setAttribute(k, a[k]); return n; };
+  const R = 80, C = 2 * Math.PI * R;
+  svg.append(S('circle', { cx: 100, cy: 100, r: R, fill: 'none', stroke: 'rgba(255,255,255,.05)', 'stroke-width': 26 }));
+  let acc = 0;
+  itens.forEach((it) => {
+    const frac = total ? it.valor / total : 0;
+    const len = Math.max(0, frac * C - (itens.length > 1 ? 2 : 0));
+    svg.append(S('circle', {
+      cx: 100, cy: 100, r: R, fill: 'none', stroke: it.cor, 'stroke-width': 26,
+      'stroke-dasharray': `${len} ${C - len}`, 'stroke-dashoffset': -acc * C, transform: 'rotate(-90 100 100)',
+    }));
+    acc += frac;
+  });
+  const t1 = S('text', { x: 100, y: 98, 'text-anchor': 'middle', 'font-size': 24, fill: '#f0cf94', 'font-family': 'Cormorant Garamond, Georgia, serif', 'font-weight': 600 });
+  t1.textContent = fmt(total);
+  const t2 = S('text', { x: 100, y: 120, 'text-anchor': 'middle', 'font-size': 11, fill: '#b3a798' });
+  t2.textContent = rotuloCentro;
+  svg.append(t1, t2);
+  const leg = el('div', { class: 'donut-legend' }, itens.map((it) => el('div', {},
+    el('span', { class: 'dot', style: `background:${it.cor}` }), el('span', {}, it.nome),
+    el('b', {}, fmt(it.valor)), el('small', {}, total ? fPCT.format(it.valor / total) : ''))));
+  wrap.append(svg, leg);
+  return wrap;
+}
+
+function barrasH(itens, { fmt, sub, cor }) {
+  const lista = itens.filter((i) => i.valor > 0).sort((a, b) => b.valor - a.valor);
+  if (!lista.length) return null;
+  const max = lista[0].valor;
+  return el('div', { class: 'bars' }, lista.map((i) => el('div', {},
+    el('div', { class: 'bar-top' }, el('span', {}, cor ? el('span', { class: 'dot', style: `background:${cor(i)}` }) : null, i.nome), el('b', {}, fmt(i.valor))),
+    sub ? el('div', { class: 'bar-sub' }, sub(i)) : null,
+    el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${(i.valor / max) * 100}%${cor ? `;background:${cor(i)}` : ''}` })))));
+}
+
+function tabela(id, linhas, colunas, { busca, total, vazioTxt } = {}) {
+  const frag = el('div', { style: 'display:grid;gap:10px' });
+  if (busca) {
+    const inp = el('input', { class: 'search', type: 'search', placeholder: busca, value: estado.busca[id] || '', 'aria-label': busca });
+    inp.addEventListener('input', () => { estado.busca[id] = inp.value; preencher(); });
+    frag.append(inp);
+  }
+  const box = el('div', { class: 'table-box' });
+  const tb = el('tbody');
+  const ths = colunas.map((c) => {
+    const th = el('th', { class: c.num ? 'num' : null }, c.t);
+    th.addEventListener('click', () => {
+      const atual = estado.ordem[id];
+      estado.ordem[id] = { k: c.k, dir: atual && atual.k === c.k && atual.dir === 'desc' ? 'asc' : 'desc' };
+      preencher();
+    });
+    return th;
+  });
+  box.append(el('table', {}, el('thead', {}, el('tr', {}, ths)), tb));
+  const msg = vazio(vazioTxt || 'Nada para mostrar neste período.');
+  frag.append(box, msg);
+  function preencher() {
+    let ls = linhas.slice();
+    const q = norm(estado.busca[id] || '');
+    if (q) ls = ls.filter((l) => colunas.some((c) => norm(c.f ? c.f(l[c.k], l) : l[c.k]).includes(q)));
+    const o = estado.ordem[id];
+    if (o) {
+      ls.sort((a, b) => {
+        const A = a[o.k], B = b[o.k];
+        const r = typeof A === 'number' && typeof B === 'number' ? A - B : String(A ?? '').localeCompare(String(B ?? ''), 'pt-BR');
+        return o.dir === 'asc' ? r : -r;
+      });
+    }
+    ths.forEach((th, i) => {
+      if (o && colunas[i].k === o.k) th.setAttribute('aria-sort', o.dir === 'asc' ? 'ascending' : 'descending');
+      else th.removeAttribute('aria-sort');
+    });
+    const rows = ls.map((l) => el('tr', {}, colunas.map((c) => {
+      const v = l[c.k];
+      const conteudo = c.render ? c.render(v, l) : c.f ? c.f(v, l) : (v ?? '');
+      return el('td', { class: [c.num ? 'num' : '', c.wrap ? 'wrap-cell' : '', c.num && typeof v === 'number' && v < 0 ? 'neg' : ''].join(' ').trim() || null }, conteudo);
+    })));
+    if (total && ls.length) rows.push(el('tr', { class: 'total' }, colunas.map((c, i) => el('td', { class: c.num ? 'num' : null }, i === 0 ? 'Total' : total[c.k] != null ? (c.f ? c.f(total[c.k]) : total[c.k]) : ''))));
+    tb.replaceChildren(...rows);
+    box.hidden = !ls.length;
+    msg.hidden = !!ls.length;
+  }
+  preencher();
+  return frag;
+}
+const pillSit = (v) => el('span', { class: `pill ${v === 'Pago' || v === 'Fechado' ? 'ok' : v === 'Parcial' || v === 'Aguardando' ? 'warn' : 'bad'}` }, v);
+const pillSvc = (s) => el('span', { class: 'pill svc', style: `background:${corServico(s)}` }, s);
+
+function cartaoTrabalho(t, { mostrarAno } = {}) {
+  return el('div', { class: 'job' },
+    el('div', { class: 'job-date' }, el('b', {}, t.data.slice(8, 10)), el('span', {}, `${MES3[t.mes - 1]}${mostrarAno ? ` ${String(t.ano).slice(2)}` : ''}`)),
+    el('div', { class: 'job-main' },
+      el('strong', {}, t.cliente || 'Sem nome'),
+      t.fechado ? el('span', { class: 'job-deal' }, t.fechado) : null,
+      el('span', { class: 'job-meta' }, [t.local, t.horario && `às ${t.horario}`, t.freelasNomes && `freela: ${t.freelasNomes}`].filter(Boolean).join(' · '))),
+    el('div', { class: 'job-side' }, pillSvc(t.servico), el('b', {}, brl(t.valor)),
+      t.areceber > 0 ? el('span', { class: 'pill warn' }, `falta ${brl(t.areceber)}`) : el('span', { class: 'pill ok' }, 'Pago')));
+}
+
+/* ===================== abas ===================== */
+const ABAS = {
+  ano() {
+    const ano = estado.ano;
+    const r = resumo(DADOS, doAno(ano));
+    const ant = resumo(DADOS, doAno(ano - 1));
+    const temAnt = ant.n > 0;
+    const vs = `vs ${ano - 1}`;
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Período: ', el('b', {}, `${ano} inteiro`), ` · faturamento pela data do evento`));
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Faturamento do ano', brl(r.fat), { hero: true, delta: temAnt ? variacao(r.fat, ant.fat, vs) : null }),
+      kpi('Lucro do ano', brl(r.lucro), { hero: true, delta: temAnt ? variacao(r.lucro, ant.lucro, vs) : null, nota: 'Faturamento − todos os custos' }),
+      kpi('Margem de lucro', pct(r.margem), { nota: 'Quanto do faturamento sobra' }),
+      kpi('Trabalhos', int(r.n), { delta: temAnt ? variacao(r.n, ant.n, vs) : null }),
+      kpi('Valor médio por trabalho', brl(r.ticket)),
+      kpi('Taxa de fechamento', pct(r.taxa), { nota: `${int(r.orcF)} de ${int(r.orcN)} orçamentos` })));
+    pg.append(el('div', { class: 'kpis small' },
+      kpi('Já recebido', brl(r.rec)), kpi('A receber', brl(r.areceber)),
+      kpi('Custos (freelas + gastos)', brl(r.custos)), kpi('Orçamentos aguardando', int(r.orcA))));
+
+    const meses = MESES.map((nome, i) => {
+      const x = resumo(DADOS, doMes(ano, i + 1));
+      return { rotulo: MES3[i], titulo: `${nome} de ${ano}`, mes: i + 1, fat: x.fat, lucro: x.lucro, custos: x.custos, n: x.n, orcN: x.orcN, orcF: x.orcF };
+    });
+    const gMes = card({ titulo: 'Mês a mês', nota: 'Clique numa coluna para abrir a visão daquele mês.', wide: true,
+      extra: el('div', { class: 'legend' }, el('span', {}, el('i', { style: 'background:#d6a85f' }), 'Faturamento'), el('span', {}, el('i', { style: 'background:#8a6634' }), 'Lucro')) });
+    pg.append(gMes);
+    colunas(gMes, meses, {
+      series: [{ key: 'fat', label: 'Faturamento', color: '#d6a85f' }, { key: 'lucro', label: 'Lucro', color: '#8a6634' }],
+      fmt: brl, eixo: curto,
+      extra: (l) => [`Custos: ${brl(l.custos)}`, `Trabalhos: ${int(l.n)}`],
+      onClick: (l) => { estado.mes = l.mes; irPara('mes'); },
+    });
+
+    const grid = el('div', { class: 'grid' });
+    const svc = [...porServico(r.T)].map(([nome, ls]) => ({ nome, valor: soma(ls, 'valor'), cor: corServico(nome) })).sort((a, b) => b.valor - a.valor);
+    grid.append(card({ titulo: 'Faturamento por tipo de serviço', nota: `Participação de cada serviço em ${ano}.` },
+      svc.length ? rosca(svc, { total: r.fat, rotuloCentro: 'no ano', fmt: curto }) : vazio('Nenhum trabalho neste ano.')));
+    const ranking = [...porServico(r.T)].map(([nome, ls]) => ({ nome, valor: soma(ls, 'lucro'), n: ls.length }));
+    grid.append(card({ titulo: 'Lucro por tipo de serviço', nota: 'Valor fechado − freelancers − custos do trabalho.' },
+      barrasH(ranking, { fmt: brl, sub: (i) => `${int(i.n)} ${i.n === 1 ? 'trabalho' : 'trabalhos'}`, cor: (i) => corServico(i.nome) }) || vazio('Nenhum trabalho neste ano.')));
+    pg.append(grid);
+
+    const tot = { fat: r.fat, custos: r.custos, lucro: r.lucro, n: r.n, orcN: r.orcN, orcF: r.orcF };
+    pg.append(card({ titulo: 'Tabela mês a mês', wide: true },
+      tabela('mesames', meses.map((m) => ({ ...m, nomeMes: MESES[m.mes - 1] })), [
+        { k: 'nomeMes', t: 'Mês' }, { k: 'fat', t: 'Faturamento', num: true, f: brl }, { k: 'custos', t: 'Custos', num: true, f: brl },
+        { k: 'lucro', t: 'Lucro', num: true, f: brl }, { k: 'n', t: 'Trabalhos', num: true, f: int },
+        { k: 'orcN', t: 'Orçamentos', num: true, f: int }, { k: 'orcF', t: 'Fechados', num: true, f: int },
+      ], { total: tot })));
+    return pg;
+  },
+
+  mes() {
+    if (!estado.mes) estado.mes = new Date().getFullYear() === estado.ano ? new Date().getMonth() + 1 : 1;
+    sincronizarSelects();
+    const { ano, mes } = estado;
+    const r = resumo(DADOS, doMes(ano, mes));
+    const pa = mes === 1 ? ano - 1 : ano, pm = mes === 1 ? 12 : mes - 1;
+    const ant = resumo(DADOS, doMes(pa, pm));
+    const vs = `vs ${MES3[pm - 1]}`;
+    const pg = el('div', { class: 'page' });
+    const nav = el('div', { class: 'month-nav' },
+      el('button', { class: 'round', type: 'button', 'aria-label': 'Mês anterior', onclick: () => mudarMes(-1) }, '‹'),
+      el('strong', {}, `${MESES[mes - 1]} ${ano}`),
+      el('button', { class: 'round', type: 'button', 'aria-label': 'Próximo mês', onclick: () => mudarMes(1) }, '›'));
+    pg.append(nav);
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Faturamento do mês', brl(r.fat), { hero: true, delta: variacao(r.fat, ant.fat, vs) }),
+      kpi('Lucro do mês', brl(r.lucro), { hero: true, delta: variacao(r.lucro, ant.lucro, vs) }),
+      kpi('Trabalhos', int(r.n), { nota: r.n ? `Valor médio ${brl(r.ticket)}` : null }),
+      kpi('A receber', brl(r.areceber), { nota: `Já recebido ${brl(r.rec)}` }),
+      kpi('Custos do mês', brl(r.custos), { nota: `Freelas ${brl(r.freelas)} · despesas ${brl(r.desp)}` }),
+      kpi('Orçamentos', `${int(r.orcF)} de ${int(r.orcN)}`, { nota: r.orcN ? `Taxa de fechamento ${pct(r.taxa)}` : 'Nenhum orçamento passado' })));
+
+    // calendário
+    const primeiro = new Date(ano, mes - 1, 1), diasNoMes = new Date(ano, mes, 0).getDate();
+    const inicio = primeiro.getDay();
+    const cal = el('div', { class: 'cal' }, DIAS.map((d) => el('div', { class: 'cal-h' }, d)));
+    for (let i = 0; i < inicio; i++) cal.append(el('div', { class: 'cal-d out' }));
+    for (let d = 1; d <= diasNoMes; d++) {
+      const iso = `${ano}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const evs = DADOS.T.filter((t) => t.data === iso);
+      cal.append(el('div', { class: `cal-d${iso === DADOS.hoje ? ' today' : ''}`, title: evs.map((t) => `${t.cliente} · ${t.servico}`).join('\n') || null },
+        el('span', { class: 'cal-n' }, d),
+        evs.map((t) => el('span', { class: 'cal-ev', style: `background:${corServico(t.servico)}` }, t.cliente || t.servico))));
+    }
+    const servicosMes = [...new Set(r.T.map((t) => t.servico))];
+    const grid = el('div', { class: 'grid' });
+    grid.append(card({ titulo: 'Calendário do mês', nota: 'Cada cor é um tipo de serviço.',
+      extra: servicosMes.length ? el('div', { class: 'legend' }, servicosMes.map((s) => el('span', {}, el('i', { style: `background:${corServico(s)}` }), s))) : null }, cal));
+    grid.append(card({ titulo: 'Trabalhos do mês', nota: 'Com o que foi fechado com cada cliente.' },
+      r.T.length ? el('div', { class: 'jobs' }, r.T.slice().sort((a, b) => a.data.localeCompare(b.data)).map((t) => cartaoTrabalho(t))) : vazio('Nenhum trabalho neste mês.')));
+    pg.append(grid);
+
+    const g2 = el('div', { class: 'grid' });
+    g2.append(card({ titulo: 'Orçamentos passados no mês' },
+      tabela('orcmes', r.O, [
+        { k: 'data', t: 'Enviado', f: dataBR }, { k: 'cliente', t: 'Cliente' }, { k: 'servico', t: 'Serviço' },
+        { k: 'valor', t: 'Valor', num: true, f: brl }, { k: 'status', t: 'Status', render: pillSit },
+      ], { vazioTxt: 'Nenhum orçamento passado neste mês.' })));
+    g2.append(card({ titulo: 'Despesas do mês' },
+      tabela('despmes', r.D, [
+        { k: 'data', t: 'Data', f: dataBR }, { k: 'categoria', t: 'Categoria' }, { k: 'descricao', t: 'Descrição' },
+        { k: 'valor', t: 'Valor', num: true, f: brl },
+      ], { vazioTxt: 'Nenhuma despesa neste mês.' })));
+    pg.append(g2);
+    return pg;
+  },
+
+  servicos() {
+    const r = resumo(DADOS, doPeriodo());
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Período: ', el('b', {}, nomePeriodo()), ' · use o seletor de mês no topo para ver um mês só'));
+    const tMap = porServico(r.T), oMap = porServico(r.O);
+    const nomes = [...new Set([...tMap.keys(), ...oMap.keys()])]
+      .sort((a, b) => soma(tMap.get(b) || [], 'valor') - soma(tMap.get(a) || [], 'valor'));
+    if (!nomes.length) { pg.append(vazio('Nenhum trabalho ou orçamento neste período.')); return pg; }
+    pg.append(el('div', { class: 'svc-grid' }, nomes.map((nome) => {
+      const ts = (tMap.get(nome) || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+      const os = oMap.get(nome) || [];
+      const fat = soma(ts, 'valor'), fech = os.filter((o) => o.status === 'Fechado').length;
+      return el('article', { class: 'card svc', style: `--c:${corServico(nome)}` },
+        el('h3', { class: 'svc-name' }, el('span', { class: 'dot', style: `background:${corServico(nome)}` }), nome),
+        el('div', { class: 'svc-stats' },
+          el('div', {}, el('span', {}, 'Trabalhos'), el('b', {}, int(ts.length))),
+          el('div', {}, el('span', {}, 'Faturamento'), el('b', {}, curto(fat))),
+          el('div', {}, el('span', {}, 'Valor médio'), el('b', {}, ts.length ? curto(fat / ts.length) : '—')),
+          el('div', {}, el('span', {}, 'Lucro'), el('b', {}, curto(soma(ts, 'lucro')))),
+          el('div', {}, el('span', {}, 'Fechamento'), el('b', {}, os.length ? pct(fech / os.length) : '—'))),
+        el('div', { class: 'deals' }, el('h4', {}, 'O que você fechou'),
+          ts.length ? ts.map((t) => el('div', { class: 'deal' },
+            el('span', { class: 'deal-what' }, t.fechado || 'Sem descrição'),
+            el('span', { class: 'deal-who' }, `${t.cliente || 'Sem nome'} · ${dataBR(t.data)}${t.local ? ` · ${t.local}` : ''}`),
+            el('span', { class: 'deal-val' }, brl(t.valor)))) : vazio('Só orçamentos neste período, nenhum trabalho fechado.')));
+    })));
+    return pg;
+  },
+
+  orcamentos() {
+    const r = resumo(DADOS, doPeriodo());
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Período: ', el('b', {}, nomePeriodo()), ' · pela data em que o orçamento foi enviado'));
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Taxa de fechamento', pct(r.taxa), { hero: true, nota: 'Orçamentos fechados ÷ passados' }),
+      kpi('Orçamentos passados', int(r.orcN)), kpi('Fechados', int(r.orcF)),
+      kpi('Aguardando resposta', int(r.orcA), { nota: r.orcA ? `${brl(r.orcValorAberto)} em aberto` : null })));
+    const total = r.orcN || 1;
+    const passo = (nome, v, cls) => el('div', { class: 'fstep' }, el('span', {}, nome),
+      el('div', { class: 'track' }, el('div', { class: `fill ${cls}`, style: `width:${(v / total) * 100}%` })), el('b', {}, int(v)));
+    const grid = el('div', { class: 'grid' });
+    grid.append(card({ titulo: 'Do orçamento ao contrato', nota: 'O que aconteceu com os orçamentos do período.' },
+      el('div', { class: 'funnel' }, passo('Passados', r.orcN, ''), passo('Fechados', r.orcF, 'ok'), passo('Aguardando', r.orcA, 'warn'), passo('Recusados', r.orcR, 'bad'))));
+    const conv = [...porServico(r.O)].map(([nome, os]) => ({ nome, valor: os.filter((o) => o.status === 'Fechado').length / os.length, n: os.length }));
+    grid.append(card({ titulo: 'Taxa de fechamento por serviço', nota: 'Onde seus orçamentos mais viram contrato.' },
+      barrasH(conv, { fmt: pct, sub: (i) => `${int(i.n)} ${i.n === 1 ? 'orçamento' : 'orçamentos'}`, cor: (i) => corServico(i.nome) }) || vazio('Nenhum orçamento neste período.')));
+    pg.append(grid);
+    pg.append(card({ titulo: 'Todos os orçamentos', wide: true },
+      tabela('orcs', r.O, [
+        { k: 'data', t: 'Enviado', f: dataBR }, { k: 'cliente', t: 'Cliente' }, { k: 'servico', t: 'Serviço', render: pillSvc },
+        { k: 'orcado', t: 'O que foi orçado', wrap: true }, { k: 'dataEvento', t: 'Evento', f: dataBR },
+        { k: 'valor', t: 'Valor', num: true, f: brl }, { k: 'status', t: 'Status', render: pillSit }, { k: 'obs', t: 'Observações', wrap: true },
+      ], { busca: 'Buscar cliente, serviço, status…', vazioTxt: 'Nenhum orçamento neste período.' })));
+    return pg;
+  },
+
+  clientes() {
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Desde o início · cadastre os clientes na aba Clientes da planilha'));
+    const linhas = DADOS.C.map((c) => {
+      const ts = DADOS.T.filter((t) => norm(t.cliente) === norm(c.nome));
+      return { ...c, n: ts.length, total: soma(ts, 'valor'), ultimo: ts.map((t) => t.data).sort().pop() || '' };
+    });
+    const semCadastro = [...new Set(DADOS.T.map((t) => t.cliente).filter((n) => n && !DADOS.C.some((c) => norm(c.nome) === norm(n))))];
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Clientes cadastrados', int(DADOS.C.length), { hero: true }),
+      kpi('Já fecharam trabalho', int(linhas.filter((l) => l.n).length)),
+      kpi('Voltaram (2+ trabalhos)', int(linhas.filter((l) => l.n > 1).length)),
+      kpi('Valor médio por cliente', brl(linhas.filter((l) => l.n).length ? soma(linhas, 'total') / linhas.filter((l) => l.n).length : 0))));
+    const grid = el('div', { class: 'grid' });
+    const origem = new Map();
+    linhas.forEach((l) => { const o = origem.get(l.origem) || { nome: l.origem, valor: 0, n: 0 }; o.valor += l.total; o.n += 1; origem.set(l.origem, o); });
+    grid.append(card({ titulo: 'De onde vêm seus clientes', nota: 'Total fechado por forma como te conheceram.' },
+      barrasH([...origem.values()], { fmt: brl, sub: (i) => `${int(i.n)} ${i.n === 1 ? 'cliente' : 'clientes'}` }) || vazio('Nenhum cliente com trabalho ainda.')));
+    grid.append(card({ titulo: 'Melhores clientes', nota: 'Quem mais fechou com você.' },
+      barrasH(linhas.map((l) => ({ nome: l.nome, valor: l.total, n: l.n })).slice(0, 50), { fmt: brl, sub: (i) => `${int(i.n)} ${i.n === 1 ? 'trabalho' : 'trabalhos'}` }) || vazio('Nenhum cliente com trabalho ainda.')));
+    pg.append(grid);
+    if (semCadastro.length) pg.append(el('div', { class: 'banner' }, `Estes clientes estão em Trabalhos mas não na aba Clientes: ${semCadastro.join(', ')}. Cadastre para aparecerem aqui.`));
+    pg.append(card({ titulo: 'Clientes', wide: true },
+      tabela('clientes', linhas, [
+        { k: 'nome', t: 'Cliente' }, { k: 'whats', t: 'WhatsApp' }, { k: 'cidade', t: 'Cidade' }, { k: 'origem', t: 'Como conheceu' },
+        { k: 'n', t: 'Trabalhos', num: true, f: int }, { k: 'total', t: 'Total fechado', num: true, f: brl }, { k: 'ultimo', t: 'Último trabalho', f: dataBR },
+      ], { busca: 'Buscar cliente, cidade…', vazioTxt: 'Nenhum cliente cadastrado.' })));
+    return pg;
+  },
+
+  custos() {
+    const r = resumo(DADOS, doPeriodo());
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Período: ', el('b', {}, nomePeriodo())));
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Custos totais', brl(r.custos), { hero: true, nota: 'Freelancers + custos dos trabalhos + despesas' }),
+      kpi('Freelancers', brl(r.freelas)), kpi('Custos dos trabalhos', brl(r.outros)), kpi('Despesas gerais', brl(r.desp)),
+      kpi('Peso dos custos', pct(r.fat ? r.custos / r.fat : 0), { nota: 'Quanto do faturamento vai em custos' })));
+    if (!estado.mes) {
+      const meses = MESES.map((nome, i) => {
+        const x = resumo(DADOS, doMes(estado.ano, i + 1));
+        return { rotulo: MES3[i], titulo: `${nome} de ${estado.ano}`, freelas: x.freelas, outros: x.outros, desp: x.desp };
+      });
+      const c = card({ titulo: `Custos por mês em ${estado.ano}`, wide: true,
+        extra: el('div', { class: 'legend' }, el('span', {}, el('i', { style: 'background:#d6a85f' }), 'Freelancers'), el('span', {}, el('i', { style: 'background:#8a6634' }), 'Custos dos trabalhos'), el('span', {}, el('i', { style: 'background:#6b5f52' }), 'Despesas')) });
+      pg.append(c);
+      colunas(c, meses, { series: [{ key: 'freelas', label: 'Freelancers', color: '#d6a85f' }, { key: 'outros', label: 'Custos dos trabalhos', color: '#8a6634' }, { key: 'desp', label: 'Despesas', color: '#6b5f52' }], fmt: brl, eixo: curto });
+    }
+    const grid = el('div', { class: 'grid' });
+    const cat = new Map();
+    r.D.forEach((d) => cat.set(d.categoria, (cat.get(d.categoria) || 0) + d.valor));
+    grid.append(card({ titulo: 'Despesas por categoria' },
+      barrasH([...cat].map(([nome, valor]) => ({ nome, valor })), { fmt: brl }) || vazio('Nenhuma despesa neste período.')));
+    const fr = new Map();
+    r.T.filter((t) => t.freelas > 0).forEach((t) => { const k = t.freelasNomes || 'Sem nome'; const o = fr.get(k) || { nome: k, valor: 0, n: 0 }; o.valor += t.freelas; o.n += 1; fr.set(k, o); });
+    grid.append(card({ titulo: 'Freelancers', nota: 'Quanto você pagou, pelo que está escrito na coluna Freelancers.' },
+      barrasH([...fr.values()], { fmt: brl, sub: (i) => `${int(i.n)} ${i.n === 1 ? 'trabalho' : 'trabalhos'}` }) || vazio('Nenhum freelancer neste período.')));
+    pg.append(grid);
+    pg.append(card({ titulo: 'Custos por trabalho', wide: true },
+      tabela('custostrab', r.T.filter((t) => t.freelas || t.outros), [
+        { k: 'data', t: 'Data', f: dataBR }, { k: 'cliente', t: 'Cliente' }, { k: 'servico', t: 'Serviço', render: pillSvc },
+        { k: 'freelasNomes', t: 'Freelancers' }, { k: 'freelas', t: 'Freelancers (R$)', num: true, f: brl },
+        { k: 'outros', t: 'Outros custos', num: true, f: brl }, { k: 'valor', t: 'Valor fechado', num: true, f: brl }, { k: 'lucro', t: 'Lucro', num: true, f: brl },
+      ], { vazioTxt: 'Nenhum custo de trabalho neste período.' })));
+    pg.append(card({ titulo: 'Despesas gerais', wide: true },
+      tabela('despesas', r.D, [
+        { k: 'data', t: 'Data', f: dataBR }, { k: 'categoria', t: 'Categoria' }, { k: 'descricao', t: 'Descrição', wrap: true },
+        { k: 'pagto', t: 'Pagamento' }, { k: 'valor', t: 'Valor', num: true, f: brl },
+      ], { vazioTxt: 'Nenhuma despesa neste período.' })));
+    return pg;
+  },
+
+  equipamentos() {
+    const pg = el('div', { class: 'page' });
+    pg.append(el('p', { class: 'scope' }, 'Desde o início · equipamento é investimento, por isso não entra no lucro do mês'));
+    const inv = soma(DADOS.E, 'valor');
+    const tudo = resumo(DADOS, () => true);
+    const ret = inv ? Math.max(0, tudo.lucro) / inv : 0;
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Investido em equipamentos', brl(inv), { hero: true }),
+      kpi('Lucro desde o início', brl(tudo.lucro)),
+      kpi('Equipamentos já pagos pelo lucro', pct(ret), { nota: '100% = o lucro já cobriu tudo' }),
+      kpi('Equipamentos em uso', int(DADOS.E.filter((e) => !e.situacao || e.situacao === 'Em uso').length))));
+    const grid = el('div', { class: 'grid' });
+    grid.append(card({ titulo: 'Retorno do investimento', nota: 'Quanto do valor dos equipamentos o seu lucro já pagou.' },
+      el('div', { class: 'progress' }, el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.min(1, ret) * 100}%` })),
+        el('div', { class: 'progress-legend' }, el('span', {}, '0%'), el('span', {}, '50%'), el('span', {}, '100%')))));
+    const cat = new Map();
+    DADOS.E.forEach((e) => cat.set(e.categoria, (cat.get(e.categoria) || 0) + e.valor));
+    grid.append(card({ titulo: 'Investido por categoria' }, barrasH([...cat].map(([nome, valor]) => ({ nome, valor })), { fmt: brl }) || vazio('Nenhum equipamento cadastrado.')));
+    pg.append(grid);
+    pg.append(card({ titulo: 'Seus equipamentos', wide: true },
+      tabela('equip', DADOS.E, [
+        { k: 'nome', t: 'Equipamento' }, { k: 'categoria', t: 'Categoria' }, { k: 'data', t: 'Comprado em', f: dataBR },
+        { k: 'valor', t: 'Valor pago', num: true, f: brl }, { k: 'pagto', t: 'Pagamento' }, { k: 'situacao', t: 'Situação' },
+      ], { vazioTxt: 'Nenhum equipamento cadastrado.' })));
+    return pg;
+  },
+
+  agenda() {
+    const pg = el('div', { class: 'page' });
+    const hoje = DADOS.hoje;
+    const prox = DADOS.T.filter((t) => t.data >= hoje).sort((a, b) => a.data.localeCompare(b.data) || a.horario.localeCompare(b.horario));
+    const pend = DADOS.T.filter((t) => t.areceber > 0).sort((a, b) => a.data.localeCompare(b.data));
+    pg.append(el('div', { class: 'kpis' },
+      kpi('Próximos eventos', int(prox.length), { hero: true }),
+      kpi('Nos próximos 30 dias', int(prox.filter((t) => (new Date(t.data) - new Date(hoje)) / 86400000 <= 30).length)),
+      kpi('Falta receber (todos)', brl(soma(pend, 'areceber')), { nota: `${int(pend.length)} ${pend.length === 1 ? 'trabalho' : 'trabalhos'} com saldo` })));
+    const grid = el('div', { class: 'grid' });
+    grid.append(card({ titulo: 'Próximos eventos', nota: 'Do mais perto para o mais longe.' },
+      prox.length ? el('div', { class: 'jobs' }, prox.map((t) => cartaoTrabalho(t, { mostrarAno: true }))) : vazio('Nenhum evento marcado daqui para frente.')));
+    grid.append(card({ titulo: 'Pagamentos pendentes', nota: 'Trabalhos com valor a receber, de qualquer data.' },
+      tabela('pend', pend, [
+        { k: 'data', t: 'Evento', f: dataBR }, { k: 'cliente', t: 'Cliente' }, { k: 'valor', t: 'Fechado', num: true, f: brl },
+        { k: 'areceber', t: 'Falta', num: true, f: brl }, { k: 'situacao', t: 'Situação', render: pillSit },
+      ], { vazioTxt: 'Tudo recebido.' })));
+    pg.append(grid);
+    return pg;
+  },
+};
+
+/* ===================== desenho ===================== */
+function anosDisponiveis() {
+  const anos = new Set([new Date().getFullYear()]);
+  [...DADOS.T, ...DADOS.O, ...DADOS.D].forEach((x) => x.ano && anos.add(x.ano));
+  return [...anos].sort((a, b) => b - a);
+}
+function sincronizarSelects() {
+  selAno.replaceChildren(...anosDisponiveis().map((a) => new Option(a, a)));
+  selAno.value = estado.ano;
+  selMes.replaceChildren(new Option('Ano inteiro', 0), ...MESES.map((m, i) => new Option(m, i + 1)));
+  selMes.value = estado.mes;
+}
+function desenhar() {
+  if (!DADOS) return;
+  sincronizarSelects();
+  $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === estado.aba)));
+  const pagina = ABAS[estado.aba]();
+  $('#conteudo').replaceChildren(pagina);
+  $('#rodape').textContent = DADOS.planilha
+    ? `Dados lidos da planilha "${DADOS.planilha}" · ${DADOS.atualizado}. O painel se atualiza sozinho a cada minuto.`
+    : 'Dados de exemplo da planilha modelo.';
+}
+function irPara(aba) {
+  estado.aba = aba;
+  desenhar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function mudarMes(d) {
+  let m = estado.mes + d, a = estado.ano;
+  if (m < 1) { m = 12; a -= 1; }
+  if (m > 12) { m = 1; a += 1; }
+  estado.mes = m; estado.ano = a;
+  desenhar();
+}
+$$('.tab').forEach((t) => t.addEventListener('click', () => irPara(t.dataset.tab)));
+selAno.addEventListener('change', () => { estado.ano = +selAno.value; desenhar(); });
+selMes.addEventListener('change', () => {
+  estado.mes = +selMes.value;
+  if (estado.aba === 'ano' && estado.mes) estado.aba = 'mes';
+  if (estado.aba === 'mes' && !estado.mes) estado.aba = 'ano';
+  desenhar();
+});
+let larguraAnterior = innerWidth;
+addEventListener('resize', () => {
+  if (Math.abs(innerWidth - larguraAnterior) < 40) return;
+  larguraAnterior = innerWidth;
+  clearTimeout(window.__rz); window.__rz = setTimeout(desenhar, 200);
+});
+
+/* ===================== carregamento automático ===================== */
+const btn = $('#btnAtualizar'), stEl = $('#status');
+let ultimaVersao = '';
+function receber(bruto, demo) {
+  const versao = JSON.stringify(bruto.abas || {});
+  $('#banner').hidden = !demo;
+  stEl.classList.remove('is-error');
+  btn.classList.remove('is-loading');
+  if (versao === ultimaVersao && DADOS) {
+    // Nada mudou na planilha: só atualiza o horário, sem redesenhar a tela.
+    DADOS.atualizado = bruto.atualizado || DADOS.atualizado;
+    stEl.textContent = demo ? 'Exemplo' : `Atualizado ${DADOS.atualizado}`;
+    return;
+  }
+  ultimaVersao = versao;
+  DADOS = preparar(bruto);
+  stEl.textContent = demo ? 'Exemplo' : `Atualizado ${DADOS.atualizado}`;
+  desenhar();
+}
+function carregar() {
+  const naPlanilha = window.google && google.script && google.script.run;
+  btn.classList.add('is-loading');
+  if (!naPlanilha) { receber(DEMO || { abas: {} }, true); return; }
+  stEl.textContent = 'Lendo a planilha…';
+  google.script.run
+    .withSuccessHandler((txt) => receber(JSON.parse(txt), false))
+    .withFailureHandler((err) => {
+      btn.classList.remove('is-loading');
+      stEl.classList.add('is-error');
+      stEl.textContent = `Não consegui ler a planilha (${err && err.message ? err.message : err}). Tente Atualizar.`;
+    })
+    .getDados();
+}
+btn.addEventListener('click', carregar);
+setInterval(() => { if (document.visibilityState === 'visible') carregar(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregar(); });
+carregar();
+</script>
+</body>
+</html>
