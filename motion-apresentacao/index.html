@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Darzan Produções — Apresentação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   DARZAN PRODUÇÕES — vídeo de apresentação em motion
+   Mesmas cores e fontes do site (darzan-producoes/css/style.css).
+   Abra este arquivo no navegador para assistir.
+   Para gerar o MP4: veja README.md desta pasta.
+   ===================================================================== */
+:root {
+  --bg: #0d0b0a;
+  --surface: #1c1713;
+  --text: #f4ede4;
+  --muted: #b3a798;
+  --gold: #d6a85f;
+  --gold-2: #f0cf94;
+  --gold-dark: #a87b3a;
+  --display: 'Cormorant Garamond', Georgia, serif;
+  --body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+
+#stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  transform-origin: 0 0;
+}
+.render #stage { left: 0; top: 0; }
+
+.layer, .scene { position: absolute; inset: 0; }
+.scene { opacity: 0; visibility: hidden; will-change: opacity, transform; }
+.abs { position: absolute; }
+.center { left: 0; right: 0; text-align: center; }
+
+.display { font-family: var(--display); font-weight: 500; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: lining-nums; }
+.display em { font-style: italic; color: var(--gold); }
+.gold-text {
+  background: linear-gradient(180deg, var(--gold-2) 0%, var(--gold) 55%, var(--gold-dark) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.eyebrow {
+  font-size: 22px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--gold);
+}
+.eyebrow.line { display: inline-flex; align-items: center; gap: 18px; }
+.eyebrow.line::before { content: ''; width: 44px; height: 1px; background: currentColor; }
+.muted { color: var(--muted); }
+
+/* máscara para textos que sobem por trás de uma linha invisível */
+.mask { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.06em 0.14em; margin: 0 -0.06em -0.14em; }
+.mask > span { display: inline-block; will-change: transform; }
+
+/* ---------- fundo ---------- */
+#leak1, #leak2 {
+  position: absolute; width: 1500px; height: 1500px; left: -750px; top: -750px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240, 190, 110, 0.55) 0%, rgba(214, 168, 95, 0.18) 35%, rgba(214, 168, 95, 0) 68%);
+  mix-blend-mode: screen;
+}
+#leak2 { background: radial-gradient(circle, rgba(200, 110, 60, 0.45) 0%, rgba(168, 90, 50, 0.14) 38%, rgba(168, 90, 50, 0) 68%); }
+#vignette { background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%); }
+#fx, #grain { position: absolute; inset: 0; }
+#grain { mix-blend-mode: overlay; opacity: 0.10; }
+
+/* ---------- HUD de câmera ---------- */
+.corner { position: absolute; width: 64px; height: 64px; border: 0 solid rgba(240, 207, 148, 0.75); }
+.corner.tl { left: 110px; top: 110px; border-top-width: 2px; border-left-width: 2px; }
+.corner.tr { right: 110px; top: 110px; border-top-width: 2px; border-right-width: 2px; }
+.corner.bl { left: 110px; bottom: 110px; border-bottom-width: 2px; border-left-width: 2px; }
+.corner.br { right: 110px; bottom: 110px; border-bottom-width: 2px; border-right-width: 2px; }
+.hud-text {
+  position: absolute; font-size: 18px; font-weight: 600; letter-spacing: 0.24em;
+  color: rgba(244, 237, 228, 0.82); font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; gap: 12px;
+}
+#recDot { width: 12px; height: 12px; border-radius: 50%; background: #e0523f; box-shadow: 0 0 14px #e0523f; }
+
+/* ---------- barras de cinema ---------- */
+.bar { position: absolute; left: 0; right: 0; height: 0; background: #000; }
+#barTop { top: 0; } #barBot { bottom: 0; }
+
+/* ---------- cena A: abertura ---------- */
+#mono { left: 830px; top: 236px; overflow: visible; }
+#mono .ring, #endMono .ring { transform-box: fill-box; transform-origin: center; }
+#monoD, #endD { transform-box: fill-box; transform-origin: center; }
+#brand { top: 548px; font-size: 156px; font-weight: 600; }
+#brand span { display: inline-block; }
+#brandLine { left: 700px; width: 520px; top: 740px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); transform: scaleX(0); }
+#brandSub { top: 770px; font-size: 26px; font-weight: 600; text-transform: uppercase; color: var(--gold-2); }
+
+/* ---------- cena B: frase ---------- */
+#bEyebrow { top: 300px; }
+#bTitle { top: 370px; font-size: 168px; }
+#bTitle .row { display: block; height: 176px; }
+.ul-wrap { position: relative; display: inline-block; }
+.ul-wrap svg { position: absolute; left: 2%; bottom: -26px; width: 96%; height: 30px; overflow: visible; }
+#bSub { top: 790px; font-size: 32px; }
+
+/* ---------- cena C: serviços ---------- */
+#cEyebrow { left: 200px; top: 250px; }
+.svc { position: absolute; inset: 0; }
+.svc-num { position: absolute; left: 190px; top: 318px; font-size: 300px; font-weight: 500; }
+.svc-of { position: absolute; left: 206px; top: 650px; font-size: 22px; letter-spacing: 0.3em; font-weight: 600; color: var(--muted); }
+.svc-icon { position: absolute; left: 790px; top: 300px; width: 116px; height: 116px; overflow: visible; }
+.svc-icon * { fill: none; stroke: var(--gold-2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.svc-icon .fill { fill: var(--gold); stroke: none; }
+.svc-title { position: absolute; left: 780px; top: 452px; font-size: 104px; white-space: nowrap; }
+.svc-desc { position: absolute; left: 790px; top: 600px; width: 900px; font-size: 32px; line-height: 1.5; color: var(--muted); }
+#cProgress { position: absolute; left: 200px; right: 200px; top: 860px; display: flex; gap: 14px; }
+#cProgress div { flex: 1; height: 3px; background: rgba(244, 237, 228, 0.14); position: relative; overflow: hidden; }
+#cProgress i { position: absolute; inset: 0; background: var(--gold); transform-origin: 0 50%; transform: scaleX(0); }
+
+/* ---------- cena D: celebrações ---------- */
+#dEyebrow { top: 320px; }
+#dSlot { left: 0; right: 0; top: 400px; height: 280px; overflow: hidden; }
+#dSlot .word { position: absolute; left: 0; right: 0; top: 0; height: 280px; line-height: 250px; text-align: center; font-size: 230px; font-style: italic; }
+#dDots { top: 760px; display: flex; justify-content: center; gap: 18px; }
+#dDots span { width: 10px; height: 10px; border-radius: 50%; background: rgba(244, 237, 228, 0.2); }
+#dRing { left: 560px; top: 140px; width: 800px; height: 800px; overflow: visible; }
+
+/* ---------- cena E: storymaker ---------- */
+#eText { left: 200px; top: 0; width: 900px; }
+#eEyebrow { position: absolute; top: 300px; }
+#eTitle { position: absolute; top: 360px; font-size: 136px; }
+#eTitle .row { display: block; height: 140px; }
+#ePara { position: absolute; top: 680px; width: 760px; font-size: 30px; line-height: 1.5; color: var(--muted); }
+#eBadge {
+  position: absolute; top: 820px; display: inline-flex; align-items: center; gap: 14px;
+  padding: 16px 28px; border-radius: 999px; border: 1px solid rgba(240, 207, 148, 0.45);
+  background: rgba(214, 168, 95, 0.12); font-size: 22px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gold-2); transform-origin: 0 50%;
+}
+#eBadge b { width: 10px; height: 10px; border-radius: 50%; background: var(--gold-2); box-shadow: 0 0 12px var(--gold-2); }
+#phone {
+  position: absolute; left: 1200px; top: 200px; width: 356px; height: 700px;
+  border-radius: 60px; padding: 14px; background: #050403;
+  border: 2px solid rgba(240, 207, 148, 0.55);
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 80px rgba(214, 168, 95, 0.18);
+}
+#screen { position: relative; width: 100%; height: 100%; border-radius: 46px; overflow: hidden; background: #2a1d14; }
+.blob { position: absolute; width: 420px; height: 420px; border-radius: 50%; filter: blur(30px); }
+#storyBars { position: absolute; left: 22px; right: 22px; top: 24px; display: flex; gap: 6px; }
+#storyBars div { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); overflow: hidden; position: relative; }
+#storyBars i { position: absolute; inset: 0; background: #fff; transform-origin: 0 50%; transform: scaleX(0); }
+#storyUser { position: absolute; left: 22px; top: 44px; display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 700; color: #fff; }
+#storyUser .av { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-family: var(--display); font-size: 24px; font-weight: 600; background: var(--bg); color: var(--gold-2); }
+#storyCap { position: absolute; left: 22px; right: 22px; bottom: 118px; text-align: center; font-family: var(--display); font-style: italic; font-size: 44px; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.5); }
+#storyLive { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(0,0,0,0.45); font-size: 15px; font-weight: 700; letter-spacing: 0.16em; color: #fff; text-transform: uppercase; white-space: nowrap; }
+.heart { position: absolute; width: 34px; height: 34px; }
+
+/* ---------- cena F: como funciona ---------- */
+#fEyebrow { top: 270px; }
+#fTitle { top: 330px; font-size: 92px; }
+#fLine { left: 390px; width: 1140px; top: 619px; height: 2px; background: linear-gradient(90deg, var(--gold-dark), var(--gold-2), var(--gold-dark)); transform-origin: 0 50%; transform: scaleX(0); }
+.step { position: absolute; top: 572px; width: 360px; margin-left: -180px; text-align: center; }
+.step .num {
+  width: 96px; height: 96px; margin: 0 auto; border-radius: 50%;
+  border: 2px solid var(--gold); background: var(--bg);
+  display: grid; place-items: center; font-family: var(--display); font-size: 48px; font-weight: 600; color: var(--gold-2); font-variant-numeric: lining-nums;
+  box-shadow: 0 0 40px rgba(214, 168, 95, 0.25);
+}
+.step h3 { margin: 30px 0 10px; font-size: 34px; font-weight: 600; }
+.step p { margin: 0; font-size: 23px; line-height: 1.45; color: var(--muted); }
+
+/* ---------- cena G: encerramento ---------- */
+#endMono { left: 880px; top: 170px; overflow: visible; }
+#gTitle { top: 382px; font-size: 128px; font-weight: 600; }
+#gTag { top: 548px; font-size: 56px; }
+#gCta { top: 676px; display: flex; justify-content: center; gap: 26px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 16px; padding: 20px 36px; border-radius: 999px;
+  font-size: 30px; font-weight: 600; letter-spacing: 0.02em;
+}
+.pill svg { width: 32px; height: 32px; }
+.pill.gold { background: linear-gradient(180deg, var(--gold-2), var(--gold)); color: #1a120a; }
+.pill.ghost { border: 1px solid rgba(240, 207, 148, 0.5); color: var(--text); }
+#gCity { top: 820px; font-size: 20px; }
+#flare {
+  left: 0; top: 330px; width: 700px; height: 320px;
+  background: radial-gradient(ellipse 50% 22% at 50% 50%, rgba(255, 236, 200, 0.75), rgba(240, 207, 148, 0.2) 45%, rgba(240, 207, 148, 0) 70%);
+  mix-blend-mode: screen;
+}
+#fadeBlack { background: #000; }
+
+/* ---------- controles (só no navegador) ---------- */
+#controls {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  width: min(720px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+  border-radius: 14px; background: rgba(20, 16, 12, 0.82); border: 1px solid rgba(240, 207, 148, 0.2);
+  color: #f4ede4; font: 600 14px/1 'Manrope', system-ui, sans-serif;
+  backdrop-filter: blur(8px); transition: opacity .3s;
+}
+#controls.idle { opacity: 0; }
+#controls button {
+  border: 0; background: none; color: inherit; cursor: pointer; padding: 6px; border-radius: 8px;
+  display: grid; place-items: center;
+}
+#controls button:hover { background: rgba(240, 207, 148, 0.14); }
+#controls button:focus-visible { outline: 2px solid #d6a85f; }
+#controls svg { width: 20px; height: 20px; fill: currentColor; }
+#scrub { flex: 1; accent-color: #d6a85f; min-width: 0; }
+#time { font-variant-numeric: tabular-nums; color: #b3a798; white-space: nowrap; }
+.render #controls { display: none; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <!-- FUNDO -->
+  <div class="layer" id="bgLayer">
+    <div id="leak1"></div>
+    <div id="leak2"></div>
+  </div>
+  <canvas id="fx" width="1920" height="1080"></canvas>
+
+  <!-- A · ABERTURA -->
+  <section class="scene" id="sA">
+    <svg id="mono" class="abs" width="260" height="260" viewBox="0 0 260 260">
+      <defs>
+        <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f0cf94"/><stop offset=".55" stop-color="#d6a85f"/><stop offset="1" stop-color="#a87b3a"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring" id="ring1" cx="130" cy="130" r="122" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      <circle class="ring" id="ring2" cx="130" cy="130" r="108" fill="none" stroke="#d6a85f" stroke-opacity=".4" stroke-width="1" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      <text id="monoD" x="130" y="170" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="140" font-weight="600" fill="url(#goldGrad)">D</text>
+    </svg>
+    <div id="brand" class="abs center display"></div>
+    <div id="brandLine" class="abs"></div>
+    <div id="brandSub" class="abs center">Produções</div>
+  </section>
+
+  <!-- B · FRASE -->
+  <section class="scene" id="sB">
+    <div id="bEyebrow" class="abs center"><span class="eyebrow">Videomaker · Campinas e região</span></div>
+    <h1 id="bTitle" class="abs center display" style="margin:0">
+      <span class="row"><span class="mask"><span class="bw">Seu</span></span> <span class="mask"><span class="bw">dia</span></span> <span class="mask"><span class="bw">contado</span></span></span>
+      <span class="row"><span class="mask"><span class="bw">como</span></span> <span class="ul-wrap"><span class="mask"><span class="bw"><em>cinema</em></span></span><svg viewBox="0 0 300 30" preserveAspectRatio="none"><path id="bUl" d="M4 20 C 80 6, 200 4, 296 14" fill="none" stroke="#d6a85f" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></span></span>
+    </h1>
+    <p id="bSub" class="abs center muted" style="margin:0">Imagens feitas para emocionar hoje e daqui a muitos anos.</p>
+  </section>
+
+  <!-- C · SERVIÇOS -->
+  <section class="scene" id="sC">
+    <div id="cEyebrow" class="abs"><span class="eyebrow line">O que eu entrego</span></div>
+    <div id="cItems"></div>
+    <div id="cProgress"></div>
+  </section>
+
+  <!-- D · CELEBRAÇÕES -->
+  <section class="scene" id="sD">
+    <svg id="dRing" class="abs" viewBox="0 0 800 800">
+      <circle cx="400" cy="400" r="390" fill="none" stroke="#d6a85f" stroke-opacity=".16" stroke-width="1.5" stroke-dasharray="2 14"/>
+      <circle cx="400" cy="400" r="330" fill="none" stroke="#d6a85f" stroke-opacity=".08" stroke-width="1"/>
+    </svg>
+    <div id="dEyebrow" class="abs center"><span class="eyebrow">Para todo tipo de celebração</span></div>
+    <div id="dSlot" class="abs"></div>
+    <div id="dDots" class="abs center"></div>
+  </section>
+
+  <!-- E · STORYMAKER -->
+  <section class="scene" id="sE">
+    <div id="eText" class="abs">
+      <div id="eEyebrow"><span class="eyebrow line">Storymaker</span></div>
+      <h2 id="eTitle" class="display" style="margin:0">
+        <span class="row"><span class="mask"><span class="ew">O seu dia na</span></span></span>
+        <span class="row"><span class="mask"><span class="ew">palma da <em>mão</em></span></span></span>
+      </h2>
+      <p id="ePara" style="margin:0">Vídeos verticais filmados durante o evento, para postar em tempo real ou guardar só para você.</p>
+      <div id="eBadge"><b></b>Pronto no mesmo dia</div>
+    </div>
+    <div id="phone">
+      <div id="screen">
+        <div class="blob" id="blob1"></div>
+        <div class="blob" id="blob2"></div>
+        <div class="blob" id="blob3"></div>
+        <div id="storyBars"></div>
+        <div id="storyUser"><span class="av">D</span>darzanproducoes</div>
+        <div id="storyCap"></div>
+        <div id="storyLive">● Ao vivo do evento</div>
+        <div id="hearts"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F · COMO FUNCIONA -->
+  <section class="scene" id="sF">
+    <div id="fEyebrow" class="abs center"><span class="eyebrow">Como funciona</span></div>
+    <h2 id="fTitle" class="abs center display" style="margin:0"><span class="mask"><span class="fw">Simples do primeiro contato à <em>entrega</em></span></span></h2>
+    <div id="fLine" class="abs"></div>
+    <div id="fSteps"></div>
+  </section>
+
+  <!-- G · ENCERRAMENTO -->
+  <section class="scene" id="sG">
+    <div id="flare" class="abs"></div>
+    <svg id="endMono" class="abs" width="160" height="160" viewBox="0 0 260 260">
+      <circle class="ring" id="endRing" cx="130" cy="130" r="122" fill="none" stroke="url(#goldGrad)" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      <text id="endD" x="130" y="170" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="140" font-weight="600" fill="url(#goldGrad)">D</text>
+    </svg>
+    <div id="gTitle" class="abs center display"><span class="mask"><span class="gw gold-text">Darzan Produções</span></span></div>
+    <div id="gTag" class="abs center display">Sua história merece virar <em>filme</em></div>
+    <div id="gCta" class="abs center">
+      <span class="pill gold" id="gWpp">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
+        (19) 99527-3041
+      </span>
+      <span class="pill ghost" id="gInsta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f0cf94" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1" fill="#f0cf94" stroke="none"/></svg>
+        @darzanproducoes
+      </span>
+    </div>
+    <div id="gCity" class="abs center"><span class="eyebrow" style="color:var(--muted)">Campinas e região · Atendo também outras cidades</span></div>
+  </section>
+
+  <!-- SOBREPOSIÇÕES -->
+  <div class="layer" id="vignette"></div>
+  <div class="layer" id="hud">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="hud-text" id="recLabel" style="left:200px; top:126px"><span id="recDot"></span>REC</div>
+    <div class="hud-text" id="tc" style="right:200px; top:126px">00:00:00:00</div>
+    <div class="hud-text" id="hudL" style="left:200px; bottom:126px">4K · 24 FPS</div>
+    <div class="hud-text" id="hudR" style="right:200px; bottom:126px">Campinas · SP</div>
+  </div>
+  <div class="bar" id="barTop"></div>
+  <div class="bar" id="barBot"></div>
+  <canvas id="grain" width="1920" height="1080"></canvas>
+  <div class="layer" id="fadeBlack"></div>
+</div>
+
+<div id="controls">
+  <button id="btnPlay" aria-label="Pausar"><svg viewBox="0 0 24 24" id="icoPlay"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+  <button id="btnRestart" aria-label="Recomeçar"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"/></svg></button>
+  <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Posição do vídeo">
+  <span id="time">0:00 / 0:00</span>
+</div>
+
+<script>
+/* =====================================================================
+   LINHA DO TEMPO
+   Tudo é calculado a partir do tempo t (em segundos) pela função
+   render(t). Isso permite tanto assistir ao vivo quanto exportar
+   quadro a quadro para MP4 (ver render.js).
+   ===================================================================== */
+const DURATION = 37;
+window.DURATION = DURATION;
+
+const SERVICOS = [
+  { n: '01', t: 'Filme cinematográfico', d: 'O seu evento contado como cinema: imagens marcantes, trilha sonora e uma edição que emociona.', icon: 'film' },
+  { n: '02', t: 'Teaser', d: 'Um vídeo curto com os melhores momentos, perfeito para mostrar à família e postar nas redes.', icon: 'play' },
+  { n: '03', t: 'Cerimônia na íntegra', d: 'A cerimônia completa, sem cortes: entrada, votos, alianças e cada palavra dita.', icon: 'rings' },
+  { n: '04', t: 'Vídeos com motion', d: 'Animações, textos e efeitos gráficos: vinhetas, logos animados e convites.', icon: 'motion' },
+  { n: '05', t: 'Vídeos para empresas', d: 'Institucionais, eventos corporativos, lançamentos e conteúdo para as redes da sua marca.', icon: 'building' },
+  { n: '06', t: 'Storymaker', d: 'Vídeos verticais feitos durante o evento e entregues ainda no mesmo dia.', icon: 'phone' }
+];
+const CELEBRACOES = ['Casamentos', 'Empresas', 'Aniversários', 'Chá revelação'];
+const PASSOS = [
+  { h: 'Conversa', p: 'Você me chama no WhatsApp ou Instagram' },
+  { h: 'Planejamento', p: 'Escolhemos juntos formatos e momentos' },
+  { h: 'Dia do evento', p: 'Filmagem discreta e stories no mesmo dia' },
+  { h: 'Entrega', p: 'Filme, teaser e íntegra prontos para guardar' }
+];
+const STORIES = [
+  { cap: 'O grande dia', c: ['#f2b56b', '#c0603a', '#5b2a3a'] },
+  { cap: 'Os detalhes', c: ['#f0d9b5', '#c99a5b', '#4a3526'] },
+  { cap: 'A emoção', c: ['#e8a0a0', '#a2546a', '#3b2235'] },
+  { cap: 'A festa', c: ['#ffd27a', '#d6803a', '#3a1f2c'] }
+];
+
+/* tempos (s) de início/fim de cada cena */
+const T = { A: [0, 5], B: [5, 9.6], C: [9.6, 18.8], D: [18.8, 22.8], E: [22.8, 27.4], F: [27.4, 31.6], G: [31.6, 37] };
+const CUTS = [5, 9.6, 18.8, 22.8, 27.4, 31.6];
+const SVC_START = 9.8, SVC_LEN = 1.5;
+const CEL_START = 19.1, CEL_LEN = 0.85;
+const STORY_START = 23.3, STORY_LEN = 0.95;
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = x => 1 - Math.pow(1 - x, 3);
+const eInOut = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eExpo = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const eBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ---------- montagem dos elementos ---------- */
+const ICONS = {
+  film: '<rect x="14" y="46" width="92" height="58" rx="5" pathLength="1"/><path d="M14 46 L18 24 L104 14 L106 34" pathLength="1"/><path d="M38 21 L32 43 M62 18 L56 40 M86 15 L80 37" pathLength="1"/><path d="M50 62 L72 75 L50 88 Z" pathLength="1"/>',
+  play: '<circle cx="60" cy="60" r="48" pathLength="1"/><circle cx="60" cy="60" r="36" pathLength="1" style="stroke-opacity:.4"/><path d="M50 42 L78 60 L50 78 Z" pathLength="1"/>',
+  rings: '<circle cx="46" cy="70" r="30" pathLength="1"/><circle cx="74" cy="70" r="30" pathLength="1"/><path d="M60 14 L70 26 L60 38 L50 26 Z" pathLength="1"/>',
+  motion: '<path d="M10 96 C 46 96, 56 26, 110 26" pathLength="1"/><path d="M10 86 L20 96 L10 106 L0 96 Z" pathLength="1"/><path d="M110 16 L120 26 L110 36 L100 26 Z" pathLength="1"/><circle class="fill" id="motionDot" cx="10" cy="96" r="7"/>',
+  building: '<rect x="30" y="22" width="60" height="84" rx="3" pathLength="1"/><path d="M44 38 h10 M66 38 h10 M44 56 h10 M66 56 h10 M44 74 h10 M66 74 h10" pathLength="1"/><path d="M8 106 H112" pathLength="1"/><path d="M52 106 V92 H68 V106" pathLength="1"/>',
+  phone: '<rect x="36" y="10" width="48" height="100" rx="9" pathLength="1"/><path d="M52 20 H68" pathLength="1"/><path d="M53 48 L72 60 L53 72 Z" pathLength="1"/>'
+};
+
+const cItems = $('cItems'), cProgress = $('cProgress');
+SERVICOS.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'svc'; el.id = 'svc' + i;
+  el.innerHTML =
+    `<div class="svc-num display gold-text">${s.n}</div>` +
+    `<div class="svc-of">DE 06</div>` +
+    `<svg class="svc-icon" viewBox="0 0 120 120">${ICONS[s.icon]}</svg>` +
+    `<div class="svc-title display"><span class="mask"><span>${s.t}</span></span></div>` +
+    `<p class="svc-desc" style="margin:0">${s.d}</p>`;
+  cItems.appendChild(el);
+  cProgress.appendChild(Object.assign(document.createElement('div'), { innerHTML: '<i></i>' }));
+});
+
+const dSlot = $('dSlot'), dDots = $('dDots');
+CELEBRACOES.forEach((w, i) => {
+  const el = document.createElement('div');
+  el.className = 'word display' + (i % 2 ? ' gold-text' : '');
+  el.textContent = w;
+  dSlot.appendChild(el);
+  dDots.appendChild(document.createElement('span'));
+});
+
+const storyBars = $('storyBars');
+STORIES.forEach(() => storyBars.appendChild(Object.assign(document.createElement('div'), { innerHTML: '<i></i>' })));
+const hearts = $('hearts');
+for (let i = 0; i < 7; i++) {
+  hearts.insertAdjacentHTML('beforeend', '<svg class="heart" viewBox="0 0 24 24"><path fill="#ff8a8a" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21Z"/></svg>');
+}
+
+const fSteps = $('fSteps');
+PASSOS.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'step';
+  el.style.left = (390 + i * 380) + 'px';
+  el.innerHTML = `<div class="num">${i + 1}</div><h3>${s.h}</h3><p>${s.p}</p>`;
+  fSteps.appendChild(el);
+});
+
+const brand = $('brand');
+'DARZAN'.split('').forEach(ch => brand.appendChild(Object.assign(document.createElement('span'), { className: 'gold-text', textContent: ch })));
+
+/* partículas de poeira dourada */
+const rnd = mulberry32(7);
+const DUST = Array.from({ length: 70 }, () => ({
+  x: rnd() * 1920, y: rnd() * 1080, s: 0.6 + rnd() * 2.4, v: 6 + rnd() * 26, ph: rnd() * Math.PI * 2, a: 0.15 + rnd() * 0.5
+}));
+
+/* textura de granulação */
+const noise = document.createElement('canvas');
+noise.width = noise.height = 256;
+(() => {
+  const nctx = noise.getContext('2d'), img = nctx.createImageData(256, 256), r = mulberry32(42);
+  for (let i = 0; i < img.data.length; i += 4) { const v = r() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+  nctx.putImageData(img, 0, 0);
+})();
+const grainCtx = $('grain').getContext('2d');
+const grainPattern = grainCtx.createPattern(noise, 'repeat');
+let lastGrainFrame = -1;
+
+const fxCtx = $('fx').getContext('2d');
+
+/* referências */
+const R = {
+  scenes: Object.fromEntries(Object.keys(T).map(k => [k, $('s' + k)])),
+  leak1: $('leak1'), leak2: $('leak2'), corners: [...document.querySelectorAll('.corner')],
+  hud: $('hud'), recDot: $('recDot'), tc: $('tc'), hudTexts: [$('recLabel'), $('tc'), $('hudL'), $('hudR')],
+  barTop: $('barTop'), barBot: $('barBot'), fadeBlack: $('fadeBlack'),
+  ring1: $('ring1'), ring2: $('ring2'), monoD: $('monoD'), brandLetters: [...brand.children], brandLine: $('brandLine'), brandSub: $('brandSub'),
+  bEyebrow: $('bEyebrow'), bWords: [...document.querySelectorAll('.bw')], bUl: $('bUl'), bSub: $('bSub'),
+  cEyebrow: $('cEyebrow'), svcs: SERVICOS.map((_, i) => $('svc' + i)), cFills: [...cProgress.querySelectorAll('i')], motionDot: null,
+  dEyebrow: $('dEyebrow'), dWords: [...dSlot.children], dDots: [...dDots.children], dRing: $('dRing'),
+  eEyebrow: $('eEyebrow'), eWords: [...document.querySelectorAll('.ew')], ePara: $('ePara'), eBadge: $('eBadge'), phone: $('phone'),
+  blobs: [$('blob1'), $('blob2'), $('blob3')], storyFills: [...storyBars.querySelectorAll('i')], storyCap: $('storyCap'), hearts: [...hearts.children],
+  fEyebrow: $('fEyebrow'), fTitle: document.querySelector('.fw'), fLine: $('fLine'), steps: [...fSteps.children],
+  endRing: $('endRing'), endD: $('endD'), endMono: $('endMono'), gTitle: document.querySelector('.gw'), gTag: $('gTag'),
+  gWpp: $('gWpp'), gInsta: $('gInsta'), gCity: $('gCity'), flare: $('flare')
+};
+R.motionDot = document.getElementById('motionDot');
+R.svcParts = R.svcs.map(el => ({
+  num: el.querySelector('.svc-num'), of: el.querySelector('.svc-of'), icon: el.querySelector('.svc-icon'),
+  strokes: [...el.querySelectorAll('.svc-icon [pathLength]')], title: el.querySelector('.svc-title .mask > span'), desc: el.querySelector('.svc-desc')
+}));
+
+/* ---------- ajudantes de cena ---------- */
+function scene(key, t, fin = 0.4, fout = 0.45) {
+  const [a, b] = T[key], el = R.scenes[key];
+  const on = t >= a && t < b + 0.001;
+  el.style.visibility = on ? 'visible' : 'hidden';
+  if (!on) return null;
+  const vin = fin ? eOut(prog(t, a, a + fin)) : 1;
+  const out = eInOut(prog(t, b - fout, b));
+  el.style.opacity = Math.min(vin, 1 - out);
+  el.style.filter = out > 0.001 ? `blur(${(out * 10).toFixed(2)}px)` : 'none';
+  return { a, b, out, local: t - a, len: b - a };
+}
+const rise = (el, k, dist = 40) => { el.style.opacity = k; el.style.transform = `translateY(${((1 - k) * dist).toFixed(2)}px)`; };
+const dash = (el, k) => el.setAttribute('stroke-dashoffset', (1 - k).toFixed(4));
+
+function bezier(u, p0, p1, p2, p3) {
+  const m = 1 - u;
+  return m * m * m * p0 + 3 * m * m * u * p1 + 3 * m * u * u * p2 + u * u * u * p3;
+}
+
+/* ---------- RENDER ---------- */
+function render(t) {
+  t = clamp(t, 0, DURATION);
+
+  /* fundo: luz dourada que passeia + clarão nos cortes */
+  let boost = 0;
+  for (const c of CUTS) boost += Math.exp(-Math.pow((t - c) / 0.32, 2));
+  const leakBase = 0.32 + 0.12 * Math.sin(t * 0.7);
+  R.leak1.style.opacity = clamp(leakBase + 0.55 * boost) * prog(t, 0.2, 1.6);
+  R.leak1.style.transform = `translate(${(960 + Math.cos(t * 0.23) * 620 + boost * 200).toFixed(1)}px, ${(260 + Math.sin(t * 0.31) * 180).toFixed(1)}px)`;
+  R.leak2.style.opacity = clamp(0.22 + 0.4 * boost) * prog(t, 0.6, 2.2);
+  R.leak2.style.transform = `translate(${(960 - Math.cos(t * 0.19) * 700).toFixed(1)}px, ${(880 + Math.cos(t * 0.27) * 160).toFixed(1)}px)`;
+
+  /* poeira */
+  fxCtx.clearRect(0, 0, 1920, 1080);
+  const dustAlpha = prog(t, 0.5, 2.5) * (1 - prog(t, 36.2, 37));
+  for (const d of DUST) {
+    const y = ((d.y - t * d.v) % 1080 + 1080) % 1080;
+    const x = d.x + Math.sin(t * 0.6 + d.ph) * 18;
+    const tw = 0.6 + 0.4 * Math.sin(t * 2 + d.ph * 3);
+    fxCtx.globalAlpha = d.a * tw * dustAlpha;
+    fxCtx.fillStyle = '#f0cf94';
+    fxCtx.beginPath(); fxCtx.arc(x, y, d.s, 0, Math.PI * 2); fxCtx.fill();
+  }
+  fxCtx.globalAlpha = 1;
+
+  /* granulação (muda a cada quadro de 24 fps) */
+  const gf = Math.floor(t * 24);
+  if (gf !== lastGrainFrame) {
+    lastGrainFrame = gf;
+    const r = mulberry32(gf + 1);
+    const ox = Math.floor(r() * 256), oy = Math.floor(r() * 256);
+    grainCtx.setTransform(1, 0, 0, 1, ox, oy);
+    grainCtx.fillStyle = grainPattern;
+    grainCtx.fillRect(-ox, -oy, 1920, 1080);
+  }
+
+  /* HUD de câmera */
+  const kc = eOut(prog(t, 0.3, 1.5));
+  const dx = lerp(560, 0, kc), dy = lerp(300, 0, kc);
+  const sgn = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
+  R.corners.forEach((c, i) => { c.style.transform = `translate(${sgn[i][0] * dx}px, ${sgn[i][1] * dy}px)`; });
+  const hudO = kc * lerp(1, 0.5, prog(t, 4.4, 5.4)) * (1 - prog(t, 35.4, 36.2));
+  R.hud.style.opacity = hudO;
+  R.hudTexts.forEach(el => { el.style.opacity = prog(t, 1.0, 1.6); });
+  R.recDot.style.opacity = Math.floor(t * 1.6) % 2 ? 0.2 : 1;
+  const fr = Math.floor(t * 24), ss = Math.floor(fr / 24), ff = fr % 24;
+  R.tc.textContent = `00:00:${String(ss).padStart(2, '0')}:${String(ff).padStart(2, '0')}`;
+
+  /* barras de cinema */
+  const barH = lerp(0, 92, eInOut(prog(t, 4.7, 5.5))) + lerp(0, 450, eInOut(prog(t, 35.8, 36.9)));
+  R.barTop.style.height = R.barBot.style.height = barH.toFixed(1) + 'px';
+  R.fadeBlack.style.opacity = Math.max(1 - prog(t, 0, 0.6), prog(t, 36.6, 37));
+
+  /* A · abertura */
+  const sA = scene('A', t, 0, 0.6);
+  if (sA) {
+    R.scenes.A.style.transform = `scale(${(1 + 0.035 * prog(t, 0, 5) + sA.out * 0.06).toFixed(4)})`;
+    const r1 = eInOut(prog(t, 0.7, 2.0)), r2 = eInOut(prog(t, 1.0, 2.3));
+    dash(R.ring1, r1); dash(R.ring2, r2);
+    R.ring1.style.transform = `rotate(${lerp(-120, 0, r1)}deg)`;
+    R.ring2.style.transform = `rotate(${lerp(120, 0, r2)}deg)`;
+    const kd = prog(t, 1.4, 2.1);
+    R.monoD.style.opacity = eOut(kd);
+    R.monoD.style.transform = `scale(${lerp(0.55, 1, eBack(kd)).toFixed(4)})`;
+    brand.style.letterSpacing = lerp(0.5, 0.16, eOut(prog(t, 1.9, 3.6))).toFixed(3) + 'em';
+    R.brandLetters.forEach((el, i) => {
+      const k = eOut(prog(t, 1.9 + i * 0.08, 2.75 + i * 0.08));
+      el.style.opacity = k; el.style.transform = `translateY(${((1 - k) * 90).toFixed(1)}px)`;
+    });
+    R.brandLine.style.transform = `scaleX(${eInOut(prog(t, 2.5, 3.4)).toFixed(4)})`;
+    R.brandSub.style.opacity = prog(t, 2.9, 3.6);
+    R.brandSub.style.letterSpacing = lerp(1.0, 0.6, eOut(prog(t, 2.9, 4.0))).toFixed(3) + 'em';
+  }
+
+  /* B · frase */
+  const sB = scene('B', t, 0.2);
+  if (sB) {
+    R.scenes.B.style.transform = `scale(${(1 + 0.03 * prog(t, 5, 9.6) + sB.out * 0.05).toFixed(4)})`;
+    rise(R.bEyebrow, eOut(prog(t, 5.2, 5.8)), 24);
+    R.bWords.forEach((el, i) => {
+      const k = eExpo(prog(t, 5.35 + i * 0.15, 6.2 + i * 0.15));
+      el.style.transform = `translateY(${((1 - k) * 110).toFixed(2)}%)`;
+    });
+    dash(R.bUl, eInOut(prog(t, 6.5, 7.2)));
+    rise(R.bSub, eOut(prog(t, 6.8, 7.5)), 24);
+  }
+
+  /* C · serviços */
+  const sC = scene('C', t, 0.3);
+  if (sC) {
+    rise(R.cEyebrow, eOut(prog(t, 9.7, 10.2)), 20);
+    R.svcParts.forEach((p, i) => {
+      const s = SVC_START + i * SVC_LEN, last = i === SERVICOS.length - 1;
+      const on = t >= s - 0.01 && (last || t < s + SVC_LEN);
+      R.svcs[i].style.visibility = on ? 'visible' : 'hidden';
+      R.cFills[i].style.transform = `scaleX(${prog(t, s, s + SVC_LEN).toFixed(4)})`;
+      if (!on) return;
+      const k = eExpo(prog(t, s, s + 0.7));
+      const q = last ? 0 : eInOut(prog(t, s + 1.2, s + SVC_LEN));
+      p.num.style.opacity = k * (1 - q);
+      p.num.style.transform = `translateY(${((1 - k) * 80 - q * 60).toFixed(1)}px)`;
+      p.of.style.opacity = eOut(prog(t, s + 0.2, s + 0.6)) * (1 - q);
+      p.title.style.transform = `translateY(${((1 - k) * 110 - q * 110).toFixed(2)}%)`;
+      const kd = eOut(prog(t, s + 0.25, s + 0.8));
+      p.desc.style.opacity = kd * (1 - q);
+      p.desc.style.transform = `translateY(${((1 - kd) * 30 - q * 20).toFixed(1)}px)`;
+      p.icon.style.opacity = 1 - q;
+      p.icon.style.transform = `translateY(${(-q * 30).toFixed(1)}px)`;
+      const ki = eInOut(prog(t, s + 0.05, s + 0.95));
+      p.strokes.forEach(st => { st.setAttribute('stroke-dasharray', '1'); dash(st, ki); });
+    });
+    if (R.motionDot) {
+      const u = eInOut((t * 0.7) % 1);
+      R.motionDot.setAttribute('cx', bezier(u, 10, 46, 56, 110).toFixed(2));
+      R.motionDot.setAttribute('cy', bezier(u, 96, 96, 26, 26).toFixed(2));
+    }
+  }
+
+  /* D · celebrações */
+  const sD = scene('D', t, 0.3);
+  if (sD) {
+    R.dRing.style.transform = `rotate(${(t * 12).toFixed(2)}deg) scale(${(0.9 + 0.1 * eOut(prog(t, 18.8, 20))).toFixed(4)})`;
+    rise(R.dEyebrow, eOut(prog(t, 18.9, 19.4)), 20);
+    let active = 0;
+    R.dWords.forEach((el, i) => {
+      const s = CEL_START + i * CEL_LEN, last = i === CELEBRACOES.length - 1;
+      const k = eExpo(prog(t, s, s + 0.55));
+      const q = last ? 0 : eInOut(prog(t, s + CEL_LEN - 0.22, s + CEL_LEN + 0.05));
+      el.style.transform = `translateY(${((1 - k) * 100 - q * 100).toFixed(2)}%)`;
+      el.style.opacity = t >= s ? 1 : 0;
+      if (t >= s) active = i;
+    });
+    R.dDots.forEach((d, i) => {
+      d.style.background = i === active ? 'var(--gold)' : 'rgba(244,237,228,0.2)';
+      d.style.transform = `scale(${i === active ? 1.3 : 1})`;
+    });
+  }
+
+  /* E · storymaker */
+  const sE = scene('E', t, 0.3);
+  if (sE) {
+    rise(R.eEyebrow, eOut(prog(t, 23.0, 23.5)), 20);
+    R.eWords.forEach((el, i) => {
+      const k = eExpo(prog(t, 23.15 + i * 0.15, 23.95 + i * 0.15));
+      el.style.transform = `translateY(${((1 - k) * 110).toFixed(2)}%)`;
+    });
+    rise(R.ePara, eOut(prog(t, 23.8, 24.4)), 24);
+    const kb = prog(t, 24.3, 24.8);
+    R.eBadge.style.opacity = eOut(kb);
+    R.eBadge.style.transform = `scale(${lerp(0.7, 1, eBack(kb)).toFixed(4)})`;
+    const kp = eOut(prog(t, 22.8, 23.9));
+    const float = Math.sin(t * 1.4) * 10;
+    R.phone.style.transform = `translate(${((1 - kp) * 560).toFixed(1)}px, ${float.toFixed(1)}px) rotate(${lerp(12, -3, kp).toFixed(2)}deg)`;
+    R.phone.style.opacity = kp;
+    const si = clamp(Math.floor((t - STORY_START) / STORY_LEN), 0, STORIES.length - 1);
+    const st = STORIES[si];
+    R.storyFills.forEach((f, i) => { f.style.transform = `scaleX(${prog(t, STORY_START + i * STORY_LEN, STORY_START + (i + 1) * STORY_LEN).toFixed(4)})`; });
+    R.blobs.forEach((b, i) => {
+      b.style.background = st.c[i];
+      const bx = [-60, 120, -20][i] + Math.sin(t * (0.9 + i * 0.3) + i) * 70;
+      const by = [-40, 260, 520][i] + Math.cos(t * (0.7 + i * 0.25) + i * 2) * 80;
+      b.style.transform = `translate(${bx.toFixed(1)}px, ${by.toFixed(1)}px)`;
+    });
+    R.storyCap.textContent = st.cap;
+    const kcap = eOut(prog(t - si * STORY_LEN, STORY_START, STORY_START + 0.35));
+    R.storyCap.style.opacity = kcap;
+    R.storyCap.style.transform = `translateY(${((1 - kcap) * 20).toFixed(1)}px)`;
+    R.hearts.forEach((h, i) => {
+      const u = ((t - 23.4) * 0.55 + i / R.hearts.length) % 1;
+      const visible = t > 23.4 + (i / R.hearts.length) * 0.4;
+      h.style.opacity = visible ? Math.sin(Math.PI * u) * 0.9 : 0;
+      h.style.left = (290 + Math.sin(u * 6 + i) * 22).toFixed(1) + 'px';
+      h.style.top = (640 - u * 420).toFixed(1) + 'px';
+      h.style.transform = `scale(${(0.6 + 0.5 * Math.sin(Math.PI * u)).toFixed(3)})`;
+    });
+  }
+
+  /* F · como funciona */
+  const sF = scene('F', t, 0.3);
+  if (sF) {
+    rise(R.fEyebrow, eOut(prog(t, 27.5, 28.0)), 20);
+    R.fTitle.style.transform = `translateY(${((1 - eExpo(prog(t, 27.6, 28.5))) * 110).toFixed(2)}%)`;
+    R.fLine.style.transform = `scaleX(${eInOut(prog(t, 28.2, 30.0)).toFixed(4)})`;
+    R.steps.forEach((el, i) => {
+      const s = 28.2 + i * 0.55;
+      const kn = prog(t, s, s + 0.45);
+      const num = el.firstElementChild;
+      num.style.opacity = eOut(kn);
+      num.style.transform = `scale(${lerp(0.3, 1, eBack(kn)).toFixed(4)})`;
+      const kt = eOut(prog(t, s + 0.15, s + 0.7));
+      [...el.children].slice(1).forEach(c => { c.style.opacity = kt; c.style.transform = `translateY(${((1 - kt) * 24).toFixed(1)}px)`; });
+    });
+  }
+
+  /* G · encerramento */
+  const sG = scene('G', t, 0.3, 0.01);
+  if (sG) {
+    R.scenes.G.style.transform = `scale(${(1 + 0.02 * prog(t, 31.6, 37)).toFixed(4)})`;
+    const kr = eInOut(prog(t, 31.8, 32.9));
+    dash(R.endRing, kr);
+    R.endRing.style.transform = `rotate(${lerp(-120, 0, kr)}deg)`;
+    const kd = prog(t, 32.2, 32.8);
+    R.endD.style.opacity = eOut(kd);
+    R.endD.style.transform = `scale(${lerp(0.55, 1, eBack(kd)).toFixed(4)})`;
+    R.gTitle.style.transform = `translateY(${((1 - eExpo(prog(t, 32.4, 33.3))) * 110).toFixed(2)}%)`;
+    rise(R.gTag, eOut(prog(t, 33.0, 33.6)), 26);
+    [[R.gWpp, 33.5], [R.gInsta, 33.7]].forEach(([el, s]) => {
+      const k = prog(t, s, s + 0.5);
+      el.style.opacity = eOut(k);
+      el.style.transform = `translateY(${((1 - eOut(k)) * 20).toFixed(1)}px) scale(${lerp(0.85, 1, eBack(k)).toFixed(4)})`;
+    });
+    rise(R.gCity, eOut(prog(t, 34.0, 34.6)), 16);
+    const kf = eInOut(prog(t, 32.6, 34.0));
+    R.flare.style.transform = `translateX(${lerp(-700, 1920, kf).toFixed(1)}px)`;
+    R.flare.style.opacity = Math.sin(Math.PI * kf);
+  }
+}
+window.renderAt = render;
+
+/* ---------- escala para caber na janela ---------- */
+const stage = $('stage');
+const isRender = new URLSearchParams(location.search).has('render');
+if (isRender) document.documentElement.classList.add('render');
+function fit() {
+  if (isRender) { stage.style.transform = 'none'; return; }
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+  stage.style.transformOrigin = '50% 50%';
+}
+addEventListener('resize', fit); fit();
+
+/* ---------- reprodução ao vivo ---------- */
+const btnPlay = $('btnPlay'), scrub = $('scrub'), timeEl = $('time'), controls = $('controls');
+let playing = !isRender, t0 = performance.now(), cur = 0;
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setPlaying(p) {
+  playing = p;
+  t0 = performance.now() - cur * 1000;
+  btnPlay.setAttribute('aria-label', p ? 'Pausar' : 'Reproduzir');
+  $('icoPlay').innerHTML = p ? '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+}
+function tick(now) {
+  if (playing) {
+    cur = (now - t0) / 1000;
+    if (cur >= DURATION) { cur = 0; t0 = now; }
+  }
+  render(cur);
+  scrub.value = Math.round(cur / DURATION * 1000);
+  timeEl.textContent = `${fmt(cur)} / ${fmt(DURATION)}`;
+  requestAnimationFrame(tick);
+}
+btnPlay.onclick = () => setPlaying(!playing);
+$('btnRestart').onclick = () => { cur = 0; setPlaying(true); };
+scrub.oninput = () => { cur = scrub.value / 1000 * DURATION; t0 = performance.now() - cur * 1000; };
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); setPlaying(!playing); } });
+let idleTimer;
+addEventListener('pointermove', () => { controls.classList.remove('idle'); clearTimeout(idleTimer); idleTimer = setTimeout(() => controls.classList.add('idle'), 2200); });
+
+document.fonts.ready.then(() => {
+  render(0);
+  window.__ready = true;
+  if (!isRender) requestAnimationFrame(tick);
+});
+</script>
+</body>
+</html>
