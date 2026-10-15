@@ -3,7 +3,8 @@
 Vídeo de 37 segundos (1920×1080, 30 fps, sem áudio) apresentando a Darzan Produções,
 com as mesmas cores e fontes do site.
 
-- **`apresentacao-darzan.mp4`**: o vídeo pronto.
+- **`apresentacao-darzan.mp4`**: o vídeo pronto, sem áudio.
+- **`apresentacao-darzan-locucao.mp4`**: o mesmo vídeo com locução em português (voz "Fabio Manarin", ElevenLabs, modelo eleven_v4).
 - **`index.html`**: a animação. Abra no navegador para assistir, pausar (barra de espaço) e avançar.
 - **`render.js`**: gera o MP4 a partir do `index.html`.
 
