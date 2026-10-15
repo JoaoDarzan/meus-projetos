@@ -308,8 +308,8 @@ function molas(t, base, mudancas, k, d) {
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const $ = id => document.getElementById(id);
 const css = (el, o) => { for (const k in o) el.style[k] = o[k]; };
-function cena(el, t, a, b, fade = .35) {      // visível entre a e b, com fade nas bordas
-  const on = t >= a - fade && t <= b + fade;
+function cena(el, t, a, b, saida = .05) {    // visível de a até b + tempo da animação de saída
+  const on = t >= a - .05 && t <= b + saida;
   el.style.visibility = on ? 'inherit' : 'hidden';
   return on;
 }
@@ -468,7 +468,7 @@ const camera = new THREE.PerspectiveCamera(30, W / H, 10, 10000);
 const DIST = 2600;
 camera.position.set(0, 0, DIST);
 const luzChave = new THREE.DirectionalLight(0xfff0d0, 1.4); luzChave.position.set(-600, 800, 1200); scene.add(luzChave);
-const luzBrilho = new THREE.PointLight(0xffe6a8, 0, 2400, 1.2); scene.add(luzBrilho);
+const luzBrilho = new THREE.PointLight(0xffc870, 0, 2400, 1.2); scene.add(luzBrilho);
 
 const ouro = new THREE.MeshStandardMaterial({ color: 0xE9BE58, metalness: 1, roughness: .3, transparent: true });
 const ouroPlay = new THREE.MeshStandardMaterial({ color: 0xF5D57E, metalness: 1, roughness: .18, transparent: true });
@@ -535,7 +535,7 @@ function pose3D(t) {
     camera.lookAt(lerp(0, alvo.x, v), lerp(0, alvo.y, v), 0);
     // reflexo de luz passando
     const sw = prog(t, 4.0, 5.4), sw2 = prog(t, 6.6, 7.9);
-    luzBrilho.intensity = 1.3e5 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
+    luzBrilho.intensity = 5e4 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
     luzBrilho.position.set(lerp(-900, 900, sw2 > 0 ? sw2 : sw), 300, 700);
     scene.environmentRotation.set(0, lerp(-.8, .8, out(prog(t, 3, 8))), 0);
   }
@@ -561,7 +561,7 @@ function pose3D(t) {
     parte('texto-darzan', { y: lerp(70, 0, tx), rx: lerp(-1.2, 0, tx), a: clamp((t - T.darzan) * 3) });
     parte('texto-producoes', { y: lerp(40, 0, tp), a: clamp((t - T.darzan - .35) * 3) });
     const sw = prog(t, T.darzan + .2, T.darzan + 1.6), sw2 = prog(t, 40.2, 41.8);
-    luzBrilho.intensity = 1.3e5 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
+    luzBrilho.intensity = 5e4 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
     luzBrilho.position.set(lerp(-900, 900, sw2 > 0 ? sw2 : sw), 400, 700);
     scene.environmentRotation.set(0, lerp(.9, -.5, out(prog(t, T.c8, DURATION))), 0);
     // fade final
@@ -631,7 +631,7 @@ function seek(t) {
   }
 
   // ---------------- cena 3
-  if (cena($('c3'), t, T.voo + .5, T.c4, .05)) {
+  if (cena($('c3'), t, T.voo + .5, T.c4, .2)) {
     const k = t - T.voo;
     const ent = outExpo(prog(t, T.voo + .55, T.voo + 1.3));
     css($('pelicula'), { transform: `rotate(-12deg) translateX(${-k * 260}px) rotateY(${lerp(25, 8, ent)}deg)`, opacity: ent });
@@ -643,7 +643,7 @@ function seek(t) {
   }
 
   // ---------------- cena 4: carrossel de serviços
-  if (cena($('c4'), t, T.c4, T.c5, .05)) {
+  if (cena($('c4'), t, T.c4, T.c5, .35)) {
     const ent = mola(t, T.c4 + .1, 150, 22), sai_ = inn(prog(t, T.c5 - .1, T.c5 + .3));
     sobe($('c4r'), t, T.c4); sobe($('c4h'), t, T.c4 + .08);
     css($('c4-titulo'), { opacity: 1 - sai_ });
@@ -665,7 +665,7 @@ function seek(t) {
   }
 
   // ---------------- cena 5: celebrações
-  if (cena($('c5'), t, T.c5, T.c6, .05)) {
+  if (cena($('c5'), t, T.c5, T.c6, .35)) {
     const sai_ = inn(prog(t, T.c6 - .1, T.c6 + .3));
     sobe($('c5r'), t, T.c5); sobe($('c5h'), t, T.c5 + .1);
     $('c5h').style.backgroundPosition = `${lerp(100, 0, prog(t, T.c5, T.c5 + 1.5))}% 0`;
@@ -682,14 +682,14 @@ function seek(t) {
   }
 
   // ---------------- cena 6: storymaker
-  if (cena($('c6'), t, T.c6, T.c7, .05)) {
+  if (cena($('c6'), t, T.c6, T.c7, .35)) {
     const k = t - T.c6, sai_ = inn(prog(t, T.c7 - .1, T.c7 + .3));
     sobe($('c6r'), t, T.c6); sobe($('c6h'), t, T.c6 + .08);
     const e = mola(t, T.c6, 120, 20);
-    css($('celular'), { transform: `translateY(${lerp(700, 0, e) - sai_ * 200}px) rotateY(${lerp(-40, -14, e) + Math.sin(k * .8) * 5}deg) rotateX(${lerp(20, 6, e)}deg) rotateZ(${lerp(-8, -3, e)}deg)`, opacity: 1 - sai_ });
+    css($('celular'), { transform: `translateY(${lerp(700, 0, e) - sai_ * 200}px) rotateY(${lerp(-40, -14, e) + Math.sin(k * .8) * 5}deg) rotateX(${lerp(20, 6, e)}deg) rotateZ(${lerp(-8, -3, e)}deg)`, opacity: clamp(e * 2.5) * (1 - sai_) });
     const dur = .95;
     stories.forEach((s, i) => {
-      const a = k - .3 - i * dur;
+      const a = k - i * dur;
       const on = a >= 0 && (a < dur || i === STO.length - 1);
       s.style.visibility = on ? 'inherit' : 'hidden';
       s.querySelector('.bg').style.transform = `scale(${1 + clamp(a / dur) * .12})`;
@@ -704,7 +704,7 @@ function seek(t) {
   }
 
   // ---------------- cena 7: como funciona
-  if (cena($('c7'), t, T.c7, T.c8, .05)) {
+  if (cena($('c7'), t, T.c7, T.c8, .3)) {
     const sai_ = inn(prog(t, T.c8 - .15, T.c8 + .25));
     sobe($('c7r'), t, T.c7); sobe($('c7h'), t, T.c7 + .08);
     const fim = T.passos.reduce((h, ts, i) => h + 250 * out(prog(t, ts - .2, ts + .35)) * (i > 0 ? 1 : 0), 0);

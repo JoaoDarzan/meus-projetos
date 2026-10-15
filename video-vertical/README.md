@@ -4,6 +4,7 @@ Vídeo institucional vertical de 43 segundos para Reels, TikTok, Shorts e Status
 Tem locução, efeitos sonoros, trilha, a logo em 3D dourada e legendas palavra por palavra.
 
 - **`out/darzan-vertical-4k.mp4`**: o vídeo final, 2160×3840 (4K vertical), 30 fps, H.264 + AAC, áudio a -14 LUFS.
+- **`out/darzan-vertical-1080p.mp4`**: o mesmo vídeo em 1080×1920, mais leve para WhatsApp e celular.
 - **`index.html`**: a animação, que também funciona como **versão interativa**. Abra em um navegador
   (precisa de um servidor local, veja abaixo) e use play/pause, a barra de tempo e os botões de capítulo
   (Abertura, Logo, Serviços, Celebrações, Storymaker, Como funciona, Contato). Atalhos: espaço = play/pausa,

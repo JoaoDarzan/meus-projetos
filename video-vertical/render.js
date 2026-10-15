@@ -86,7 +86,7 @@ function video() {
   const a = ['-v', 'error', '-y', '-framerate', String(FPS), '-i', q];
   if (fs.existsSync(mix)) a.push('-i', mix);
   a.push('-vf', 'scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p', '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high', '-level', '5.2');
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-maxrate', '16M', '-bufsize', '32M', '-profile:v', 'high', '-level', '5.2');
   if (fs.existsSync(mix)) a.push('-c:a', 'aac', '-b:a', '256k');
   a.push('-movflags', '+faststart', sai);
   const r = spawnSync('ffmpeg', a, { stdio: 'inherit' });
