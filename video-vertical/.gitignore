@@ -1,0 +1,7 @@
+out/quadros/
+out/probe/
+out/*.log
+out/onda.png
+audio/takes/
+audio/sfx_takes/
+node_modules/

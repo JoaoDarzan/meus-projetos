@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Darzan Produções · Vídeo vertical</title>
+<style>
+@font-face { font-family: Cinzel; font-weight: 600; src: url(fonts/Cinzel-600.ttf); }
+@font-face { font-family: Cinzel; font-weight: 700; src: url(fonts/Cinzel-700.ttf); }
+@font-face { font-family: Montserrat; font-weight: 300; src: url(fonts/Montserrat-300.ttf); }
+@font-face { font-family: Montserrat; font-weight: 400; src: url(fonts/Montserrat-400.ttf); }
+@font-face { font-family: Montserrat; font-weight: 500; src: url(fonts/Montserrat-500.ttf); }
+@font-face { font-family: Montserrat; font-weight: 600; src: url(fonts/Montserrat-600.ttf); }
+@font-face { font-family: Montserrat; font-weight: 700; src: url(fonts/Montserrat-700.ttf); }
+@font-face { font-family: Cormorant; font-style: italic; font-weight: 500; src: url(fonts/CormorantGaramond-500i.ttf); }
+
+:root {
+  --ouro: #E2B850; --ouro-claro: #F7E08A; --ouro-escuro: #A87A28;
+  --creme: #F3EBDD; --grafite: #121315; --fundo: #0B0B0C;
+  --grad-ouro: linear-gradient(100deg, #A87A28 0%, #F7E08A 30%, #E2B850 50%, #FBE9A6 66%, #B98A30 100%);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #000; overflow: hidden; }
+body { display: grid; place-items: center; min-height: 100vh; font-family: Montserrat, sans-serif; color: var(--creme); }
+
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--fundo); transform-origin: 0 0; }
+.camada { position: absolute; inset: 0; }
+.cena { position: absolute; inset: 0; visibility: hidden; }
+
+#fundo { background: radial-gradient(120% 70% at 50% 42%, #23201b 0%, #141414 45%, #090909 100%); }
+#poeira, #grao { width: 1080px; height: 1920px; }
+#grao { mix-blend-mode: overlay; opacity: .35; }
+#vinheta { background: radial-gradient(110% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.65) 100%); }
+#gl { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+#flash { background: radial-gradient(circle at 50% 45%, #fff6dc 0%, #f3d27a 35%, rgba(226,184,80,0) 75%); opacity: 0; mix-blend-mode: screen; }
+#luz { background: linear-gradient(115deg, transparent 35%, rgba(255,226,150,.0) 42%, rgba(255,226,150,.45) 50%, rgba(255,226,150,0) 58%, transparent 65%); mix-blend-mode: screen; opacity: 0; }
+
+/* textos */
+.cinzel { font-family: Cinzel, serif; font-weight: 600; letter-spacing: .04em; }
+.serif-it { font-family: Cormorant, serif; font-style: italic; font-weight: 500; }
+.dourado { background: var(--grad-ouro); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.rotulo { font-family: Montserrat; font-weight: 600; font-size: 26px; letter-spacing: .42em; text-transform: uppercase; color: var(--ouro); }
+.linha { display: block; overflow: hidden; padding: 0 .08em; }
+.linha > span { display: inline-block; will-change: transform; }
+
+/* visor de câmera */
+#visor .canto { position: absolute; width: 90px; height: 90px; border-color: rgba(243,235,221,.75); border-style: solid; border-width: 0; }
+#visor .c1 { left: 70px; top: 150px; border-left-width: 4px; border-top-width: 4px; }
+#visor .c2 { right: 70px; top: 150px; border-right-width: 4px; border-top-width: 4px; }
+#visor .c3 { left: 70px; bottom: 260px; border-left-width: 4px; border-bottom-width: 4px; }
+#visor .c4 { right: 70px; bottom: 260px; border-right-width: 4px; border-bottom-width: 4px; }
+#rec { position: absolute; left: 110px; top: 190px; font: 600 30px Montserrat; letter-spacing: .12em; color: var(--creme); display: flex; align-items: center; gap: 16px; }
+#rec i { width: 22px; height: 22px; border-radius: 50%; background: #e0302a; box-shadow: 0 0 18px #e0302a; display: block; }
+#tc { position: absolute; right: 110px; top: 190px; font: 500 30px Montserrat; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+#visor-info { position: absolute; left: 0; right: 0; top: 196px; text-align: center; font: 500 24px Montserrat; letter-spacing: .3em; color: rgba(243,235,221,.7); }
+
+/* cena 1 */
+#iris { position: absolute; left: 140px; top: 460px; width: 800px; height: 800px; }
+#gancho { position: absolute; left: 0; right: 0; top: 700px; text-align: center; }
+#gancho .t1 { font: 600 76px Cinzel; letter-spacing: .05em; line-height: 1.15; }
+#gancho .t2 { font-size: 230px; line-height: .95; margin-top: 10px; }
+
+/* cena 2 */
+#sub { position: absolute; left: 0; right: 0; top: 1330px; text-align: center; }
+#sub .s1 { font: 600 34px Montserrat; letter-spacing: .38em; color: var(--creme); }
+#sub .s2 { margin-top: 26px; font: 500 36px Montserrat; letter-spacing: .08em; color: var(--ouro-claro); display: inline-flex; align-items: center; gap: 16px; }
+#sub .traco { width: 0; height: 2px; margin: 34px auto 0; background: var(--grad-ouro); }
+
+/* cena 3 */
+#frase { position: absolute; left: 0; right: 0; top: 560px; text-align: center; }
+#frase .f1 { font: 600 92px Cinzel; line-height: 1.12; letter-spacing: .03em; }
+#frase .f2 { font-size: 300px; line-height: .9; margin-top: 20px; }
+#pelicula { position: absolute; left: -300px; top: 1220px; width: 1700px; height: 300px; transform-style: preserve-3d; }
+.filme { position: absolute; left: 0; top: 0; height: 300px; display: flex; gap: 0; background: #0d0d0e; border-top: 2px solid #2a2722; border-bottom: 2px solid #2a2722; }
+.quadro { position: relative; width: 300px; height: 300px; padding: 46px 14px; border-right: 6px solid #0d0d0e; }
+.quadro::before, .quadro::after { content: ""; position: absolute; left: 18px; right: 18px; height: 22px; background: repeating-linear-gradient(90deg, #3b362e 0 26px, transparent 26px 48px); }
+.quadro::before { top: 12px; } .quadro::after { bottom: 12px; }
+.quadro b { display: block; width: 100%; height: 100%; border-radius: 6px; }
+
+/* cena 4: carrossel */
+#c4-titulo { position: absolute; left: 0; right: 0; top: 250px; text-align: center; }
+#c4-titulo h2 { font: 600 84px Cinzel; margin-top: 18px; letter-spacing: .03em; }
+#carrossel { position: absolute; left: 0; top: 560px; width: 1080px; height: 900px; perspective: 2000px; perspective-origin: 50% 40%; }
+#roda { position: absolute; left: 540px; top: 60px; width: 0; height: 0; transform-style: preserve-3d; }
+.card { position: absolute; left: -300px; top: 0; width: 600px; height: 760px; border-radius: 34px; padding: 70px 56px; backface-visibility: hidden;
+  background: linear-gradient(160deg, rgba(48,42,32,.96), rgba(18,17,16,.98) 60%); border: 2px solid rgba(226,184,80,.55);
+  box-shadow: 0 40px 90px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,235,180,.15); display: flex; flex-direction: column; }
+.card .num { font: 600 30px Montserrat; letter-spacing: .3em; color: var(--ouro); }
+.card svg { width: 190px; height: 190px; margin: 70px 0 60px; }
+.card h3 { font: 600 58px Cinzel; line-height: 1.12; color: var(--creme); }
+.card p { margin-top: 26px; font: 400 32px/1.45 Montserrat; color: rgba(243,235,221,.78); }
+#c4-pontos { position: absolute; left: 0; right: 0; top: 1455px; display: flex; justify-content: center; gap: 22px; }
+#c4-pontos i { width: 16px; height: 16px; border-radius: 50%; background: rgba(243,235,221,.25); display: block; }
+
+/* cena 5 */
+#c5-titulo { position: absolute; left: 0; right: 0; top: 330px; text-align: center; }
+#c5-titulo h2 { font: 600 80px/1.12 Cinzel; margin-top: 22px; }
+#lista { position: absolute; left: 130px; right: 130px; top: 740px; perspective: 1400px; }
+.item { display: flex; align-items: center; gap: 40px; height: 170px; border-bottom: 2px solid rgba(226,184,80,.22); transform-origin: 50% 0; }
+.item .ico { width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(226,184,80,.6); display: grid; place-items: center; flex: none; }
+.item .ico svg { width: 66px; height: 66px; }
+.item span { font: 600 64px Cinzel; letter-spacing: .02em; }
+
+/* cena 6: storymaker */
+#c6-titulo { position: absolute; left: 0; right: 0; top: 210px; text-align: center; }
+#c6-titulo h2 { font: 600 82px Cinzel; margin-top: 18px; }
+#celular-wrap { position: absolute; left: 0; right: 0; top: 470px; height: 1000px; perspective: 1800px; }
+#celular { position: absolute; left: 290px; top: 0; width: 500px; height: 1000px; border-radius: 70px; background: #0a0a0a; border: 14px solid #1d1c1a;
+  box-shadow: 0 0 0 3px #6b5426, 0 60px 120px rgba(0,0,0,.7); transform-style: preserve-3d; overflow: hidden; }
+#tela { position: absolute; inset: 0; border-radius: 56px; overflow: hidden; }
+.story { position: absolute; inset: 0; }
+#barras { position: absolute; left: 26px; right: 26px; top: 34px; display: flex; gap: 8px; z-index: 3; }
+#barras i { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.3); overflow: hidden; display: block; }
+#barras i b { display: block; height: 100%; width: 0; background: #fff; }
+#perfil { position: absolute; left: 26px; top: 62px; display: flex; align-items: center; gap: 14px; z-index: 3; font: 600 24px Montserrat; }
+#perfil img { width: 54px; height: 54px; border-radius: 50%; background: #111; border: 2px solid var(--ouro); }
+.story-txt { position: absolute; left: 0; right: 0; bottom: 150px; text-align: center; font: 600 54px/1.1 Cinzel; z-index: 2; }
+#selo { position: absolute; right: 120px; top: 1180px; width: 290px; height: 290px; border-radius: 50%; background: var(--grad-ouro); color: #1b1408; display: grid; place-items: center; text-align: center;
+  font: 700 34px/1.15 Montserrat; letter-spacing: .04em; box-shadow: 0 20px 60px rgba(226,184,80,.35); }
+#selo small { display: block; font-weight: 600; font-size: 22px; letter-spacing: .2em; margin-bottom: 8px; }
+#chips { position: absolute; left: 0; right: 0; top: 1475px; display: flex; justify-content: center; gap: 26px; }
+.chip { padding: 22px 36px; border-radius: 60px; border: 2px solid rgba(226,184,80,.6); font: 600 30px Montserrat; letter-spacing: .04em; background: rgba(20,18,15,.8); }
+
+/* cena 7 */
+#c7-titulo { position: absolute; left: 0; right: 0; top: 260px; text-align: center; }
+#c7-titulo h2 { font: 600 80px/1.1 Cinzel; margin-top: 18px; }
+#passos { position: absolute; left: 140px; right: 110px; top: 640px; }
+#trilho { position: absolute; left: 58px; top: 60px; width: 4px; height: 0; background: var(--grad-ouro); }
+#trilho-fundo { position: absolute; left: 58px; top: 60px; width: 4px; height: 750px; background: rgba(226,184,80,.18); }
+.passo { position: relative; display: flex; gap: 46px; height: 250px; }
+.passo .bola { width: 120px; height: 120px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 700 44px Cinzel; color: var(--ouro);
+  border: 3px solid rgba(226,184,80,.5); background: #141310; position: relative; z-index: 2; }
+.passo .bola.on { background: var(--grad-ouro); color: #1b1408; border-color: transparent; }
+.passo h4 { font: 600 54px Cinzel; margin-top: 10px; }
+.passo p { font: 400 30px/1.4 Montserrat; color: rgba(243,235,221,.75); margin-top: 10px; max-width: 640px; }
+
+/* cena 8 */
+#cta { position: absolute; left: 0; right: 0; top: 1270px; text-align: center; }
+#cta .chamada { font: 600 30px Montserrat; letter-spacing: .36em; color: var(--creme); }
+#zap { margin: 34px auto 0; width: 820px; height: 150px; border-radius: 80px; background: var(--grad-ouro); color: #17110a; display: flex; align-items: center; justify-content: center; gap: 26px;
+  font: 700 58px Montserrat; letter-spacing: .02em; box-shadow: 0 24px 70px rgba(226,184,80,.35); position: relative; overflow: hidden; }
+#zap svg { width: 66px; height: 66px; }
+#zap .brilho { position: absolute; top: -20px; bottom: -20px; width: 140px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); transform: skewX(-20deg); }
+#redes { margin-top: 44px; display: flex; justify-content: center; gap: 46px; font: 500 34px Montserrat; color: var(--creme); }
+#redes span { display: inline-flex; align-items: center; gap: 14px; }
+#redes svg { width: 40px; height: 40px; }
+
+/* legenda (palavras da locução) */
+#legenda { position: absolute; left: 60px; right: 60px; top: 1590px; text-align: center; font: 600 40px/1.3 Montserrat; color: var(--creme); text-shadow: 0 3px 14px rgba(0,0,0,.9); }
+#legenda b { color: var(--ouro-claro); font-weight: 700; }
+
+/* player interativo (some no render) */
+#player { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(560px, 94vw); background: rgba(14,13,12,.88); border: 1px solid rgba(226,184,80,.4);
+  border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; font: 500 13px Montserrat; color: var(--creme); z-index: 10; backdrop-filter: blur(8px); }
+#player .lin { display: flex; align-items: center; gap: 10px; }
+#player button { background: none; border: 1px solid rgba(226,184,80,.55); color: var(--creme); border-radius: 10px; padding: 7px 12px; font: 600 13px Montserrat; cursor: pointer; }
+#player button.on { background: var(--ouro); color: #17110a; }
+#player input[type=range] { flex: 1; accent-color: #E2B850; }
+#capitulos { display: flex; flex-wrap: wrap; gap: 6px; }
+#capitulos button { padding: 5px 9px; font-size: 12px; }
+#tempo { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+body.render #player { display: none; }
+</style>
+<script type="importmap">{ "imports": { "three": "./lib/three.module.min.js" } }</script>
+</head>
+<body>
+<div id="stage">
+  <div id="fundo" class="camada"></div>
+  <canvas id="poeira" class="camada" width="540" height="960"></canvas>
+
+  <!-- CENA 1: gancho -->
+  <div id="c1" class="cena">
+    <svg id="iris" viewBox="-400 -400 800 800"></svg>
+    <div id="gancho">
+      <div class="t1"><span class="linha"><span id="g1">Todo momento</span></span><span class="linha"><span id="g2">merece virar</span></span></div>
+      <div class="t2 serif-it"><span class="linha"><span id="g3" class="dourado">cinema.</span></span></div>
+    </div>
+  </div>
+
+  <!-- 3D (logo) -->
+  <canvas id="gl"></canvas>
+
+  <!-- CENA 2: logo + subtítulo -->
+  <div id="c2" class="cena">
+    <div id="sub">
+      <div class="s1"><span class="linha"><span id="s1">VIDEOMAKER CINEMATOGRÁFICO</span></span></div>
+      <div class="traco" id="traco"></div>
+      <div class="s2" id="s2"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#E2B850" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.6"/></svg>Campinas e região</div>
+    </div>
+  </div>
+
+  <!-- CENA 3 -->
+  <div id="c3" class="cena">
+    <div id="pelicula"></div>
+    <div id="frase">
+      <div class="f1"><span class="linha"><span id="f1">O seu dia,</span></span><span class="linha"><span id="f2">contado como</span></span></div>
+      <div class="f2 serif-it"><span class="linha"><span id="f3" class="dourado">cinema</span></span></div>
+    </div>
+  </div>
+
+  <!-- CENA 4: serviços -->
+  <div id="c4" class="cena">
+    <div id="c4-titulo"><div class="rotulo"><span class="linha"><span id="c4r">Serviços</span></span></div><h2><span class="linha"><span id="c4h">O que eu <span class="serif-it dourado" style="font-size:1.15em">entrego</span></span></span></h2></div>
+    <div id="carrossel"><div id="roda"></div></div>
+    <div id="c4-pontos"></div>
+  </div>
+
+  <!-- CENA 5: celebrações -->
+  <div id="c5" class="cena">
+    <div id="c5-titulo"><div class="rotulo"><span class="linha"><span id="c5r">Para todo tipo de</span></span></div><h2><span class="linha"><span id="c5h" class="serif-it dourado" style="font-size:1.5em">celebração</span></span></h2></div>
+    <div id="lista"></div>
+  </div>
+
+  <!-- CENA 6: storymaker -->
+  <div id="c6" class="cena">
+    <div id="c6-titulo"><div class="rotulo"><span class="linha"><span id="c6r">Storymaker</span></span></div><h2><span class="linha"><span id="c6h">Na palma da <span class="serif-it dourado" style="font-size:1.15em">mão</span></span></span></h2></div>
+    <div id="celular-wrap"><div id="celular"><div id="tela"></div></div></div>
+    <div id="selo"><div><small>PRONTO NO</small>MESMO<br>DIA</div></div>
+    <div id="chips"><div class="chip" id="chip1">Em tempo real</div><div class="chip" id="chip2">Só para você</div></div>
+  </div>
+
+  <!-- CENA 7: como funciona -->
+  <div id="c7" class="cena">
+    <div id="c7-titulo"><div class="rotulo"><span class="linha"><span id="c7r">Como funciona</span></span></div><h2><span class="linha"><span id="c7h">Simples <span class="serif-it dourado" style="font-size:1.15em">assim</span></span></span></h2></div>
+    <div id="passos"><div id="trilho-fundo"></div><div id="trilho"></div></div>
+  </div>
+
+  <!-- CENA 8: encerramento -->
+  <div id="c8" class="cena">
+    <div id="cta">
+      <div class="chamada"><span class="linha"><span id="ch1">ORÇAMENTO PELO WHATSAPP</span></span></div>
+      <div id="zap"><svg viewBox="0 0 32 32" fill="#17110a"><path d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7s1.2 3.2 1.3 3.4c.2.2 2.3 3.5 5.6 4.9 2.1.9 2.9 1 4 .8.6-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg>(19) 99527-3041<i class="brilho" id="zapb"></i></div>
+      <div id="redes">
+        <span id="r1"><svg viewBox="0 0 24 24" fill="none" stroke="#E2B850" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1" fill="#E2B850"/></svg>@darzanproducoes</span>
+      </div>
+      <div id="redes2" style="margin-top:22px;font:500 30px Montserrat;color:rgba(243,235,221,.7);letter-spacing:.06em">Campinas e região · Atendo outras cidades</div>
+    </div>
+  </div>
+
+  <div id="luz" class="camada"></div>
+  <div id="flash" class="camada"></div>
+  <div id="visor" class="camada">
+    <div class="canto c1"></div><div class="canto c2"></div><div class="canto c3"></div><div class="canto c4"></div>
+    <div id="rec"><i></i>REC</div><div id="tc">00:00:00:00</div>
+    <div id="visor-info">4K · 30 FPS · DARZAN</div>
+  </div>
+  <div id="legenda"></div>
+  <div id="vinheta" class="camada"></div>
+  <canvas id="grao" class="camada" width="540" height="960"></canvas>
+</div>
+
+<div id="player">
+  <div class="lin"><button id="bplay">▶ Play</button><input id="barra" type="range" min="0" max="43" step="0.0333" value="0"><span id="tempo">0,0 / 43,0 s</span></div>
+  <div class="lin" style="justify-content:space-between"><div id="capitulos"></div><button id="bsom" class="on" title="Som">Som</button></div>
+</div>
+<audio id="audio" src="audio/mix.m4a" preload="auto"></audio>
+
+<script type="module">
+import * as THREE from 'three';
+import { SVGLoader } from './lib/SVGLoader.js';
+import { RoomEnvironment } from './lib/RoomEnvironment.js';
+
+const RENDER = new URLSearchParams(location.search).has('render');
+if (RENDER) document.body.classList.add('render');
+const W = 1080, H = 1920, FPS = 30;
+const DURATION = 43;
+window.DURATION = DURATION;
+
+/* ------------------------------------------------------------ tempos
+   Locução começa em O s; palavras vêm de audio/palavras.json (+O). */
+const O = 0.8;
+const T = {
+  g: [0.88, 1.32, 2.2, 2.48],                 // Todo · momento · virar · cinema
+  impacto: 3.87,                              // "Darzan"
+  sub1: 5.28, sub2: 7.04,                     // Videomaker · Campinas
+  voo: 8.15,                                  // entra no obturador
+  f: [8.54, 9.44, 10.32],                     // O seu dia · contado como · cinema
+  c4: 10.95, serv: [11.4, 13.04, 13.84, 15.52, 16.88, 18.6],
+  c5: 19.75, cel: [20.11, 20.88, 22.4, 23.44],
+  c6: 24.3, prontos: 27.04,
+  c7: 28.45, passos: [29.92, 30.8, 32.08, 34.0],
+  c8: 35.2, darzan: 35.6, zap: 37.2,
+};
+window.T = T;
+
+/* ------------------------------------------------------------ utilidades */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const io = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const out = x => (x = clamp(x), 1 - Math.pow(1 - x, 3));
+const outExpo = x => (x = clamp(x), x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const inn = x => (x = clamp(x), x * x * x);
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+/* mola: resposta ao degrau, começa em t0 (0 antes, ~1 depois) */
+function mola(t, t0, k = 170, d = 26) {
+  const x = t - t0; if (x <= 0) return 0;
+  const w = Math.sqrt(k), z = d / (2 * w);
+  if (z >= 1) return 1 - Math.exp(-w * x) * (1 + w * x);
+  const wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * x) * (Math.cos(wd * x) + (z * w / wd) * Math.sin(wd * x));
+}
+/* soma de molas: valor que muda de alvo várias vezes */
+function molas(t, base, mudancas, k, d) {
+  let v = base;
+  for (const [t0, delta] of mudancas) v += delta * mola(t, t0, k, d);
+  return v;
+}
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const $ = id => document.getElementById(id);
+const css = (el, o) => { for (const k in o) el.style[k] = o[k]; };
+function cena(el, t, a, b, fade = .35) {      // visível entre a e b, com fade nas bordas
+  const on = t >= a - fade && t <= b + fade;
+  el.style.visibility = on ? 'inherit' : 'hidden';
+  return on;
+}
+/* texto subindo de dentro da máscara */
+function sobe(el, t, t0, dur = .7, extra = '') {
+  const p = mola(t, t0, 140, 22);
+  css(el, { transform: `translateY(${(1 - p) * 110}%) rotate(${(1 - p) * 3}deg) ${extra}`, opacity: clamp(p * 1.6) });
+}
+function sai(el, t, t0, dur = .35) {          // saída para cima
+  const p = inn(prog(t, t0, t0 + dur));
+  return p;
+}
+
+/* ------------------------------------------------------------ ícones */
+const ICO = {
+  filme: '<circle cx="50" cy="50" r="38"/><circle cx="50" cy="28" r="8"/><circle cx="50" cy="72" r="8"/><circle cx="28" cy="50" r="8"/><circle cx="72" cy="50" r="8"/><circle cx="50" cy="50" r="3"/><path d="M50 88h40"/>',
+  teaser: '<rect x="12" y="34" width="76" height="52" rx="6"/><path d="M12 34l10-18 70 0-10 18"/><path d="M30 16l-8 18M50 16l-8 18M70 16l-8 18"/><path d="M44 50v20l17-10z"/>',
+  cerimonia: '<circle cx="38" cy="60" r="22"/><circle cx="62" cy="60" r="22"/><path d="M50 18l7 10-7 8-7-8z"/>',
+  motion: '<path d="M14 70c18-40 36 20 54-20 6-13 12-20 18-22"/><path d="M78 20l10 8-12 4z"/><circle cx="26" cy="28" r="6"/><path d="M64 82h24M14 86h36"/>',
+  empresas: '<rect x="14" y="32" width="72" height="50" rx="6"/><path d="M38 32v-8a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v8"/><path d="M14 52h72"/><rect x="44" y="47" width="12" height="10" rx="2"/>',
+  stories: '<rect x="30" y="10" width="40" height="80" rx="8"/><path d="M44 18h12"/><circle cx="50" cy="50" r="12"/><path d="M47 44v12l9-6z"/>',
+  casamento: '<circle cx="38" cy="60" r="20"/><circle cx="62" cy="60" r="20"/><path d="M50 22l6 8-6 6-6-6z"/>',
+  empresa: '<path d="M16 86V40l22-12v58M38 86V18l30 14v54M68 86V48l18 8v30"/><path d="M10 86h82M48 40h8M48 54h8M48 68h8"/>',
+  aniversario: '<rect x="18" y="52" width="64" height="34" rx="6"/><path d="M18 66c8 6 16-6 24 0s16-6 24 0 10-4 16 0"/><path d="M36 52V38M50 52V36M64 52V38"/><path d="M36 30c-3-4 0-8 0-8s3 4 0 8zM50 28c-3-4 0-8 0-8s3 4 0 8zM64 30c-3-4 0-8 0-8s3 4 0 8z"/>',
+  cha: '<ellipse cx="42" cy="38" rx="20" ry="24"/><ellipse cx="66" cy="44" rx="16" ry="20"/><path d="M42 62l-3 6h6zM66 64l-3 6h6M42 68c2 10-6 14 0 22M66 70c-2 8 6 12 0 20"/>',
+  conversa: '<path d="M16 22h68a6 6 0 0 1 6 6v36a6 6 0 0 1-6 6H44l-18 14V70H16a6 6 0 0 1-6-6V28a6 6 0 0 1 6-6z"/><path d="M28 40h44M28 52h30"/>',
+  plano: '<rect x="14" y="20" width="72" height="66" rx="6"/><path d="M14 38h72M32 12v16M68 12v16"/><path d="M30 58l10 10 22-22"/>',
+  camera: '<rect x="10" y="30" width="58" height="44" rx="6"/><path d="M68 44l22-12v40L68 60"/><circle cx="32" cy="52" r="10"/>',
+  entrega: '<circle cx="50" cy="50" r="38"/><path d="M42 34v32l26-16z"/>',
+};
+const svgIco = (k, cor = '#E2B850', sw = 3) => `<svg viewBox="0 0 100 100" fill="none" stroke="${cor}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
+
+/* ------------------------------------------------------------ montagem das cenas */
+// íris da cena 1 (8 lâminas, como o obturador da logo)
+const IRIS_N = 8, IRIS_R = 380;
+const iris = $('iris');
+iris.innerHTML = `<defs><clipPath id="irisClip"><circle r="${IRIS_R}"/></clipPath>
+  <linearGradient id="lam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3326"/><stop offset=".5" stop-color="#1b1813"/><stop offset="1" stop-color="#2c2619"/></linearGradient></defs>
+  <circle r="${IRIS_R + 10}" fill="none" stroke="#E2B850" stroke-width="6" id="irisAro"/>
+  <g clip-path="url(#irisClip)" id="laminas"></g>`;
+const laminas = $('laminas');
+for (let i = 0; i < IRIS_N; i++) {
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('fill', 'url(#lam)'); p.setAttribute('stroke', '#E2B850'); p.setAttribute('stroke-width', '2.5'); p.setAttribute('stroke-opacity', '.65');
+  laminas.appendChild(p);
+}
+function desenhaIris(abertura) {      // abertura 0 (fechada) .. 1 (aberta)
+  const r0 = lerp(0, IRIS_R * 1.02, abertura), rot = lerp(0, -.55, abertura);
+  [...laminas.children].forEach((p, i) => {
+    const a = rot + i * 2 * Math.PI / IRIS_N, b = rot + (i + 1) * 2 * Math.PI / IRIS_N;
+    const v0 = [r0 * Math.cos(a), r0 * Math.sin(a)], v1 = [r0 * Math.cos(b), r0 * Math.sin(b)];
+    const dx = v1[0] - v0[0], dy = v1[1] - v0[1], L = Math.hypot(dx, dy) || 1;
+    const far = 900;
+    const e = [v0[0] + dx / L * far, v0[1] + dy / L * far];
+    const o = [e[0] + dy / L * far, e[1] - dx / L * far];
+    const o2 = [v0[0] + dy / L * far, v0[1] - dx / L * far];
+    p.setAttribute('d', `M${v0}L${e}L${o}L${o2}Z`);
+  });
+}
+
+// película (cena 3)
+const pel = $('pelicula');
+const CORES = [['#3b2a12', '#e2b850'], ['#1d2430', '#c99b4a'], ['#2b1a1a', '#f3c98a'], ['#162622', '#d8b26a'], ['#2a2433', '#f0d79a'], ['#33240f', '#ffd88a']];
+for (let f = 0; f < 2; f++) {
+  const tira = document.createElement('div'); tira.className = 'filme'; tira.id = 'filme' + f;
+  for (let i = 0; i < 12; i++) {
+    const [a, b] = CORES[(i + f * 3) % CORES.length];
+    const q = document.createElement('div'); q.className = 'quadro';
+    q.innerHTML = `<b style="background:radial-gradient(70% 60% at ${30 + (i * 37) % 40}% ${35 + (i * 23) % 30}%, ${b} 0%, ${a} 55%, #0c0b0a 100%)"></b>`;
+    tira.appendChild(q);
+  }
+  pel.appendChild(tira);
+}
+css($('filme1'), { top: '330px', transform: 'translateX(-900px)' });
+
+// carrossel (cena 4)
+const SERV = [
+  ['filme', 'Filme cinematográfico', 'Edição cinematográfica com trilha e narrativa.'],
+  ['teaser', 'Teaser', 'Um resumo curto e emocionante para compartilhar.'],
+  ['cerimonia', 'Cerimônia na íntegra', 'A cerimônia completa, do início ao fim.'],
+  ['motion', 'Vídeos com motion', 'Animações e textos que dão vida ao vídeo.'],
+  ['empresas', 'Para empresas', 'Vídeos institucionais e conteúdo para marcas.'],
+  ['stories', 'Storymaker', 'Vídeos verticais para reviver tudo no celular.'],
+];
+const roda = $('roda'), RAIO = 560;
+const cards = SERV.map(([ico, t, d], i) => {
+  const c = document.createElement('div'); c.className = 'card';
+  c.innerHTML = `<div class="num">0${i + 1} / 06</div>${svgIco(ico)}<h3>${t}</h3><p>${d}</p>`;
+  roda.appendChild(c); return c;
+});
+const pontos = SERV.map(() => { const i = document.createElement('i'); $('c4-pontos').appendChild(i); return i; });
+
+// lista (cena 5)
+const CEL = [['casamento', 'Casamentos'], ['empresa', 'Eventos corporativos'], ['aniversario', 'Aniversários'], ['cha', 'Chá revelação']];
+const itens = CEL.map(([ico, t]) => {
+  const d = document.createElement('div'); d.className = 'item';
+  d.innerHTML = `<div class="ico">${svgIco(ico, '#E2B850', 4)}</div><span>${t}</span>`;
+  $('lista').appendChild(d); return d;
+});
+
+// celular (cena 6)
+const STO = [['Making of<br>da noiva', '#5a3b1a', '#f0c27a'], ['Entrada<br>dos noivos', '#2a1f2e', '#e8b9a0'], ['Bastidores', '#1b2a2a', '#d9c08a'], ['A revelação', '#3a1a24', '#f5b8c8']];
+const tela = $('tela');
+tela.innerHTML = `<div id="barras">${STO.map(() => '<i><b></b></i>').join('')}</div>
+  <div id="perfil"><img src="../marca/logo-fundo-2048.png" alt="">darzanproducoes</div>` +
+  STO.map(([t, a, b], i) => `<div class="story" id="st${i}"><div class="bg" style="position:absolute;inset:-10%;background:radial-gradient(60% 45% at 50% 40%, ${b} 0%, ${a} 55%, #070707 100%)"></div>
+    <div class="story-txt">${t}</div></div>`).join('');
+const barras = [...tela.querySelectorAll('#barras b')];
+const stories = STO.map((_, i) => $('st' + i));
+
+// passos (cena 7)
+const PAS = [['Conversa', 'Você me chama no WhatsApp e conta sobre o seu evento.'], ['Planejamento', 'Escolhemos juntos os formatos e os momentos principais.'],
+  ['Dia do evento', 'Eu filmo tudo com discrição.'], ['Entrega', 'Você recebe tudo editado, pronto para guardar.']];
+const passos = PAS.map(([h, p], i) => {
+  const d = document.createElement('div'); d.className = 'passo';
+  d.innerHTML = `<div class="bola">${i + 1}</div><div><h4>${h}</h4><p>${p}</p></div>`;
+  $('passos').appendChild(d); return d;
+});
+
+/* ------------------------------------------------------------ poeira dourada e grão */
+const poeira = $('poeira').getContext('2d');
+const rnd = mulberry32(7);
+const PART = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), r: 2 + rnd() * 9, v: .004 + rnd() * .012, f: rnd() * 6.28, a: .15 + rnd() * .5, z: rnd() }));
+function desenhaPoeira(t, forca) {
+  poeira.clearRect(0, 0, 540, 960);
+  if (forca <= 0) return;
+  for (const p of PART) {
+    const x = ((p.x + Math.sin(t * .3 + p.f) * .02) % 1) * 540;
+    const y = (((p.y - t * p.v) % 1) + 1) % 1 * 960;
+    const tw = .6 + .4 * Math.sin(t * 2.1 + p.f * 3);
+    const g = poeira.createRadialGradient(x, y, 0, x, y, p.r * (1 + p.z));
+    g.addColorStop(0, `rgba(255,222,150,${p.a * tw * forca})`); g.addColorStop(1, 'rgba(255,222,150,0)');
+    poeira.fillStyle = g; poeira.beginPath(); poeira.arc(x, y, p.r * (1 + p.z), 0, 6.283); poeira.fill();
+  }
+}
+const grao = $('grao').getContext('2d');
+const graoImg = grao.createImageData(540, 960);
+function desenhaGrao(t) {
+  const r = mulberry32(Math.floor(t * FPS) + 1), d = graoImg.data;
+  for (let i = 0; i < d.length; i += 4) { const v = r() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+  grao.putImageData(graoImg, 0, 0);
+}
+
+/* ------------------------------------------------------------ 3D: logo dourada */
+const gl = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas: gl, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(RENDER ? 2 : Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = .92;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+const camera = new THREE.PerspectiveCamera(30, W / H, 10, 10000);
+const DIST = 2600;
+camera.position.set(0, 0, DIST);
+const luzChave = new THREE.DirectionalLight(0xfff0d0, 1.4); luzChave.position.set(-600, 800, 1200); scene.add(luzChave);
+const luzBrilho = new THREE.PointLight(0xffe6a8, 0, 2400, 1.2); scene.add(luzBrilho);
+
+const ouro = new THREE.MeshStandardMaterial({ color: 0xE9BE58, metalness: 1, roughness: .3, transparent: true });
+const ouroPlay = new THREE.MeshStandardMaterial({ color: 0xF5D57E, metalness: 1, roughness: .18, transparent: true });
+const logo = new THREE.Group(); scene.add(logo);   // posição/escala globais
+const flip = new THREE.Group(); flip.scale.y = -1; logo.add(flip);
+const PARTES = {};
+const PROF = { 'anel-externo': 16, 'anel-interno': 10, 'louro': 14, 'obturador': 28, 'play': 40, 'rolo': 26, 'seta': 18, 'texto-darzan': 18, 'texto-producoes': 8 };
+
+async function montaLogo() {
+  const txt = await (await fetch('../marca/logo-partes.svg')).text();
+  const data = new SVGLoader().parse(txt);
+  for (const path of data.paths) {
+    const id = path.userData.node.id;
+    const shapes = SVGLoader.createShapes(path);
+    const prof = PROF[id] || 12;
+    const geo = new THREE.ExtrudeGeometry(shapes, { depth: prof, bevelEnabled: true, bevelThickness: 2.4, bevelSize: 1.6, bevelSegments: 3, curveSegments: 6 });
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox, cx = (bb.min.x + bb.max.x) / 2, cy = (bb.min.y + bb.max.y) / 2;
+    geo.translate(-cx, -cy, -prof / 2);
+    const mesh = new THREE.Mesh(geo, id === 'play' ? ouroPlay : ouro.clone());
+    const piv = new THREE.Group(); piv.position.set(cx - 512, cy - 512, 0); piv.add(mesh);
+    flip.add(piv);
+    PARTES[id] = { piv, mesh, cx, cy };
+  }
+}
+
+function opac(id, a) { const m = PARTES[id]?.mesh.material; if (m) { m.opacity = a; m.visible = a > .003; } }
+function parte(id, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1, a = 1 } = {}) {
+  const P = PARTES[id]; if (!P) return;
+  P.piv.position.set(P.cx - 512 + x, P.cy - 512 + y, z);   // y em coordenadas SVG (para baixo)
+  P.piv.rotation.set(rx, ry, rz); P.piv.scale.setScalar(Math.max(s, .0001));
+  opac(id, a);
+}
+const EMBLEMA = ['rolo', 'obturador', 'play', 'seta'];
+const OBT = [551, 425];   // centro do obturador (coordenadas SVG)
+
+function pose3D(t) {
+  let vis = false;
+  // ---- cena 2: emblema entra, anéis, louro e texto montam
+  if (t >= 2.9 && t < T.voo + .7) {
+    vis = true;
+    const e = mola(t, 3.18, 150, 21);                    // chegada do emblema (~impacto)
+    const idle = t - 3.2;
+    logo.position.set(0, 120, 0);
+    logo.rotation.set(Math.sin(idle * .5) * .04, lerp(-1.25, 0, e) + Math.sin(idle * .6) * .09, lerp(.25, 0, e));
+    logo.scale.setScalar(lerp(.35, 1, e));
+    logo.position.z = lerp(-2400, 0, e);
+    for (const id of EMBLEMA) parte(id, { a: clamp((t - 3.0) * 4) });
+    parte('obturador', { rz: lerp(-Math.PI * 1.25, 0, mola(t, 3.15, 120, 22)), a: clamp((t - 3.0) * 4) });
+    parte('play', { z: lerp(160, 0, mola(t, 3.6, 160, 18)), s: lerp(.2, 1, mola(t, 3.55, 170, 16)), a: clamp((t - 3.5) * 5) });
+    const an = mola(t, 3.92, 120, 20);
+    parte('anel-externo', { rz: lerp(-1.1, 0, an), s: lerp(.82, 1, an), a: clamp((t - 3.92) * 3) });
+    const an2 = mola(t, 4.08, 120, 20);
+    parte('anel-interno', { rz: lerp(1.0, 0, an2), s: lerp(.8, 1, an2), a: clamp((t - 4.08) * 3) });
+    const lo = mola(t, 4.45, 130, 20);
+    parte('louro', { x: lerp(-60, 0, lo), y: lerp(60, 0, lo), rz: lerp(.5, 0, lo), s: lerp(.4, 1, lo), a: clamp((t - 4.45) * 3) });
+    const tx = mola(t, 4.3, 140, 22), tp = mola(t, 4.75, 140, 22);
+    parte('texto-darzan', { y: lerp(70, 0, tx), rx: lerp(-1.2, 0, tx), a: clamp((t - 4.3) * 3) });
+    parte('texto-producoes', { y: lerp(40, 0, tp), a: clamp((t - 4.75) * 3) });
+    // voo para dentro do obturador
+    const v = io(prog(t, T.voo, T.voo + .62));
+    const alvo = new THREE.Vector3(OBT[0] - 512, -(OBT[1] - 512) + 120, 0);
+    camera.position.set(lerp(0, alvo.x, v), lerp(0, alvo.y, v), lerp(DIST, 90, Math.pow(v, 1.4)));
+    camera.lookAt(lerp(0, alvo.x, v), lerp(0, alvo.y, v), 0);
+    // reflexo de luz passando
+    const sw = prog(t, 4.0, 5.4), sw2 = prog(t, 6.6, 7.9);
+    luzBrilho.intensity = 1.3e5 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
+    luzBrilho.position.set(lerp(-900, 900, sw2 > 0 ? sw2 : sw), 300, 700);
+    scene.environmentRotation.set(0, lerp(-.8, .8, out(prog(t, 3, 8))), 0);
+  }
+  // ---- cena 8: logo inteira volta
+  if (t >= T.c8 - .1) {
+    vis = true;
+    const k = t - T.c8;
+    camera.position.set(0, 0, DIST); camera.lookAt(0, 0, 0);
+    logo.position.set(0, 330, 0);
+    const g = mola(t, T.c8, 110, 20);
+    logo.rotation.set(lerp(.5, 0, g) + Math.sin(k * .5) * .03, lerp(1.4, 0, g) + Math.sin(k * .45) * .1, 0);
+    logo.scale.setScalar(lerp(.6, .92, g));
+    logo.position.z = lerp(-1500, 0, g);
+    for (const id of EMBLEMA) parte(id, { a: clamp(k * 3) });
+    parte('obturador', { rz: lerp(Math.PI, 0, mola(t, T.c8, 110, 22)), a: clamp(k * 3) });
+    parte('play', { z: lerp(140, 0, mola(t, T.c8 + .35, 160, 18)), s: lerp(.3, 1, mola(t, T.c8 + .3, 170, 16)), a: clamp((k - .3) * 4) });
+    const a1 = mola(t, T.c8 + .25, 120, 20), a2 = mola(t, T.c8 + .38, 120, 20);
+    parte('anel-externo', { rx: lerp(1.4, 0, a1), s: lerp(.85, 1, a1), a: clamp((k - .25) * 3) });
+    parte('anel-interno', { ry: lerp(-1.4, 0, a2), s: lerp(.85, 1, a2), a: clamp((k - .38) * 3) });
+    const lo = mola(t, T.c8 + .55, 130, 20);
+    parte('louro', { x: lerp(-60, 0, lo), y: lerp(60, 0, lo), rz: lerp(.5, 0, lo), s: lerp(.4, 1, lo), a: clamp((k - .55) * 3) });
+    const tx = mola(t, T.darzan, 140, 22), tp = mola(t, T.darzan + .35, 140, 22);
+    parte('texto-darzan', { y: lerp(70, 0, tx), rx: lerp(-1.2, 0, tx), a: clamp((t - T.darzan) * 3) });
+    parte('texto-producoes', { y: lerp(40, 0, tp), a: clamp((t - T.darzan - .35) * 3) });
+    const sw = prog(t, T.darzan + .2, T.darzan + 1.6), sw2 = prog(t, 40.2, 41.8);
+    luzBrilho.intensity = 1.3e5 * (Math.sin(Math.PI * sw) + Math.sin(Math.PI * sw2));
+    luzBrilho.position.set(lerp(-900, 900, sw2 > 0 ? sw2 : sw), 400, 700);
+    scene.environmentRotation.set(0, lerp(.9, -.5, out(prog(t, T.c8, DURATION))), 0);
+    // fade final
+    const f = 1 - prog(t, DURATION - .7, DURATION);
+    for (const id in PARTES) PARTES[id].mesh.material.opacity *= f;
+  }
+  gl.style.visibility = vis ? 'inherit' : 'hidden';
+  if (vis) renderer.render(scene, camera);
+}
+
+/* ------------------------------------------------------------ seek(t): desenha o quadro do tempo t */
+const legendaEl = $('legenda');
+let PALAVRAS = [];
+function legenda(t) {
+  // mostra a frase atual, palavra falada em dourado
+  const tv = t - O;
+  const frases = window.FRASES || [];
+  const f = frases.find(fr => tv >= fr.i - .15 && tv <= fr.f + .25);
+  if (!f || t > T.zap - .3) { legendaEl.innerHTML = ''; return; }
+  legendaEl.innerHTML = f.palavras.map(w => (tv >= w.i && tv <= w.f + .12) ? `<b>${w.p}</b>` : w.p).join(' ');
+}
+
+function seek(t) {
+  t = clamp(t, 0, DURATION - 1e-4);
+
+  // fundo / atmosfera
+  desenhaPoeira(t, clamp(prog(t, .2, 1.5) - prog(t, 10.9, 11.2) * .5));
+  desenhaGrao(t);
+
+  // visor de câmera (cena 1) — some quando a logo entra
+  const vo = 1 - prog(t, 3.1, 3.5);
+  const vi = out(prog(t, .05, .6));
+  css($('visor'), { opacity: vo * vi, visibility: vo > 0 ? 'inherit' : 'hidden' });
+  document.querySelectorAll('#visor .canto').forEach((c, i) => {
+    const dx = (i % 2 ? 1 : -1) * (1 - vi) * 60, dy = (i < 2 ? -1 : 1) * (1 - vi) * 60;
+    c.style.transform = `translate(${dx}px,${dy}px)`;
+  });
+  $('rec').querySelector('i').style.opacity = (Math.floor(t * 2) % 2) ? .25 : 1;
+  const fr = Math.floor(t * FPS);
+  $('tc').textContent = `00:00:${String(Math.floor(fr / FPS)).padStart(2, '0')}:${String(fr % FPS).padStart(2, '0')}`;
+
+  // ---------------- cena 1
+  if (cena($('c1'), t, 0, 3.4, .01)) {
+    const ab = io(prog(t, .25, 1.35));
+    desenhaIris(ab * .92);
+    const fecha = io(prog(t, 2.95, 3.4));   // íris fecha e gira antes da logo
+    if (fecha > 0) desenhaIris(lerp(.92, 0, fecha));
+    css($('iris'), { transform: `scale(${lerp(.92, 1.05, ab) + fecha * .2}) rotate(${fecha * -40}deg)`, opacity: 1 - fecha * .2 });
+    sobe($('g1'), t, T.g[0] - .1); sobe($('g2'), t, T.g[2] - .25); sobe($('g3'), t, T.g[3] - .12);
+    const s = 1 - inn(prog(t, 2.95, 3.3));
+    css($('gancho'), { opacity: s, transform: `scale(${1 + (1 - s) * .15})`, filter: `blur(${(1 - s) * 12}px)` });
+    $('g3').style.backgroundPosition = `${lerp(100, 0, prog(t, 2.4, 3.3))}% 0`;
+  }
+
+  // flash da logo (impacto)
+  const fl = Math.max(Math.exp(-Math.pow((t - T.impacto) / .09, 2)) * .9, Math.exp(-Math.pow((t - (T.voo + .62)) / .1, 2)));
+  css($('flash'), { opacity: fl });
+
+  // ---------------- cena 2 (textos abaixo da logo 3D)
+  if (cena($('c2'), t, 4.9, T.voo + .3, .05)) {
+    sobe($('s1'), t, T.sub1 - .15);
+    $('traco').style.width = `${out(prog(t, T.sub1 + .2, T.sub1 + 1)) * 520}px`;
+    const p = mola(t, T.sub2 - .2, 150, 22);
+    css($('s2'), { opacity: clamp(p * 1.5), transform: `translateY(${(1 - p) * 40}px)` });
+    const s = inn(prog(t, T.voo - .1, T.voo + .3));
+    css($('sub'), { opacity: 1 - s, transform: `translateY(${s * 80}px)` });
+  }
+
+  // ---------------- cena 3
+  if (cena($('c3'), t, T.voo + .5, T.c4, .05)) {
+    const k = t - T.voo;
+    const ent = outExpo(prog(t, T.voo + .55, T.voo + 1.3));
+    css($('pelicula'), { transform: `rotate(-12deg) translateX(${-k * 260}px) rotateY(${lerp(25, 8, ent)}deg)`, opacity: ent });
+    sobe($('f1'), t, T.f[0] - .12); sobe($('f2'), t, T.f[1] - .12); sobe($('f3'), t, T.f[2] - .15);
+    $('f3').style.backgroundPosition = `${lerp(100, 0, prog(t, T.f[2], T.f[2] + 1))}% 0`;
+    const s = inn(prog(t, T.c4 - .25, T.c4 + .1));
+    css($('frase'), { opacity: 1 - s, transform: `translateY(${-s * 120}px) scale(${1 - s * .08})` });
+    css($('pelicula'), { opacity: ent * (1 - s) });
+  }
+
+  // ---------------- cena 4: carrossel de serviços
+  if (cena($('c4'), t, T.c4, T.c5, .05)) {
+    const ent = mola(t, T.c4 + .1, 150, 22), sai_ = inn(prog(t, T.c5 - .1, T.c5 + .3));
+    sobe($('c4r'), t, T.c4); sobe($('c4h'), t, T.c4 + .08);
+    css($('c4-titulo'), { opacity: 1 - sai_ });
+    // ângulo da roda: um passo de 60° em cada serviço falado
+    const ang = molas(t, 60, T.serv.map(ts => [ts - .25, -60]), 150, 22);
+    const z0 = lerp(-900, 0, ent);
+    roda.style.transform = `translateZ(${-RAIO + z0}px) rotateX(-6deg) rotateY(${ang}deg)`;
+    cards.forEach((c, i) => {
+      const a = (i * 60 + ang) * Math.PI / 180;
+      const frente = Math.cos(a);
+      c.style.transform = `rotateY(${i * 60}deg) translateZ(${RAIO}px)`;
+      c.style.opacity = clamp((frente + .2) * 1.3) * clamp(ent * 1.5) * (1 - sai_);
+      c.style.filter = `brightness(${lerp(.35, 1, clamp(frente))})`;
+    });
+    const ativo = T.serv.reduce((n, ts, i) => t >= ts - .25 ? i : n, -1);
+    pontos.forEach((p, i) => { p.style.background = i === ativo ? '#E2B850' : 'rgba(243,235,221,.25)'; p.style.transform = `scale(${i === ativo ? 1.4 : 1})`; });
+    css($('c4-pontos'), { opacity: ent * (1 - sai_) });
+    css($('carrossel'), { transform: `translateY(${sai_ * -140}px)` });
+  }
+
+  // ---------------- cena 5: celebrações
+  if (cena($('c5'), t, T.c5, T.c6, .05)) {
+    const sai_ = inn(prog(t, T.c6 - .1, T.c6 + .3));
+    sobe($('c5r'), t, T.c5); sobe($('c5h'), t, T.c5 + .1);
+    $('c5h').style.backgroundPosition = `${lerp(100, 0, prog(t, T.c5, T.c5 + 1.5))}% 0`;
+    itens.forEach((it, i) => {
+      const p = mola(t, T.cel[i] - .2, 150, 20);
+      const atual = t >= T.cel[i] - .2 && (i === 3 || t < T.cel[i + 1] - .2);
+      it.style.transform = `rotateX(${(1 - p) * -95}deg) translateX(${sai_ * (i % 2 ? 1 : -1) * 200}px)`;
+      it.style.opacity = clamp(p * 1.4) * (atual ? 1 : .55) * (1 - sai_);
+      it.querySelector('span').className = atual ? 'dourado' : '';
+      it.querySelector('span').style.backgroundPosition = `${lerp(100, 0, prog(t, T.cel[i], T.cel[i] + 1))}% 0`;
+      it.querySelector('.ico').style.background = atual ? 'rgba(226,184,80,.16)' : 'transparent';
+    });
+    css($('c5-titulo'), { opacity: 1 - sai_ });
+  }
+
+  // ---------------- cena 6: storymaker
+  if (cena($('c6'), t, T.c6, T.c7, .05)) {
+    const k = t - T.c6, sai_ = inn(prog(t, T.c7 - .1, T.c7 + .3));
+    sobe($('c6r'), t, T.c6); sobe($('c6h'), t, T.c6 + .08);
+    const e = mola(t, T.c6, 120, 20);
+    css($('celular'), { transform: `translateY(${lerp(700, 0, e) - sai_ * 200}px) rotateY(${lerp(-40, -14, e) + Math.sin(k * .8) * 5}deg) rotateX(${lerp(20, 6, e)}deg) rotateZ(${lerp(-8, -3, e)}deg)`, opacity: 1 - sai_ });
+    const dur = .95;
+    stories.forEach((s, i) => {
+      const a = k - .3 - i * dur;
+      const on = a >= 0 && (a < dur || i === STO.length - 1);
+      s.style.visibility = on ? 'inherit' : 'hidden';
+      s.querySelector('.bg').style.transform = `scale(${1 + clamp(a / dur) * .12})`;
+      barras[i].style.width = `${clamp(a / dur) * 100}%`;
+    });
+    const ps = mola(t, T.prontos - .15, 180, 14);
+    css($('selo'), { transform: `scale(${ps}) rotate(${lerp(-30, -8, ps)}deg)`, opacity: clamp(ps * 2) * (1 - sai_) });
+    const c1 = mola(t, T.c6 + .9, 150, 22), c2 = mola(t, T.c6 + 1.15, 150, 22);
+    css($('chip1'), { opacity: clamp(c1 * 1.5) * (1 - sai_), transform: `translateY(${(1 - c1) * 60}px)` });
+    css($('chip2'), { opacity: clamp(c2 * 1.5) * (1 - sai_), transform: `translateY(${(1 - c2) * 60}px)` });
+    css($('c6-titulo'), { opacity: 1 - sai_ });
+  }
+
+  // ---------------- cena 7: como funciona
+  if (cena($('c7'), t, T.c7, T.c8, .05)) {
+    const sai_ = inn(prog(t, T.c8 - .15, T.c8 + .25));
+    sobe($('c7r'), t, T.c7); sobe($('c7h'), t, T.c7 + .08);
+    const fim = T.passos.reduce((h, ts, i) => h + 250 * out(prog(t, ts - .2, ts + .35)) * (i > 0 ? 1 : 0), 0);
+    $('trilho').style.height = `${fim}px`;
+    passos.forEach((p, i) => {
+      const e = mola(t, T.c7 + .2 + i * .12, 150, 22), on = t >= T.passos[i] - .2;
+      p.style.opacity = clamp(e * 1.4) * (on ? 1 : .45) * (1 - sai_);
+      p.style.transform = `translateX(${(1 - e) * 120}px)`;
+      const b = p.querySelector('.bola'); b.classList.toggle('on', on);
+      b.style.transform = `scale(${1 + .18 * Math.exp(-Math.pow((t - T.passos[i] + .1) / .15, 2))})`;
+    });
+    css($('c7-titulo'), { opacity: 1 - sai_ });
+    css($('passos'), { transform: `translateY(${-sai_ * 100}px)` });
+  }
+
+  // ---------------- cena 8: CTA
+  if (cena($('c8'), t, T.c8, DURATION, .05)) {
+    sobe($('ch1'), t, T.zap - .25);
+    const z = mola(t, T.zap - .05, 160, 18);
+    css($('zap'), { transform: `scale(${lerp(.6, 1, z)})`, opacity: clamp(z * 1.5) });
+    $('zapb').style.left = `${lerp(-200, 1000, prog(t, T.zap + .6, T.zap + 1.5)) + lerp(-200, 1000, prog(t, 40.5, 41.4)) + 200}px`;
+    const r = mola(t, T.zap + .45, 150, 22), r2 = mola(t, T.zap + .65, 150, 22);
+    css($('redes'), { opacity: clamp(r * 1.5), transform: `translateY(${(1 - r) * 40}px)` });
+    css($('redes2'), { opacity: clamp(r2 * 1.5) * .9, transform: `translateY(${(1 - r2) * 40}px)` });
+    css($('cta'), { opacity: 1 - prog(t, DURATION - .7, DURATION) });
+  }
+
+  // luz varrendo (transições)
+  const lz = [3.9, T.c4 + .1, T.c6 + .1, T.c8 + .3].map(a => prog(t, a, a + .7)).find(p => p > 0 && p < 1) || 0;
+  css($('luz'), { opacity: lz > 0 ? Math.sin(Math.PI * lz) : 0, transform: `translateX(${lerp(-60, 60, lz)}%)` });
+
+  pose3D(t);
+  legenda(t);
+}
+window.seek = seek;
+window.renderAt = seek;
+
+/* ------------------------------------------------------------ início */
+async function iniciar() {
+  await montaLogo();
+  try {
+    PALAVRAS = await (await fetch('audio/palavras.json')).json();
+    // quebra a locução em frases curtas (até ~5 palavras ou pontuação)
+    const fr = []; let cur = [];
+    const fecha = ws => {
+      // frases longas viram duas linhas de legenda
+      const partes = ws.length > 6 ? [ws.slice(0, Math.ceil(ws.length / 2)), ws.slice(Math.ceil(ws.length / 2))] : [ws];
+      for (const p of partes) fr.push({ i: p[0].i, f: p[p.length - 1].f, palavras: p });
+    };
+    for (const w of PALAVRAS) {
+      cur.push(w);
+      if (/[.,:…]$/.test(w.p) && (cur.length >= 3 || /[.:…]$/.test(w.p))) { fecha(cur); cur = []; }
+    }
+    if (cur.length) fecha(cur);
+    for (let i = 0; i < fr.length - 1; i++) fr[i].f = Math.min(fr[i].f, fr[i + 1].i - .2);
+    window.FRASES = fr;
+  } catch (e) { window.FRASES = []; }
+  await document.fonts.ready;
+  seek(0);
+  window.__ready = true; window.ready = true;
+}
+
+/* ------------------------------------------------------------ player interativo */
+function ajustaTela() {
+  if (RENDER) return;
+  const esc = Math.min(innerWidth / W, (innerHeight - 110) / H);
+  const st = $('stage');
+  st.style.transform = `scale(${esc})`;
+  st.style.position = 'absolute';
+  st.style.left = `${(innerWidth - W * esc) / 2}px`; st.style.top = `${Math.max(6, (innerHeight - 110 - H * esc) / 2)}px`;
+}
+if (!RENDER) {
+  addEventListener('resize', ajustaTela); ajustaTela();
+  const audio = $('audio'), barra = $('barra'), bplay = $('bplay'), tempo = $('tempo');
+  let tocando = false, t0 = 0, inicio = 0, tAtual = 0;
+  const CAP = [['Abertura', 0], ['Logo', 2.9], ['Serviços', T.c4], ['Celebrações', T.c5], ['Storymaker', T.c6], ['Como funciona', T.c7], ['Contato', T.c8]];
+  CAP.forEach(([n, ts]) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => ir(ts, true); $('capitulos').appendChild(b); });
+  function ir(ts, tocar) { tAtual = ts; t0 = ts; inicio = performance.now(); audio.currentTime = ts; seek(ts); if (tocar && !tocando) alterna(); }
+  function alterna() {
+    tocando = !tocando; bplay.textContent = tocando ? '❚❚ Pausar' : '▶ Play';
+    if (tocando) { if (tAtual >= DURATION - .05) tAtual = 0; t0 = tAtual; inicio = performance.now(); audio.currentTime = tAtual; audio.play().catch(() => {}); requestAnimationFrame(loop); }
+    else audio.pause();
+  }
+  function loop() {
+    if (!tocando) return;
+    tAtual = t0 + (performance.now() - inicio) / 1000;
+    if (tAtual >= DURATION) { tAtual = DURATION; tocando = false; bplay.textContent = '▶ Play'; audio.pause(); }
+    seek(tAtual); barra.value = tAtual; tempo.textContent = `${tAtual.toFixed(1).replace('.', ',')} / 43,0 s`;
+    if (tocando) requestAnimationFrame(loop);
+  }
+  bplay.onclick = alterna;
+  barra.oninput = () => ir(Number(barra.value), false);
+  $('bsom').onclick = e => { audio.muted = !audio.muted; e.target.classList.toggle('on', !audio.muted); };
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); alterna(); }
+    if (e.code === 'ArrowRight') ir(Math.min(DURATION, tAtual + (e.shiftKey ? 1 / FPS : .5)), false);
+    if (e.code === 'ArrowLeft') ir(Math.max(0, tAtual - (e.shiftKey ? 1 / FPS : .5)), false);
+    if (e.code === 'KeyR') ir(0, true);
+  });
+  const q = new URLSearchParams(location.search).get('t');
+  iniciar().then(() => { if (q) ir(Number(q), false); });
+} else {
+  iniciar();
+}
+</script>
+</body>
+</html>
