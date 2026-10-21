@@ -17,10 +17,10 @@ html, body { width: 2560px; height: 1440px; background: var(--bg); overflow: hid
     radial-gradient(ellipse 700px 500px at 16% 64%, rgba(168,90,70,.12), transparent 70%),
     var(--bg); }
 /* reflexo anamórfico (luz de lente de cinema) atravessando a faixa */
-.flare { position: absolute; left: 0; right: 0; height: 3px; top: 742px;
+.flare { position: absolute; left: 0; right: 0; height: 3px; top: 760px;
   background: linear-gradient(90deg, transparent 0%, rgba(240,207,148,.0) 8%, rgba(240,207,148,.55) 38%, rgba(255,236,200,.9) 50%, rgba(240,207,148,.55) 62%, rgba(240,207,148,0) 92%, transparent);
   filter: blur(1.5px); opacity: .55; }
-.flare.f2 { top: 742px; height: 40px; filter: blur(22px); opacity: .18; }
+.flare.f2 { top: 760px; height: 40px; filter: blur(22px); opacity: .18; }
 /* faixas de cinema (letterbox) suaves fora da área do computador */
 .bars::before, .bars::after { content: ''; position: absolute; left: 0; right: 0; height: 420px; }
 .bars::before { top: 0; background: linear-gradient(180deg, #050403 0%, rgba(5,4,3,0) 100%); }
@@ -30,7 +30,7 @@ html, body { width: 2560px; height: 1440px; background: var(--bg); overflow: hid
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
 /* marcas de visor de câmera nos cantos da faixa central */
-.visor { position: absolute; left: 540px; top: 528px; width: 1480px; height: 383px; }
+.visor { position: absolute; left: 250px; top: 528px; width: 2060px; height: 383px; }
 .visor i { position: absolute; width: 46px; height: 46px; border-color: rgba(214,168,95,.55); border-style: solid; border-width: 0; }
 .visor i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
 .visor i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
@@ -42,17 +42,16 @@ html, body { width: 2560px; height: 1440px; background: var(--bg); overflow: hid
 
 /* conteúdo central */
 .centro { position: absolute; left: 507px; top: 509px; width: 1546px; height: 423px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.marca { display: flex; align-items: center; gap: 46px; }
-.selo { width: 150px; height: 150px; border-radius: 50%; border: 2.5px solid var(--gold); display: grid; place-items: center;
-  font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 104px; color: var(--gold); line-height: 1; padding-bottom: 8px; }
-.titulo { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 158px; line-height: .95; letter-spacing: -.005em; }
-.titulo em { color: var(--gold); font-weight: 500; }
-.eyebrow { font-size: 25px; font-weight: 600; letter-spacing: .42em; text-transform: uppercase; color: var(--gold); margin-bottom: 26px; display: flex; align-items: center; gap: 22px; }
-.eyebrow::before, .eyebrow::after { content: ''; width: 60px; height: 1.5px; background: var(--gold); opacity: .8; }
-.frase { margin-top: 26px; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 50px; color: var(--gold-2); }
-.servicos { margin-top: 22px; font-size: 21px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
-.servicos span { color: var(--gold); margin: 0 14px; }
+  display: flex; align-items: center; justify-content: center; gap: 64px; }
+.logo { width: 385px; height: 385px; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,.6)); flex-shrink: 0; }
+.texto { display: flex; flex-direction: column; align-items: flex-start; }
+.eyebrow { font-size: 23px; font-weight: 600; letter-spacing: .36em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+.eyebrow::before { content: ''; width: 56px; height: 1.5px; background: var(--gold); opacity: .8; }
+.titulo { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 104px; line-height: 1; letter-spacing: -.005em; }
+.titulo em { color: var(--gold); font-style: italic; }
+.servicos { margin-top: 24px; font-size: 18px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.servicos span { color: var(--gold); margin: 0 10px; }
+.contato { margin-top: 14px; font-size: 22px; letter-spacing: .08em; color: var(--gold-2); }
 </style>
 </head>
 <body>
@@ -67,13 +66,13 @@ html, body { width: 2560px; height: 1440px; background: var(--bg); overflow: hid
   </div>
 
   <div class="centro">
-    <p class="eyebrow">Videomaker · Storymaker · Campinas</p>
-    <div class="marca">
-      <span class="selo">D</span>
-      <h1 class="titulo">Darzan <em>Produções</em></h1>
+    <img class="logo" src="logo/darzan-logo-realista-sem-fundo.png" alt="Darzan Produções">
+    <div class="texto">
+      <p class="eyebrow">Videomaker · Storymaker · Campinas</p>
+      <h1 class="titulo">Seu dia contado<br>como <em>cinema</em></h1>
+      <p class="servicos">Filmes cinematográficos<span>·</span>Teasers<span>·</span>Cerimônia na íntegra<span>·</span>Storymaker</p>
+      <p class="contato">@darzanproducoes</p>
     </div>
-    <p class="frase">Seu dia contado como cinema</p>
-    <p class="servicos">Filmes cinematográficos<span>·</span>Teasers<span>·</span>Cerimônia na íntegra<span>·</span>Storymaker</p>
   </div>
 
   <div class="grao"></div>
