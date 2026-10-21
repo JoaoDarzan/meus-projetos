@@ -235,9 +235,19 @@ p { margin: 0; }
   height: 56.25vw;          /* 16:9 */
   min-width: 177.78vh;
   min-height: 100%;
-  transform: translate(-50%, -50%);
+  /* um pouco maior que a tela para esconder o título e a logo do YouTube nas bordas */
+  transform: translate(-50%, -50%) scale(1.2);
   border: 0;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.hero__media iframe.is-on { opacity: 1; }
+/* enquanto o vídeo carrega, aparece a luz dourada de fundo */
+.hero__media {
+  background:
+    radial-gradient(ellipse 55% 45% at 75% 35%, rgba(214, 168, 95, .18), transparent 70%),
+    var(--bg);
 }
 /* sem vídeo ainda: luz de cinema em movimento lento */
 .hero__media.is-empty {

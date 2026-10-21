@@ -27,7 +27,7 @@ function parseVideo(url) {
       tipo: 'youtube',
       id: yt[1],
       embed: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&playsinline=1`,
-      fundo: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0`,
+      fundo: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0`,
       thumb: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`
     };
   }
@@ -74,6 +74,9 @@ function setupMedia() {
       v.play().catch(() => {});
     } else if (info.fundo) {
       media.innerHTML = `<iframe src="${esc(info.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
+      // aparece suavemente depois de carregar, para não mostrar a tela preta do YouTube
+      const frame = $('iframe', media);
+      frame.addEventListener('load', () => setTimeout(() => frame.classList.add('is-on'), 900));
     }
   } else {
     media.classList.add('is-empty');

@@ -22,7 +22,7 @@ const SITE = {
   // Vídeo que roda no FUNDO do topo do site, atrás dos textos.
   // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
   // Pode ser um arquivo seu ('videos/fundo.mp4') ou um link do YouTube.
-  videoFundo: '',
+  videoFundo: 'https://youtu.be/Lrmm-2Vb5b4',
 
   // Vídeo vertical que aparece DENTRO DO CELULAR na seção Storymaker.
   // Ex: 'videos/story-destaque.mp4'
