@@ -35,7 +35,7 @@ const SITE = {
   videoCelular: '',
 
   // Sua foto (João Darzan) para a seção "Sobre". Ex: 'img/perfil.jpg'
-  fotoPerfil: ''
+  fotoPerfil: 'img/perfil-joao-darzan.jpg'
 };
 
 /* ---------- FILMES (vídeos horizontais) ----------
