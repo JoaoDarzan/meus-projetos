@@ -22,6 +22,12 @@ videoFundo: 'videos/fundo.mp4',              // arquivo seu (recomendado, até ~
 videoFundo: 'https://youtu.be/XXXXXXXXXXX',  // ou um link do YouTube
 ```
 
+**Melhor qualidade:** use um arquivo seu em vez do YouTube (o YouTube sempre começa borrado e não deixa escolher 4K).
+Exporte um trecho de 15 a 30 segundos em **1920x1080, MP4 (H.264), sem som, até ~15 MB**, coloque na pasta `videos/` e escreva `videoFundo: 'videos/fundo.mp4'`.
+
+**Celular:** opcionalmente, uma versão **vertical** (1080x1920) em `videoFundoCelular: 'videos/fundo-celular.mp4'`.
+Com ela o celular mostra o vídeo em tela cheia; sem ela, mostra o vídeo horizontal inteiro numa faixa no topo.
+
 ### 3. Filmes (vídeos horizontais)
 Coloque em `VIDEOS`. O **primeiro** da lista aparece em destaque, maior.
 ```js

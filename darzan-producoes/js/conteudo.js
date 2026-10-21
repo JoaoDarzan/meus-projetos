@@ -21,8 +21,14 @@ const SITE = {
 
   // Vídeo que roda no FUNDO do topo do site, atrás dos textos.
   // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
-  // Pode ser um arquivo seu ('videos/fundo.mp4') ou um link do YouTube.
+  // Melhor qualidade: um arquivo seu ('videos/fundo.mp4', 1920x1080, até ~15 MB).
+  // Também aceita link do YouTube ou Vimeo (o YouTube começa com qualidade baixa).
   videoFundo: 'https://youtu.be/Lrmm-2Vb5b4',
+
+  // OPCIONAL: versão VERTICAL (em pé) do vídeo de fundo, para celular.
+  // Com ela, o celular mostra o vídeo em tela cheia. Sem ela, mostra o vídeo
+  // horizontal inteiro numa faixa no topo. Ex: 'videos/fundo-celular.mp4'
+  videoFundoCelular: '',
 
   // Vídeo vertical que aparece DENTRO DO CELULAR na seção Storymaker.
   // Ex: 'videos/story-destaque.mp4'

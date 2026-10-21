@@ -63,24 +63,60 @@ function setupWhatsApp() {
 }
 
 /* ---------- Topo (vídeo de fundo), celular e foto ---------- */
-function setupMedia() {
+/* Vídeo de fundo do topo.
+   - Computador (ou celular deitado): vídeo cobre o topo inteiro.
+   - Celular em pé: se houver SITE.videoFundoCelular (vídeo vertical), ele cobre a tela;
+     senão o vídeo horizontal aparece INTEIRO numa faixa de cinema no topo, sem cortes.
+   - YouTube escolhe a qualidade pelo tamanho do player: o player tem sempre 1920x1080
+     e é ampliado/reduzido com zoom, para o YouTube mandar a qualidade alta. */
+const telaEmPe = window.matchMedia('(max-width: 760px) and (orientation: portrait)');
+let modoVideo = null;
+function montarVideoFundo() {
   const media = $('#heroMedia');
-  const info = parseVideo(SITE.videoFundo);
-  if (info) {
-    $('#heroHint').remove();
-    if (info.tipo === 'arquivo') {
-      media.innerHTML = `<video src="${esc(info.src)}" muted loop playsinline autoplay preload="auto"></video>`;
-      const v = $('video', media);
-      v.play().catch(() => {});
-    } else if (info.fundo) {
-      media.innerHTML = `<iframe src="${esc(info.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
-      // aparece suavemente depois de carregar, para não mostrar a tela preta do YouTube
-      const frame = $('iframe', media);
-      frame.addEventListener('load', () => setTimeout(() => frame.classList.add('is-on'), 900));
-    }
-  } else {
+  const hero = $('#inicio');
+  const celular = telaEmPe.matches;
+  const fonteCel = parseVideo(SITE.videoFundoCelular);
+  const fonte = celular && fonteCel ? fonteCel : parseVideo(SITE.videoFundo);
+  const faixa = !!fonte && celular && !fonteCel;
+  const modo = `${celular}|${faixa}`;
+  if (modo === modoVideo) { ajustarVideoFundo(); return; }
+  modoVideo = modo;
+  hero.classList.toggle('hero--faixa', faixa);
+  if (!fonte) {
     media.classList.add('is-empty');
+    media.replaceChildren();
+    return;
   }
+  const aviso = $('#heroHint');
+  if (aviso) aviso.remove();
+  media.classList.remove('is-empty');
+  if (fonte.tipo === 'arquivo') {
+    media.innerHTML = `<video src="${esc(fonte.src)}" muted loop playsinline autoplay preload="auto"></video>`;
+    const v = $('video', media);
+    v.addEventListener('playing', () => v.classList.add('is-on'), { once: true });
+    v.play().catch(() => v.classList.add('is-on'));
+  } else if (fonte.fundo) {
+    media.innerHTML = `<iframe src="${esc(fonte.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
+    const frame = $('iframe', media);
+    // espera o YouTube subir a qualidade antes de mostrar (os primeiros segundos vêm borrados)
+    frame.addEventListener('load', () => setTimeout(() => frame.classList.add('is-on'), 2600));
+    ajustarVideoFundo();
+  }
+}
+function ajustarVideoFundo() {
+  const media = $('#heroMedia');
+  const frame = $('iframe', media);
+  if (!frame) return;
+  const W = media.clientWidth, H = media.clientHeight;
+  const faixa = $('#inicio').classList.contains('hero--faixa');
+  const escala = faixa ? W / 1920 : Math.max(W / 1920, H / 1080) * 1.08;
+  frame.style.transform = `translate(-50%, -50%) scale(${escala})`;
+}
+telaEmPe.addEventListener('change', montarVideoFundo);
+addEventListener('resize', ajustarVideoFundo);
+
+function setupMedia() {
+  montarVideoFundo();
 
   const phone = $('#storyPhone');
   if (SITE.videoCelular) {

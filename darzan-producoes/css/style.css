@@ -226,23 +226,49 @@ p { margin: 0; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.2s ease;
 }
+.hero__media video.is-on { opacity: 1; }
 .hero__media iframe {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100vw;
-  height: 56.25vw;          /* 16:9 */
-  min-width: 177.78vh;
-  min-height: 100%;
-  /* um pouco maior que a tela para esconder o título e a logo do YouTube nas bordas */
-  transform: translate(-50%, -50%) scale(1.2);
+  width: 1920px;            /* tamanho fixo grande: o YouTube manda qualidade alta */
+  height: 1080px;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
   border: 0;
   pointer-events: none;
   opacity: 0;
   transition: opacity 1.4s ease;
 }
 .hero__media iframe.is-on { opacity: 1; }
+
+/* Celular em pé com vídeo horizontal: vídeo inteiro numa faixa de cinema, textos embaixo */
+.hero--faixa {
+  min-height: 0;
+  align-items: flex-start;
+  padding-top: calc(var(--header-h) + 56.25vw + 26px);
+  padding-bottom: 64px;
+}
+.hero--faixa .hero__media {
+  inset: auto 0 auto 0;
+  top: var(--header-h);
+  height: 56.25vw;
+}
+.hero--faixa .hero__overlay {
+  background: linear-gradient(180deg,
+    rgba(13, 11, 10, .25) 0,
+    rgba(13, 11, 10, 0) calc(var(--header-h) + 8vw),
+    rgba(13, 11, 10, 0) calc(var(--header-h) + 47vw),
+    var(--bg) calc(var(--header-h) + 56.25vw),
+    var(--bg) 100%);
+}
+.hero--faixa .hero__overlay::after { opacity: .04; }
+.hero--faixa .hero__bars { display: none; }
+.hero--faixa .hero__logo { display: none; }
 /* enquanto o vídeo carrega, aparece a luz dourada de fundo */
 .hero__media {
   background:
