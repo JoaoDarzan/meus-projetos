@@ -27,7 +27,7 @@ function parseVideo(url) {
       tipo: 'youtube',
       id: yt[1],
       embed: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&playsinline=1`,
-      fundo: `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0`,
+      fundo: `https://www.youtube.com/embed/${yt[1]}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&cc_load_policy=0&disablekb=1&fs=0&enablejsapi=1${/^https?:/.test(location.origin) ? `&origin=${encodeURIComponent(location.origin)}` : ''}`,
       thumb: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`
     };
   }
@@ -96,13 +96,75 @@ function montarVideoFundo() {
     v.addEventListener('playing', () => v.classList.add('is-on'), { once: true });
     v.play().catch(() => v.classList.add('is-on'));
   } else if (fonte.fundo) {
-    media.innerHTML = `<iframe src="${esc(fonte.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
-    const frame = $('iframe', media);
-    // espera o YouTube subir a qualidade antes de mostrar (os primeiros segundos vêm borrados)
-    frame.addEventListener('load', () => setTimeout(() => frame.classList.add('is-on'), 2600));
+    media.innerHTML = `<iframe id="videoFundoYT" src="${esc(fonte.fundo)}" title="Vídeo de fundo" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
     ajustarVideoFundo();
+    if (fonte.tipo === 'youtube') controlarYouTube($('iframe', media));
+    else $('iframe', media).addEventListener('load', () => setTimeout(() => $('iframe', media) && $('iframe', media).classList.add('is-on'), 2600));
   }
 }
+/* Controle do YouTube: o vídeo só aparece quando já está tocando (sem botão de play, título
+   ou legendas), e a repetição é feita pelo site, antes da tela final de sugestões do YouTube.
+   Se o celular bloquear o vídeo, o YouTube nunca aparece: fica só o fundo dourado. */
+function carregarApiYouTube() {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (!window.__ytApi) {
+    window.__ytApi = new Promise((resolve) => {
+      const anterior = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (anterior) anterior(); resolve(window.YT); };
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.append(tag);
+    });
+  }
+  return window.__ytApi;
+}
+function controlarYouTube(frame) {
+  let mostrado = false;
+  let relogio = null;
+  const semLegenda = (p) => {
+    try { p.unloadModule('captions'); } catch (e) { /* sem legenda carregada */ }
+    try { p.unloadModule('cc'); } catch (e) { /* idem */ }
+  };
+  carregarApiYouTube().then((YT) => {
+    if (!frame.isConnected) return;
+    new YT.Player(frame, {
+      events: {
+        onReady: (ev) => {
+          const p = ev.target;
+          p.mute();
+          semLegenda(p);
+          p.playVideo();
+          clearInterval(relogio);
+          relogio = setInterval(() => {
+            if (!frame.isConnected) { clearInterval(relogio); return; }
+            const dur = p.getDuration ? p.getDuration() : 0;
+            const t = p.getCurrentTime ? p.getCurrentTime() : 0;
+            // volta ao começo um pouco antes do fim: a tela final do YouTube nunca aparece
+            if (dur > 1 && t > dur - 0.6) p.seekTo(0, true);
+          }, 200);
+        },
+        onApiChange: (ev) => semLegenda(ev.target),
+        onStateChange: (ev) => {
+          const p = ev.target;
+          if (ev.data === YT.PlayerState.PLAYING) {
+            semLegenda(p);
+            if (!mostrado) {
+              mostrado = true;
+              // o título do YouTube some sozinho nos primeiros segundos: só mostra depois disso
+              setTimeout(() => frame.classList.add('is-on'), 3200);
+            }
+          } else if (ev.data === YT.PlayerState.ENDED) {
+            p.seekTo(0, true);
+            p.playVideo();
+          } else if (ev.data === YT.PlayerState.PAUSED && document.visibilityState === 'visible') {
+            p.playVideo();
+          }
+        },
+      },
+    });
+  });
+}
+
 function ajustarVideoFundo() {
   const media = $('#heroMedia');
   const frame = $('iframe', media);
