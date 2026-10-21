@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Capa do YouTube — Darzan Produções</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Capa do canal: 2560x1440. Área segura (aparece em todos os aparelhos): 1546x423 no centro.
+   No computador aparece a faixa inteira de 2560x423; na TV, a imagem toda. */
+:root { --bg: #0d0b0a; --fg: #f4ede4; --muted: #b3a798; --gold: #d6a85f; --gold-2: #f0cf94; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 2560px; height: 1440px; background: var(--bg); overflow: hidden; }
+.capa { position: relative; width: 2560px; height: 1440px; overflow: hidden; color: var(--fg); font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(ellipse 900px 330px at 50% 50%, rgba(214,168,95,.20), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 82% 38%, rgba(214,168,95,.10), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 16% 64%, rgba(168,90,70,.12), transparent 70%),
+    var(--bg); }
+/* reflexo anamórfico (luz de lente de cinema) atravessando a faixa */
+.flare { position: absolute; left: 0; right: 0; height: 3px; top: 742px;
+  background: linear-gradient(90deg, transparent 0%, rgba(240,207,148,.0) 8%, rgba(240,207,148,.55) 38%, rgba(255,236,200,.9) 50%, rgba(240,207,148,.55) 62%, rgba(240,207,148,0) 92%, transparent);
+  filter: blur(1.5px); opacity: .55; }
+.flare.f2 { top: 742px; height: 40px; filter: blur(22px); opacity: .18; }
+/* faixas de cinema (letterbox) suaves fora da área do computador */
+.bars::before, .bars::after { content: ''; position: absolute; left: 0; right: 0; height: 420px; }
+.bars::before { top: 0; background: linear-gradient(180deg, #050403 0%, rgba(5,4,3,0) 100%); }
+.bars::after { bottom: 0; background: linear-gradient(0deg, #050403 0%, rgba(5,4,3,0) 100%); }
+/* grão de filme */
+.grao { position: absolute; inset: 0; opacity: .09; mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* marcas de visor de câmera nos cantos da faixa central */
+.visor { position: absolute; left: 540px; top: 528px; width: 1480px; height: 383px; }
+.visor i { position: absolute; width: 46px; height: 46px; border-color: rgba(214,168,95,.55); border-style: solid; border-width: 0; }
+.visor i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.visor i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.visor i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.visor i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.rec { position: absolute; left: 72px; top: 22px; font-size: 19px; letter-spacing: .3em; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+.rec b { width: 12px; height: 12px; border-radius: 50%; background: #d9574a; box-shadow: 0 0 14px rgba(217,87,74,.8); }
+.tc { position: absolute; right: 72px; top: 22px; font-size: 19px; letter-spacing: .18em; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* conteúdo central */
+.centro { position: absolute; left: 507px; top: 509px; width: 1546px; height: 423px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.marca { display: flex; align-items: center; gap: 46px; }
+.selo { width: 150px; height: 150px; border-radius: 50%; border: 2.5px solid var(--gold); display: grid; place-items: center;
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 104px; color: var(--gold); line-height: 1; padding-bottom: 8px; }
+.titulo { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 158px; line-height: .95; letter-spacing: -.005em; }
+.titulo em { color: var(--gold); font-weight: 500; }
+.eyebrow { font-size: 25px; font-weight: 600; letter-spacing: .42em; text-transform: uppercase; color: var(--gold); margin-bottom: 26px; display: flex; align-items: center; gap: 22px; }
+.eyebrow::before, .eyebrow::after { content: ''; width: 60px; height: 1.5px; background: var(--gold); opacity: .8; }
+.frase { margin-top: 26px; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 50px; color: var(--gold-2); }
+.servicos { margin-top: 22px; font-size: 21px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+.servicos span { color: var(--gold); margin: 0 14px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <div class="bars"></div>
+  <div class="flare f2"></div>
+  <div class="flare"></div>
+
+  <div class="visor"><i></i><i></i><i></i><i></i>
+    <div class="rec"><b></b>REC</div>
+    <div class="tc">4K · 24 FPS</div>
+  </div>
+
+  <div class="centro">
+    <p class="eyebrow">Videomaker · Storymaker · Campinas</p>
+    <div class="marca">
+      <span class="selo">D</span>
+      <h1 class="titulo">Darzan <em>Produções</em></h1>
+    </div>
+    <p class="frase">Seu dia contado como cinema</p>
+    <p class="servicos">Filmes cinematográficos<span>·</span>Teasers<span>·</span>Cerimônia na íntegra<span>·</span>Storymaker</p>
+  </div>
+
+  <div class="grao"></div>
+</div>
+</body>
+</html>
