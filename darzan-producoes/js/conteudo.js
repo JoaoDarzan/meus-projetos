@@ -23,7 +23,7 @@ const SITE = {
   // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
   // Melhor qualidade: um arquivo seu ('videos/fundo.mp4', 1920x1080, até ~15 MB).
   // Também aceita link do YouTube ou Vimeo (o YouTube começa com qualidade baixa).
-  videoFundo: 'https://youtu.be/Lrmm-2Vb5b4',
+  videoFundo: '',
 
   // OPCIONAL: versão VERTICAL (em pé) do vídeo de fundo, para celular.
   // Com ela, o celular mostra o vídeo em tela cheia. Sem ela, mostra o vídeo
