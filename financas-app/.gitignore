@@ -1,0 +1,7 @@
+# Dados pessoais e fotos: ficam só no computador / no Supabase, nunca no GitHub (repositório público)
+dados/meus-dados.js
+dados/fotos/
+dist/
+testes/capturas/
+# O importador antigo tem valores e nomes reais dentro; vai ser refeito para ler a "Planilha financeira 2.0"
+ferramentas/importar_planilha.py
