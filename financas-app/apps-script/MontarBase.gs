@@ -307,10 +307,25 @@ function escrever_(ss, nome, cab, linhas, o, existente) {
 }
 function formulas_(ss) {
   const t = ss.getSheetByName('TRABALHOS'), n = t.getLastRow();
+  const sep = separador_(t.getRange(2, 7));
+  const f = s => s.replace(/,/g, sep);
   for (let r = 2; r <= n + 30; r++) {
-    t.getRange(r, 7).setFormula(`=IF(A${r}="","",SUMIFS(EXTRATO!F:F,EXTRATO!C:C,"*"&A${r}&"*",EXTRATO!D:D,"Renda"))`);
-    t.getRange(r, 8).setFormula(`=IF(OR(A${r}="",F${r}=""),"",F${r}-G${r})`);
+    t.getRange(r, 7).setFormula(f(`=IF(A${r}="","",SUMIFS(EXTRATO!F:F,EXTRATO!C:C,"*"&A${r}&"*",EXTRATO!D:D,"Renda"))`));
+    t.getRange(r, 8).setFormula(f(`=IF(OR(A${r}="",F${r}=""),"",F${r}-G${r})`));
   }
+}
+/* planilha em português pode pedir ";" no lugar de "," nas fórmulas: testa e usa o que funcionar */
+function separador_(celula) {
+  celula.setFormula('=IF(1=1,1,0)');
+  SpreadsheetApp.flush();
+  const ok = String(celula.getDisplayValue()) === '1';
+  celula.clearContent();
+  return ok ? ',' : ';';
+}
+/* conserta só as fórmulas da aba TRABALHOS (para quem já montou a base com a versão anterior) */
+function ajustarFormulasTrabalhos() {
+  formulas_(SpreadsheetApp.getActiveSpreadsheet());
+  SpreadsheetApp.flush();
 }
 function listas_(ss) {
   const ext = ss.getSheetByName('EXTRATO'), n = ext.getMaxRows() - 1;

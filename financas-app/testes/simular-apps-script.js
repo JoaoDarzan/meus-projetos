@@ -29,6 +29,8 @@ class Intervalo {
   constructor(aba, r, c, nr, nc) { Object.assign(this, { aba, r, c, nr, nc }); }
   getValues() { const out = []; for (let i = 0; i < this.nr; i++) { const row = this.aba.g[this.r - 1 + i] || []; const l = []; for (let j = 0; j < this.nc; j++) l.push(row[this.c - 1 + j] === undefined ? '' : row[this.c - 1 + j]); out.push(l); } return out; }
   getValue() { return this.getValues()[0][0]; }
+  getDisplayValue() { return process.env.SEPARADOR === ';' ? '#ERROR!' : '1'; } /* finge planilha que só aceita ; */
+  clearContent() { return encadeia(this); }
   setValues(v) {
     if (v.length !== this.nr || v.some(l => l.length !== this.nc)) throw new Error(`setValues: tamanho errado em ${this.aba.nome} (${v.length}x${v[0] && v[0].length} em ${this.nr}x${this.nc})`);
     /* igual ao Google: lista suspensa que não aceita valor fora da lista barra a gravação */
