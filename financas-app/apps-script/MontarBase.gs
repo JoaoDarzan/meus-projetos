@@ -106,16 +106,23 @@ function montarBaseDeDados() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ext = ss.getSheetByName('EXTRATO');
   if (!ext) throw new Error('Não achei a aba EXTRATO nesta planilha.');
-  if (ext.getRange(1, 1, 1, ext.getLastColumn()).getValues()[0].indexOf('ID') >= 0) {
-    throw new Error('A base já foi montada (o EXTRATO já tem a coluna ID). Para montar de novo, use a cópia de segurança.');
+  const jaTemId = ext.getLastColumn() > 0 && ext.getRange(1, 1, 1, ext.getLastColumn()).getValues()[0].indexOf('ID') >= 0;
+  let origem = ext;
+  if (jaTemId && ext.getLastRow() > 1) {
+    throw new Error('A base já foi montada (o EXTRATO já tem a coluna ID e linhas). Nada foi alterado.');
   }
-  copiaDeSeguranca_(ss);
+  if (jaTemId) {
+    /* uma tentativa anterior parou no meio e deixou o EXTRATO vazio: as suas linhas estão na cópia de segurança */
+    origem = extratoDaCopia_();
+  } else {
+    copiaDeSeguranca_(ss);
+  }
   const antiga = SpreadsheetApp.openById(PLANILHA_ANTIGA_ID);
   const hoje = new Date();
   const mesAtual = hoje.getFullYear() === ANO ? hoje.getMonth() + 1 : 12;
 
   /* 1. o que você já lançou na 2.0 */
-  const meus = lerExtratoAtual_(ext);
+  const meus = lerExtratoAtual_(origem);
   /* 2. histórico da antiga */
   const hist = lerAntiga_(antiga, mesAtual);
   const linhas = meus.concat(hist.linhas).sort((a, b) => a[0] - b[0]);
@@ -282,6 +289,9 @@ function escrever_(ss, nome, cab, linhas, o, existente) {
   let sh = existente || ss.getSheetByName(nome);
   if (!sh) sh = ss.insertSheet(nome);
   sh.clear();
+  /* clear() não apaga listas suspensas antigas; sem isso o Google recusa valores novos */
+  if (sh.getMaxColumns() < cab.length) sh.insertColumnsAfter(sh.getMaxColumns(), cab.length - sh.getMaxColumns());
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
   sh.getRange(1, 1, 1, cab.length).setValues([cab]).setFontWeight('bold').setFontColor('#ffffff').setBackground(o.cor || '#1f3a8a');
   if (linhas.length) sh.getRange(2, 1, linhas.length, cab.length).setValues(linhas.map(l => cab.map((_, i) => l[i] === undefined ? '' : l[i])));
   const n = Math.max(linhas.length, 1) + 200;
@@ -346,6 +356,15 @@ function leiaMe_(ss, total, seus, hist) {
 function copiaDeSeguranca_(ss) {
   const nome = ss.getName() + ' (cópia de segurança ' + Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd-MM-yyyy HH.mm') + ')';
   DriveApp.getFileById(ss.getId()).makeCopy(nome);
+}
+function extratoDaCopia_() {
+  const busca = DriveApp.searchFiles("title contains 'Planilha financeira 2.0 (cópia de segurança' and trashed = false");
+  let melhor = null;
+  while (busca.hasNext()) { const f = busca.next(); if (!melhor || f.getDateCreated() > melhor.getDateCreated()) melhor = f; }
+  if (!melhor) throw new Error('O EXTRATO está vazio e não achei a cópia de segurança no Drive. Copie as suas linhas de volta para o EXTRATO e rode de novo.');
+  const sh = SpreadsheetApp.open(melhor).getSheetByName('EXTRATO');
+  if (!sh || sh.getLastRow() < 2) throw new Error('A cópia de segurança "' + melhor.getName() + '" não tem linhas no EXTRATO.');
+  return sh;
 }
 function numero_(v) {
   if (typeof v === 'number') return v;

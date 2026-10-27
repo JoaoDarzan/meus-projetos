@@ -18,7 +18,8 @@ class Aba {
   getLastRow() { for (let r = this.g.length; r > 0; r--) if (this.g[r - 1].some(v => v !== '' && v != null)) return r; return 0; }
   getLastColumn() { return Math.max(0, ...this.g.map(r => { for (let c = r.length; c > 0; c--) if (r[c - 1] !== '' && r[c - 1] != null) return c; return 0; })); }
   getMaxRows() { return Math.max(1000, this.g.length); }
-  clear() { this.g = []; this.formulas = {}; this.validacoes = []; return this; }
+  getMaxColumns() { return Math.max(26, this.getLastColumn()); }
+  clear() { this.g = []; this.formulas = {}; return this; } /* como no Google: as listas suspensas continuam */
   setFrozenRows(n) { this.congelada = n; }
   getFilter() { return null; }
   autoResizeColumns() { } setColumnWidth() { } setTabColor() { }
@@ -30,12 +31,18 @@ class Intervalo {
   getValue() { return this.getValues()[0][0]; }
   setValues(v) {
     if (v.length !== this.nr || v.some(l => l.length !== this.nc)) throw new Error(`setValues: tamanho errado em ${this.aba.nome} (${v.length}x${v[0] && v[0].length} em ${this.nr}x${this.nc})`);
+    /* igual ao Google: lista suspensa que não aceita valor fora da lista barra a gravação */
+    this.aba.validacoes.filter(x => x.regra && x.regra.lista && !x.regra.permite).forEach(x => v.forEach((l, i) => {
+      const r = this.r + i, c = x.c - this.c;
+      if (c >= 0 && c < this.nc && r >= x.r && r < x.r + x.nr && l[c] !== '' && x.regra.lista.indexOf(l[c]) < 0) throw new Error(`Os dados inseridos na célula ${String.fromCharCode(64 + x.c)}${r} violam as regras de validação de dados.`);
+    }));
     v.forEach((l, i) => { const ri = this.r - 1 + i; while (this.aba.g.length <= ri) this.aba.g.push([]); l.forEach((x, j) => { const row = this.aba.g[ri]; while (row.length < this.c - 1 + j) row.push(''); row[this.c - 1 + j] = x; }); });
     return encadeia(this);
   }
   setValue(x) { return this.setValues([[x]]); }
   setFormula(f) { this.aba.formulas[`${this.r},${this.c}`] = f; return encadeia(this); }
   setDataValidation(v) { this.aba.validacoes.push({ r: this.r, c: this.c, nr: this.nr, regra: v }); return encadeia(this); }
+  clearDataValidations() { this.aba.validacoes = this.aba.validacoes.filter(x => x.c < this.c || x.c >= this.c + this.nc); return encadeia(this); }
   insertCheckboxes() { this.aba.validacoes.push({ r: this.r, c: this.c, nr: this.nr, regra: 'checkbox' }); return encadeia(this); }
   createFilter() { return encadeia(this); }
 }
@@ -47,15 +54,25 @@ class Planilha {
   setActiveSheet() { }
 }
 const nova = new Planilha('Planilha financeira 2.0', entrada.nova), antiga = new Planilha('antiga', entrada.antiga);
-const regra = () => { const r = {}; const b = { requireValueInList: (l) => (r.lista = l, b), requireValueInRange: (g) => (r.intervalo = `${g.aba.nome}!${g.c}`, b), setAllowInvalid: () => b, build: () => r }; return b; };
+/* a lista que o João tinha criado na coluna BANCO do EXTRATO */
+nova.getSheetByName('EXTRATO').validacoes.push({ r: 2, c: 2, nr: 999, regra: { lista: ['Nu bank', 'PicPay'], permite: false } });
+const regra = () => { const r = {}; const b = { requireValueInList: (l) => (r.lista = l, b), requireValueInRange: (g) => (r.intervalo = `${g.aba.nome}!${g.c}`, b), setAllowInvalid: (x) => (r.permite = x, b), build: () => r }; return b; };
 const ctx = {
-  SpreadsheetApp: { getActiveSpreadsheet: () => nova, openById: () => antiga, newDataValidation: regra, flush() { } },
-  DriveApp: { getFileById: () => ({ makeCopy: (n) => { ctx.copias.push(n); } }) },
+  SpreadsheetApp: { getActiveSpreadsheet: () => nova, openById: () => antiga, open: f => f.planilha, newDataValidation: regra, flush() { } },
+  DriveApp: {
+    getFileById: () => ({ makeCopy: (n) => { ctx.copias.push(n); ctx.arquivos.push({ nome: n, planilha: new Planilha(n, { EXTRATO: entrada.nova.EXTRATO }) }); } }),
+    searchFiles: () => { const fs_ = ctx.arquivos.slice(); return { hasNext: () => fs_.length > 0, next: () => { const f = fs_.shift(); return { getName: () => f.nome, getDateCreated: () => new Date(), planilha: f.planilha }; } }; },
+  },
   Utilities: { formatDate: (d) => d.toISOString().slice(0, 16).replace('T', ' ') },
-  console, copias: [], Date, /* mesma classe Date dos dois lados */
+  console, copias: [], arquivos: [], Date, /* mesma classe Date dos dois lados */
 };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(arqScript, 'utf8'), ctx, { filename: arqScript });
+/* opcional: simula a tentativa que parou no meio (EXTRATO só com o cabeçalho) antes de rodar */
+if (process.env.SIMULAR_FALHA) {
+  ctx.arquivos.push({ nome: 'Planilha financeira 2.0 (cópia de segurança)', planilha: new Planilha('copia', { EXTRATO: entrada.nova.EXTRATO }) });
+  nova.getSheetByName('EXTRATO').g = [['DATA', 'BANCO', 'DESCRIÇÃO', 'GRUPO', 'TIPO', 'VALOR', 'CATEGORIA', 'SUB-CATEGORIA', 'STATUS', 'PARCELA', 'OBS', 'ID']];
+}
 const resumo = vm.runInContext('montarBaseDeDados()', ctx);
 const iso = v => v instanceof Date ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}` : v;
 fs.writeFileSync(arqSaida, JSON.stringify({ resumo, copias: ctx.copias, abas: nova.abas.map(a => ({ nome: a.nome, linhas: a.g.map(r => r.map(iso)), formulas: a.formulas, validacoes: a.validacoes, congelada: a.congelada })) }, null, 1));
