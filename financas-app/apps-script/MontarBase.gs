@@ -108,8 +108,10 @@ function montarBaseDeDados() {
   if (!ext) throw new Error('Não achei a aba EXTRATO nesta planilha.');
   const jaTemId = ext.getLastColumn() > 0 && ext.getRange(1, 1, 1, ext.getLastColumn()).getValues()[0].indexOf('ID') >= 0;
   let origem = ext;
-  if (jaTemId && ext.getLastRow() > 1) {
-    throw new Error('A base já foi montada (o EXTRATO já tem a coluna ID e linhas). Nada foi alterado.');
+  /* a base só está pronta se as linhas têm ID; uma tentativa que parou no meio deixa linhas sem ID */
+  const comId = jaTemId && ext.getLastRow() > 1 ? ext.getRange(2, 12, ext.getLastRow() - 1, 1).getValues().filter(r => r[0] !== '').length : 0;
+  if (comId > 0) {
+    throw new Error('A base já foi montada (o EXTRATO já tem ' + comId + ' linhas com ID). Nada foi alterado.');
   }
   if (jaTemId) {
     /* uma tentativa anterior parou no meio e deixou o EXTRATO vazio: as suas linhas estão na cópia de segurança */

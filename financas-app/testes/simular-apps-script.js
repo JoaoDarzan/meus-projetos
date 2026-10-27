@@ -71,7 +71,8 @@ vm.runInContext(fs.readFileSync(arqScript, 'utf8'), ctx, { filename: arqScript }
 /* opcional: simula a tentativa que parou no meio (EXTRATO só com o cabeçalho) antes de rodar */
 if (process.env.SIMULAR_FALHA) {
   ctx.arquivos.push({ nome: 'Planilha financeira 2.0 (cópia de segurança)', planilha: new Planilha('copia', { EXTRATO: entrada.nova.EXTRATO }) });
-  nova.getSheetByName('EXTRATO').g = [['DATA', 'BANCO', 'DESCRIÇÃO', 'GRUPO', 'TIPO', 'VALOR', 'CATEGORIA', 'SUB-CATEGORIA', 'STATUS', 'PARCELA', 'OBS', 'ID']];
+  /* foi assim que ficou na planilha do João: cabeçalho novo e só a data da 1ª linha */
+  nova.getSheetByName('EXTRATO').g = [['DATA', 'BANCO', 'DESCRIÇÃO', 'GRUPO', 'TIPO', 'VALOR', 'CATEGORIA', 'SUB-CATEGORIA', 'STATUS', 'PARCELA', 'OBS', 'ID'], [new Date(2026, 2, 2)]];
 }
 const resumo = vm.runInContext('montarBaseDeDados()', ctx);
 const iso = v => v instanceof Date ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}` : v;
