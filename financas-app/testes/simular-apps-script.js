@@ -7,13 +7,22 @@
 const fs = require('fs');
 const vm = require('vm');
 const [arqScript, arqEntrada, arqSaida] = process.argv.slice(2);
+const funcoes = (process.env.FUNCOES || 'montarBaseDeDados').split(',');
 const entrada = JSON.parse(fs.readFileSync(arqEntrada, 'utf8'));
 
 const revive = v => (v && typeof v === 'object' && v.$d) ? (([y, m, d]) => new Date(y, m - 1, d))(v.$d.split('-').map(Number)) : v;
 const encadeia = alvo => new Proxy(alvo, { get: (o, k) => k in o ? o[k] : () => encadeia(o) });
 
 class Aba {
-  constructor(nome, grade) { this.nome = nome; this.g = (grade || []).map(r => r.map(revive)); this.formulas = {}; this.validacoes = []; this.congelada = 0; }
+  constructor(nome, grade) {
+    this.nome = nome; this.g = (grade || []).map(r => r.map(revive)); this.formulas = {}; this.validacoes = []; this.congelada = 0; this.escondidas = []; this.regras = []; this.cor = null;
+    return new Proxy(this, { get: (o, k) => k in o ? o[k] : () => { } }); /* o que o Google tem e o teste não precisa: não faz nada */
+  }
+  hideColumns(c) { this.escondidas.push(c); }
+  setConditionalFormatRules(r) { this.regras = r; }
+  setTabColor(c) { this.cor = c; }
+  getBandings() { return []; }
+  getColumnWidth() { return 100; }
   getName() { return this.nome; }
   getLastRow() { for (let r = this.g.length; r > 0; r--) if (this.g[r - 1].some(v => v !== '' && v != null)) return r; return 0; }
   getLastColumn() { return Math.max(0, ...this.g.map(r => { for (let c = r.length; c > 0; c--) if (r[c - 1] !== '' && r[c - 1] != null) return c; return 0; })); }
@@ -53,14 +62,18 @@ class Planilha {
   getName() { return this.nome; } getId() { return this.nome; }
   getSheetByName(n) { return this.abas.find(a => a.nome === n) || null; }
   insertSheet(n, i) { const a = new Aba(n, []); if (i === 0) this.abas.unshift(a); else this.abas.push(a); return a; }
-  setActiveSheet() { }
+  setActiveSheet(a) { this.ativa = a; }
+  moveActiveSheet(pos) { const i = this.abas.indexOf(this.ativa); if (i < 0) return; this.abas.splice(i, 1); this.abas.splice(pos - 1, 0, this.ativa); }
+  getSheets() { return this.abas; }
 }
 const nova = new Planilha('Planilha financeira 2.0', entrada.nova), antiga = new Planilha('antiga', entrada.antiga);
 /* a lista que o João tinha criado na coluna BANCO do EXTRATO */
 nova.getSheetByName('EXTRATO').validacoes.push({ r: 2, c: 2, nr: 999, regra: { lista: ['Nu bank', 'PicPay'], permite: false } });
 const regra = () => { const r = {}; const b = { requireValueInList: (l) => (r.lista = l, b), requireValueInRange: (g) => (r.intervalo = `${g.aba.nome}!${g.c}`, b), setAllowInvalid: (x) => (r.permite = x, b), build: () => r }; return b; };
 const ctx = {
-  SpreadsheetApp: { getActiveSpreadsheet: () => nova, openById: () => antiga, open: f => f.planilha, newDataValidation: regra, flush() { } },
+  SpreadsheetApp: { getActiveSpreadsheet: () => nova, openById: () => antiga, open: f => f.planilha, newDataValidation: regra, flush() { },
+    newConditionalFormatRule: () => { const r = {}; const b = new Proxy({}, { get: (o, k) => k === 'build' ? () => r : (...a) => { r[k] = a; return b; } }); return b; },
+    BandingTheme: { LIGHT_GREY: 'LIGHT_GREY' } },
   DriveApp: {
     getFileById: () => ({ makeCopy: (n) => { ctx.copias.push(n); ctx.arquivos.push({ nome: n, planilha: new Planilha(n, { EXTRATO: entrada.nova.EXTRATO }) }); } }),
     searchFiles: () => { const fs_ = ctx.arquivos.slice(); return { hasNext: () => fs_.length > 0, next: () => { const f = fs_.shift(); return { getName: () => f.nome, getDateCreated: () => new Date(), planilha: f.planilha }; } }; },
@@ -69,14 +82,15 @@ const ctx = {
   console, copias: [], arquivos: [], Date, /* mesma classe Date dos dois lados */
 };
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(arqScript, 'utf8'), ctx, { filename: arqScript });
+arqScript.split(',').forEach(a => vm.runInContext(fs.readFileSync(a, 'utf8'), ctx, { filename: a }));
 /* opcional: simula a tentativa que parou no meio (EXTRATO só com o cabeçalho) antes de rodar */
 if (process.env.SIMULAR_FALHA) {
   ctx.arquivos.push({ nome: 'Planilha financeira 2.0 (cópia de segurança)', planilha: new Planilha('copia', { EXTRATO: entrada.nova.EXTRATO }) });
   /* foi assim que ficou na planilha do João: cabeçalho novo e só a data da 1ª linha */
   nova.getSheetByName('EXTRATO').g = [['DATA', 'BANCO', 'DESCRIÇÃO', 'GRUPO', 'TIPO', 'VALOR', 'CATEGORIA', 'SUB-CATEGORIA', 'STATUS', 'PARCELA', 'OBS', 'ID'], [new Date(2026, 2, 2)]];
 }
-const resumo = vm.runInContext('montarBaseDeDados()', ctx);
+let resumo;
+funcoes.forEach(fn => { resumo = vm.runInContext(fn + '()', ctx) || resumo; });
 const iso = v => v instanceof Date ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}` : v;
-fs.writeFileSync(arqSaida, JSON.stringify({ resumo, copias: ctx.copias, abas: nova.abas.map(a => ({ nome: a.nome, linhas: a.g.map(r => r.map(iso)), formulas: a.formulas, validacoes: a.validacoes, congelada: a.congelada })) }, null, 1));
+fs.writeFileSync(arqSaida, JSON.stringify({ resumo, copias: ctx.copias, abas: nova.abas.map(a => ({ nome: a.nome, linhas: a.g.map(r => r.map(iso)), formulas: a.formulas, validacoes: a.validacoes, congelada: a.congelada, escondidas: a.escondidas, regras: a.regras.length, cor: a.cor })) }, null, 1));
 console.log('ok', JSON.stringify(resumo), 'abas:', nova.abas.map(a => `${a.nome}(${a.getLastRow()})`).join(' '));
