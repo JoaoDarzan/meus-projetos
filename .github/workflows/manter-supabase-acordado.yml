@@ -1,0 +1,29 @@
+# Lembrete automático: a cada 3 dias avisa o Supabase que o app está em uso, para o projeto grátis não "dormir".
+# Também se religa a cada vez (o GitHub desliga lembretes de projetos sem mudanças por 60 dias).
+# A reserva fica no Netlify: netlify/functions/manter-supabase-acordado.mjs
+name: Manter o Supabase acordado
+on:
+  schedule:
+    - cron: '17 14 */3 * *'
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+jobs:
+  sinal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisa o Supabase
+        env:
+          URL: https://sczpyzcozcaibyzekmau.supabase.co
+          CHAVE: sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14
+        run: |
+          for i in 1 2 3; do
+            if curl -fsS -X POST "$URL/rest/v1/rpc/manter_ativo" -H "apikey: $CHAVE" -H "Content-Type: application/json" -d '{}'; then echo; echo "Supabase acordado"; exit 0; fi
+            sleep 30
+          done
+          echo "Não consegui falar com o Supabase"; exit 1
+      - name: Religa este lembrete
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/manter-supabase-acordado.yml/enable"

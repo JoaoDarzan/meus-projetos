@@ -1,0 +1,40 @@
+# Testa o app de finanças a cada mudança: regras de segurança do banco e o app no navegador (celular e computador).
+name: Testar o app de finanças
+on:
+  push:
+    paths: ['darzan-producoes/financas/**', 'financas-app/**', '.github/workflows/testar-financas.yml']
+  pull_request:
+    paths: ['darzan-producoes/financas/**', 'financas-app/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  banco:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: teste }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: O SQL está em dia com as tabelas do app
+        run: node financas-app/ferramentas/gerar_sql.js && git diff --exit-code financas-app/supabase/esquema.sql
+      - name: Regras de segurança (cada um só vê o que é seu)
+        env: { PGHOST: localhost, PGUSER: postgres, PGPASSWORD: teste }
+        run: financas-app/testes/testar-sql.sh
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Navegador de teste
+        run: npm install --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
+      - name: Testes do app (dados de exemplo)
+        run: node financas-app/testes/testar-app.js
+      - name: Fotos das telas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: capturas, path: financas-app/testes/capturas, retention-days: 7 }

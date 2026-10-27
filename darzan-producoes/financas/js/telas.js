@@ -1,5 +1,3 @@
-<!-- Telas do app. Incluído pelo Index.html. -->
-<script>
 (function (A) {
   const u = A.u, c = A.c, db = A.db;
   const ui = A.ui = { view: 'inicio', mes: null, fseg: 'extrato', rseg: 'mes', tfil: 'todas', efil: 'Todos', filtro: 'tudo', q: '', cartao: null, oculto: false };
@@ -58,7 +56,7 @@
     const d1 = c.dicas(m)[0];
     return `<div class="home"><div class="col-l">
       <section class="hero"><span class="blob b1"></span><span class="blob b2"></span>
-        <div class="hello"><div class="ava-w">${foto()}</div><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+        <div class="hello"><button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
           <button class="eye" type="button" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}">${u.svg(ui.oculto ? 'eye-off' : 'eye')}</button>
           <button class="bell ${urg ? 'ring' : ''}" type="button" data-a="go" data-v="tarefas" aria-label="Tarefas">${u.svg('bell')}${urg ? `<span class="cnt">${urg}</span>` : ''}</button></div>
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
@@ -553,7 +551,7 @@
   function nav() {
     const urg = c.urgentes();
     $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
-    $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button>${A.urlPlanilha ? `<a class="snav-l" href="${A.urlPlanilha}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:11px 12px;color:var(--muted);text-decoration:none;font-weight:600">${u.svg('file-text')}Abrir a planilha</a>` : ''}`;
+    $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
     const lv = c.nivel(c.xp());
     $('sbrand').innerHTML = `<div class="ringw">${anel(lv.atual / lv.prox, 56, 4, '#ffd36b')}${foto()}<span class="lvl">Nv ${lv.n}</span></div><div><b>João Darzan</b><span>${lv.nome}</span></div>`;
     $('fabwrap').hidden = ui.view === 'inicio';
@@ -612,26 +610,115 @@
   addEventListener('scroll', () => { const t = $('tip'); if (t) t.hidden = true; }, { passive: true });
   $('scrim2').addEventListener('click', e => { if (e.target.id === 'scrim2') fechar(); });
 
-  /* ================= início ================= */
+  /* ================= sincronia ================= */
+  const N = A.nuvem;
   db.aoSincronizar((estado, msg) => {
-    const s = $('sync'); s.hidden = false; s.className = 'sync ' + (estado === 'ok' ? 'ok' : estado === 'erro' ? 'erro' : '');
-    s.innerHTML = `<i></i>${estado === 'ok' ? 'Salvo na planilha' : estado === 'erro' ? 'Não salvou' : 'Salvando…'}`;
-    clearTimeout(s.h); if (estado === 'ok') s.h = setTimeout(() => s.hidden = true, 1800);
-    if (estado === 'erro') { render(false); toast('Não consegui salvar na planilha: ' + (msg || 'tente de novo') + '. Desfiz a mudança no app.'); }
+    const s = $('sync'); s.hidden = false; s.className = 'sync ' + (estado === 'ok' || estado === 'recarregado' ? 'ok' : estado === 'erro' ? 'erro' : estado === 'offline' ? 'off' : '');
+    s.innerHTML = `<i></i>${{ ok: 'Salvo', recarregado: 'Atualizado', erro: 'Não salvou', offline: 'Sem internet · guardado no celular', login: 'Entre de novo para salvar' }[estado] || 'Salvando…'}`;
+    clearTimeout(s.h); if (estado === 'ok' || estado === 'recarregado') s.h = setTimeout(() => s.hidden = true, 1600);
+    if (estado === 'erro') toast('O Supabase não aceitou essa mudança (' + (msg || 'erro') + '). Voltei a mostrar o que está salvo lá.');
+    if (estado === 'recarregado') render(false);
+    if (estado === 'login') mostrarLogin('Sua sessão terminou. Entre de novo: o que você mudou continua guardado no celular.');
   });
-  async function iniciar() {
-    const sp = $('splash');
+
+  /* ================= entrar ================= */
+  const splash = {
+    sair: () => { const sp = $('splash'); sp.classList.add('out'); setTimeout(() => sp.hidden = true, 500); },
+    erro: (msg, botao) => { const sp = $('splash'); sp.hidden = false; sp.classList.remove('out'); sp.querySelector('.spin').hidden = true; sp.querySelector('p').innerHTML = `<span class="erro">${u.esc(msg)}</span><br><button class="btn2" type="button" data-a="recomecar" style="margin-top:14px">${botao || 'Tentar de novo'}</button>`; },
+  };
+  function mostrarLogin(aviso) {
+    const L = $('login');
+    $('lgAviso').textContent = aviso || ''; $('lgAviso').hidden = !aviso; $('lgErro').hidden = true;
+    $('lgFoto').innerHTML = foto();
+    L.hidden = false; L.classList.remove('out'); splash.sair();
+    setTimeout(() => { const e = $('lgEmail'); if (e && !e.value) e.focus(); }, 50);
+  }
+  $('lgForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const bt = $('lgBtn'), er = $('lgErro');
+    bt.disabled = true; bt.textContent = 'Entrando…'; er.hidden = true;
     try {
-      await db.carregar();
-      ui.mes = u.mes(u.hoje());
-      if (!c.doMes(ui.mes).length) { const ms = c.mesesPassados(); if (ms.length) ui.mes = ms[ms.length - 1]; }
-      render();
-      sp.classList.add('out'); setTimeout(() => sp.hidden = true, 500);
+      await N.entrar($('lgEmail').value, $('lgSenha').value);
+      $('lgSenha').value = '';
+      const L = $('login'); L.classList.add('out'); setTimeout(() => L.hidden = true, 450);
+      await abrirApp();
+    } catch (x) { er.textContent = x.message; er.hidden = false; }
+    finally { bt.disabled = false; bt.textContent = 'Entrar'; }
+  });
+  $('lgOlho').addEventListener('click', () => { const i = $('lgSenha'); i.type = i.type === 'password' ? 'text' : 'password'; $('lgOlho').innerHTML = u.svg(i.type === 'password' ? 'eye' : 'eye-off'); });
+
+  function escolherMes() {
+    ui.mes = u.mes(u.hoje());
+    if (!c.doMes(ui.mes).length) { const ms = c.mesesPassados(); if (ms.length) ui.mes = ms[ms.length - 1]; }
+  }
+  async function abrirApp() {
+    const temCopia = db.abrirCopia();
+    if (temCopia) { escolherMes(); render(); splash.sair(); }
+    try {
+      await db.atualizar();
+      if (db.vazio()) { splash.sair(); return telaImportar(); }
+      const criou = db.garantirFixas();
+      if (!temCopia) { escolherMes(); render(); splash.sair(); } else render(false);
+      if (!criou) db.enviar();
     } catch (e) {
-      sp.querySelector('.spin').hidden = true;
-      sp.querySelector('p').innerHTML = `<span class="erro">Não consegui abrir a planilha: ${u.esc(e.message)}</span><br><button class="btn2" type="button" onclick="location.reload()" style="margin-top:14px">Tentar de novo</button>`;
+      if (e.status === 401) return mostrarLogin('Entre de novo.');
+      if (temCopia) { toast(e.semInternet ? 'Sem internet: mostrando o que está guardado no celular.' : 'Não consegui atualizar agora: ' + e.message); return; }
+      splash.erro(e.semInternet ? 'Sem internet. Confira o Wi-Fi ou os dados móveis.' : 'Não consegui abrir seus dados: ' + e.message);
     }
+  }
+  /* primeira vez: trazer os dados da planilha */
+  function telaImportar() {
+    nav(); $('fabwrap').hidden = true;
+    $('view').innerHTML = `<header class="bar"><h1>Trazer seus dados</h1></header>
+      <div class="panel" style="max-width:520px;margin:20px auto 0;padding:24px;display:grid;gap:14px;text-align:center;justify-items:center">
+        ${u.ti(['upload', '#8fb0ff', '#2c55d6'], 'lg')}
+        <p style="margin:0">Sua conta ainda está vazia. Escolha o arquivo <b>darzan-dados.json</b> que o Claude te mandou: ele tem todo o histórico da planilha.</p>
+        <label class="btn2 pri" style="cursor:pointer">${u.svg('file-text')}Escolher o arquivo<input type="file" id="impArq" accept=".json,application/json" hidden></label>
+        <p class="c-muted" id="impMsg" style="margin:0;font-size:.88rem"></p>
+      </div>`;
+    $('impArq').addEventListener('change', async ev => {
+      const arq = ev.target.files[0], msg = $('impMsg'); if (!arq) return;
+      try {
+        const dados = JSON.parse(await arq.text());
+        if (!dados.abas || !dados.abas.EXTRATO) throw new Error('esse arquivo não é o dos seus dados');
+        msg.textContent = 'Trazendo…';
+        const n = await db.importar(dados, (f, t) => { msg.textContent = `Trazendo… ${f} de ${t}`; });
+        db.garantirFixas(); escolherMes(); render(); toast(`Pronto! ${n} registros trazidos.`); confete(innerWidth / 2, 200);
+      } catch (e) { msg.innerHTML = `<span class="c-out">Não deu certo: ${u.esc(e.message)}</span>`; }
+    });
+  }
+  /* sua conta: cópia de segurança, dados no Supabase, sair */
+  function formConta() {
+    const ref = (N.config.url.match(/https:\/\/([^.]+)\./) || [])[1];
+    abrir(`<h3 style="margin:0 0 4px">Sua conta</h3><p class="c-muted" style="margin:0 0 16px">${u.esc((N.sessao && N.sessao.user.email) || '')}</p>
+      <div style="display:grid;gap:10px">
+        <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
+        ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
+        <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
+        <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
+      </div>
+      <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
+  }
+  function baixarCopia() {
+    const blob = new Blob([JSON.stringify(db.copia(), null, 1)], { type: 'application/json' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `darzan-dados-${u.hoje()}.json`; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast('Cópia baixada');
+  }
+  Object.assign(ACOES, {
+    conta: () => formConta(),
+    baixarCopia: () => baixarCopia(),
+    sair: b => {
+      if (db.pendentes() && b.dataset.certeza !== '1') { b.dataset.certeza = '1'; b.innerHTML = u.svg('log-out') + 'Tem mudança sem salvar. Toque de novo para sair mesmo assim'; return; }
+      N.sair(); db.abas = {}; fechar(); mostrarLogin();
+    },
+    recomecar: () => { $('splash').querySelector('.spin').hidden = false; $('splash').querySelector('p').textContent = 'Abrindo…'; iniciar(); },
+  });
+  N.aoSair = () => mostrarLogin('Sua sessão terminou. Entre de novo.');
+
+  async function iniciar() {
+    if (!N.sessao) return mostrarLogin();
+    await abrirApp();
   }
   A.iniciar = iniciar;
 })(window.A);
-</script>

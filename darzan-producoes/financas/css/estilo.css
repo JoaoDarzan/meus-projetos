@@ -1,5 +1,3 @@
-<!-- Visual do app (cores, cartões de vidro, animações). Incluído pelo Index.html. -->
-<style>
 
 /* Layout: app de banco escuro e "de vidro", com camada de jogo (XP, missões, conquistas). Celular: abas embaixo com Missões no centro. PC: menu lateral. */
 :root{
@@ -615,4 +613,8 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 
-</style>
+/* login, sincronia sem internet */
+.erro-lg{color:var(--out);font-size:.88rem;margin:2px 0 12px;text-align:center}
+.lg-card .aviso{margin:14px 0 0}
+.sync.off i{background:var(--faint)}
+.ava-w:focus-visible{outline:3px solid var(--xp);outline-offset:3px;border-radius:50%}

@@ -1,5 +1,3 @@
-<!-- Base do app: utilidades, conversa com a planilha e contas. Incluído pelo Index.html. -->
-<script>
 window.A = window.A || {};
 (function (A) {
   /* ================= utilidades ================= */
@@ -14,7 +12,7 @@ window.A = window.A || {};
   u.r2 = v => Math.round((+v || 0) * 100) / 100;
   u.num = s => { if (typeof s === 'number') return s; s = String(s == null ? '' : s).replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, ''); const n = parseFloat(s); return isFinite(n) ? n : 0; };
   u.sum = (a, f = x => x.valor) => a.reduce((s, x) => s + (+f(x) || 0), 0);
-  u.hoje = () => A.hoje || new Date().toISOString().slice(0, 10);
+  u.hoje = () => { if (A.hoje) return A.hoje; const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   u.mes = d => String(d || '').slice(0, 7);
   u.addMes = (m, n) => { let [y, mm] = m.split('-').map(Number); mm += n; y += Math.floor((mm - 1) / 12); mm = ((mm - 1) % 12 + 12) % 12 + 1; return `${y}-${String(mm).padStart(2, '0')}`; };
   u.difMes = (a, b) => { const [y1, m1] = a.split('-').map(Number), [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
@@ -32,57 +30,166 @@ window.A = window.A || {};
   u.svg = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(window.ICONES || {})[n] || (window.ICONES || {})['circle-help'] || ''}</svg>`;
   u.ti = (s, tam = '') => `<span class="ti ${tam}" style="--a:${s[1]};--b:${s[2]}">${u.svg(s[0])}</span>`;
 
-  /* ================= conversa com a planilha ================= */
-  /* google.script.run em forma de Promise */
-  const chamar = (fn, ...args) => new Promise((ok, erro) => google.script.run.withSuccessHandler(ok).withFailureHandler(e => erro(e && e.message ? e : new Error(String(e))))[fn](...args));
-  const db = A.db = { abas: {}, fila: Promise.resolve(), pendentes: 0, ouvintes: [] };
+  /* ================= dados: no celular + no Supabase ================= */
+  /* O app guarda uma cópia de tudo no aparelho (abre na hora, funciona sem internet)
+     e manda cada mudança para o Supabase numa fila que não se perde. */
+  const N = A.nuvem, T = window.TABELAS, TAB = window.TAB;
+  const ABAS = Object.keys(T);
+  const db = A.db = { abas: {}, ouvintes: [], fila: [], carregado: false };
+  const guarda = {
+    ler: k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    gravar: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  };
+  const chave = nome => `df-${nome}-${(N.sessao && N.sessao.user.id) || 'x'}`;
   db.aoSincronizar = f => db.ouvintes.push(f);
   const avisar = (estado, msg) => db.ouvintes.forEach(f => f(estado, msg));
-  db.carregar = async () => {
-    const r = await chamar('carregar');
-    A.hoje = r.hoje; A.urlPlanilha = r.planilha;
-    db.abas = {};
-    Object.keys(r.abas).forEach(k => { db.abas[k] = r.abas[k].linhas; });
-    db.cab = Object.fromEntries(Object.keys(r.abas).map(k => [k, r.abas[k].cab]));
-    return db;
-  };
   db.linhas = aba => db.abas[aba] || (db.abas[aba] = []);
   db.achar = (aba, id) => db.linhas(aba).find(x => x.ID === id);
-  /* aplica na hora no app e manda para a planilha em seguida (em fila, na ordem) */
-  const PREF = { EXTRATO: 'L', CONTAS: 'C', CARTOES: 'K', PARCELADOS: 'P', FIXAS: 'F', EQUIPAMENTOS: 'E', TRABALHOS: 'J', TAREFAS: 'T', METAS: 'M' };
-  db.novoId = aba => (PREF[aba] || 'X') + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 46656).toString(36).toUpperCase();
-  /* aplica na hora no app e manda para a planilha em seguida (em fila, na ordem); se a planilha recusar, desfaz no app */
-  db.lote = (ops) => {
-    const desfazer = [];
+  db.novoId = aba => ((T[aba] || {}).prefixo || 'X') + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 46656).toString(36).toUpperCase().padStart(3, '0');
+  db.vazio = () => !db.linhas('EXTRATO').length && !db.linhas('CATEGORIAS').length;
+
+  function guardarCopia() {
+    const dados = { quando: Date.now(), abas: db.abas };
+    if (guarda.gravar(chave('dados'), dados)) return;
+    /* aparelho sem espaço: guarda sem as fotos */
+    const leve = { quando: dados.quando, abas: Object.assign({}, db.abas, { EQUIPAMENTOS: db.linhas('EQUIPAMENTOS').map(e => Object.assign({}, e, { FOTO: '' })) }) };
+    guarda.gravar(chave('dados'), leve);
+  }
+  const guardarFila = () => guarda.gravar(chave('fila'), db.fila);
+
+  /* aplica uma lista de mudanças nos dados do app (sem mandar para a nuvem) */
+  function aplicar(ops) {
     ops.forEach(o => {
       const lista = db.linhas(o.aba);
       if (o.op === 'salvar') {
-        if (!o.registro.ID) o.registro.ID = db.novoId(o.aba);
         const i = lista.findIndex(x => x.ID === o.registro.ID);
-        if (i >= 0) { desfazer.push({ aba: o.aba, antes: Object.assign({}, lista[i]), i }); Object.assign(lista[i], o.registro); }
-        else { lista.push(Object.assign({}, o.registro)); desfazer.push({ aba: o.aba, criado: o.registro.ID }); }
+        if (i >= 0) Object.assign(lista[i], o.registro);
+        else { const novo = {}; T[o.aba].colunas.forEach(([nome, , tipo]) => { novo[nome] = tipo === 'boolean' ? false : ''; }); lista.push(Object.assign(novo, o.registro)); }
       } else {
         const i = lista.findIndex(x => x.ID === o.id);
-        if (i >= 0) { desfazer.push({ aba: o.aba, antes: lista[i], i, apagado: true }); lista.splice(i, 1); }
+        if (i >= 0) lista.splice(i, 1);
       }
     });
-    const envio = ops.map(o => o.op === 'salvar' ? { op: 'salvar', aba: o.aba, registro: Object.assign({}, o.registro) } : { op: 'apagar', aba: o.aba, id: o.id });
-    db.pendentes++; avisar('salvando');
-    db.fila = db.fila.then(() => chamar('lote', envio)).then(() => {
-      db.pendentes--; avisar(db.pendentes ? 'salvando' : 'ok');
-    }).catch(e => {
-      desfazer.reverse().forEach(d => {
-        const lista = db.linhas(d.aba);
-        if (d.criado) { const i = lista.findIndex(x => x.ID === d.criado); if (i >= 0) lista.splice(i, 1); }
-        else if (d.apagado) lista.splice(d.i, 0, d.antes);
-        else Object.assign(lista[d.i], d.antes);
-      });
-      db.pendentes--; avisar('erro', e.message);
+  }
+
+  /* abre na hora com a cópia do aparelho (se tiver) */
+  db.abrirCopia = () => {
+    const c0 = guarda.ler(chave('dados'));
+    db.fila = guarda.ler(chave('fila')) || [];
+    if (!c0 || !c0.abas) return false;
+    db.abas = c0.abas; db.quando = c0.quando; db.carregado = true;
+    return true;
+  };
+  /* busca tudo no Supabase; mudanças que ainda estão na fila continuam valendo por cima */
+  db.atualizar = async () => {
+    const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela)));
+    const abas = {};
+    ABAS.forEach((aba, i) => { abas[aba] = lido[i].map(l => TAB.doNuvem(aba, l)); });
+    db.abas = abas;
+    aplicar(db.fila.flatMap(x => x.ops));
+    db.carregado = true; db.quando = Date.now();
+    guardarCopia();
+    return db;
+  };
+
+  /* fila de envio: uma mudança de cada vez, na ordem; se cair a internet, espera e tenta de novo */
+  let enviando = false, tentarDepois = null;
+  async function enviar() {
+    if (enviando) return;
+    enviando = true;
+    try {
+      while (db.fila.length) {
+        avisar('salvando');
+        const item = db.fila[0];
+        await mandar(item.ops);
+        db.fila.shift(); guardarFila();
+      }
+      avisar('ok');
+    } catch (e) {
+      if (e.semInternet) { avisar('offline'); clearTimeout(tentarDepois); tentarDepois = setTimeout(enviar, 15000); }
+      else if (e.status === 401) { avisar('login'); }
+      else {
+        /* o Supabase recusou: tira da fila e volta a mostrar o que está lá de verdade */
+        db.fila.shift(); guardarFila();
+        avisar('erro', e.message);
+        db.atualizar().then(() => avisar('recarregado')).catch(() => { });
+      }
+    } finally { enviando = false; }
+  }
+  db.enviar = enviar;
+  addEventListener('online', () => enviar());
+  async function mandar(ops) {
+    /* junta as mudanças seguidas da mesma tabela num envio só, mantendo a ordem */
+    let lote = null;
+    const despacha = async () => {
+      if (!lote) return;
+      const t = T[lote.aba].tabela, l = lote; lote = null;
+      if (l.op === 'salvar') await N.gravar(t, l.itens.map(o => TAB.paraNuvem(o.aba, o.envio || o.registro)));
+      else await N.apagar(t, l.itens.map(o => o.id));
+    };
+    for (const o of ops) {
+      const id = o.op === 'salvar' ? o.registro.ID : o.id;
+      if (lote && (lote.op !== o.op || lote.aba !== o.aba || lote.ids.has(id))) await despacha();
+      if (!lote) lote = { op: o.op, aba: o.aba, itens: [], ids: new Set() };
+      lote.itens.push(o); lote.ids.add(id);
+    }
+    await despacha();
+  }
+  db.pendentes = () => db.fila.length;
+
+  /* aplica na hora no app e põe na fila para o Supabase */
+  db.lote = ops => {
+    const lista = ops.map(o => {
+      if (o.op !== 'salvar') return { op: 'apagar', aba: o.aba, id: o.id };
+      const registro = Object.assign({}, o.registro);
+      if (!registro.ID) registro.ID = o.registro.ID = db.novoId(o.aba);
+      const existe = db.achar(o.aba, registro.ID);
+      /* linha nova vai completa; linha que já existe manda só o que mudou */
+      return { op: 'salvar', aba: o.aba, registro, envio: existe ? registro : null };
     });
-    return db.fila;
+    aplicar(lista);
+    lista.forEach(o => { if (o.op === 'salvar' && !o.envio) o.envio = Object.assign({}, db.achar(o.aba, o.registro.ID)); });
+    db.fila.push({ ops: lista.map(o => o.op === 'salvar' ? { op: 'salvar', aba: o.aba, registro: o.registro, envio: o.envio } : o), em: Date.now() });
+    guardarFila(); guardarCopia();
+    enviar();
+    return Promise.resolve();
   };
   db.salvar = (aba, registro) => db.lote([{ op: 'salvar', aba, registro }]);
   db.apagar = (aba, id) => db.lote([{ op: 'apagar', aba, id }]);
+
+  /* contas fixas viram lançamentos "previstos" no mês atual e no próximo; o ID fixo evita repetir em dois aparelhos */
+  db.garantirFixas = () => {
+    const ops = [], ext = db.linhas('EXTRATO'), m0 = u.mes(u.hoje());
+    db.linhas('FIXAS').filter(f => String(f['ATIVA']).toLowerCase() !== 'não' && f['DESCRIÇÃO'] && f['VALOR']).forEach(f => {
+      [m0, u.addMes(m0, 1)].forEach(m => {
+        const nome = String(f['DESCRIÇÃO']).trim().toLowerCase(), id = `LFX-${f.ID}-${m}`;
+        if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === m && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
+        const tipo = /cart/i.test(f['TIPO']) ? 'cartão' : 'conta';
+        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(m, parseInt(f['DIA'], 10) || 1), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': tipo === 'cartão' ? 'Pago' : 'Previsto', 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
+      });
+    });
+    if (!db.linhas('CATEGORIAS').some(x => x['SUB-CATEGORIA'] === 'Pagamento de fatura') && db.linhas('CATEGORIAS').length) ops.push({ op: 'salvar', aba: 'CATEGORIAS', registro: { ID: 'G-PAGFATURA', 'CATEGORIA': 'Transferência', 'SUB-CATEGORIA': 'Pagamento de fatura', 'GRUPO': 'Transferência' } });
+    if (ops.length) db.lote(ops);
+    return ops.length;
+  };
+
+  /* trazer os dados da planilha (arquivo .json) e fazer cópia de segurança */
+  db.importar = async (dados, progresso) => {
+    const abas = dados.abas || dados;
+    const todas = ABAS.filter(a => Array.isArray(abas[a]));
+    let feito = 0;
+    const total = todas.reduce((s, a) => s + abas[a].length, 0);
+    for (const aba of todas) {
+      const linhas = abas[aba].map(r => TAB.paraNuvem(aba, Object.assign({}, r, { ID: r.ID || db.novoId(aba) })));
+      /* todas as linhas com as mesmas colunas */
+      const cols = ['id'].concat(T[aba].colunas.map(x => x[1]));
+      const cheias = linhas.map(l => Object.fromEntries(cols.map(k => [k, k in l ? l[k] : (T[aba].colunas.find(x => x[1] === k) || [])[2] === 'boolean' ? false : null])));
+      for (let i = 0; i < cheias.length; i += 200) { await N.gravar(T[aba].tabela, cheias.slice(i, i + 200)); feito += Math.min(200, cheias.length - i); if (progresso) progresso(feito, total); }
+    }
+    await db.atualizar();
+    return total;
+  };
+  db.copia = () => ({ app: 'Darzan Finanças', versao: 1, feito_em: new Date().toISOString(), abas: db.abas });
 
   /* ================= contas do app ================= */
   const c = A.c = {};
@@ -239,4 +346,3 @@ window.A = window.A || {};
     return o;
   };
 })(window.A);
-</script>

@@ -1,3 +1,14 @@
-# Publica o site da Darzan Produções no Netlify
+# Publica o site da Darzan Produções no Netlify (o app de finanças fica em /financas)
 [build]
   publish = "darzan-producoes"
+
+# lembrete diário que mantém o Supabase do app de finanças acordado
+[functions]
+  directory = "netlify/functions"
+
+# o app sempre busca a versão nova dos arquivos (o próprio app guarda a cópia para usar sem internet)
+[[headers]]
+  for = "/financas/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+    X-Robots-Tag = "noindex, nofollow"

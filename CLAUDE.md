@@ -6,5 +6,6 @@ Videomaker e storymaker em Campinas e região. Fale com o usuário **em portugu�
   (versão principal: `marca/logo/darzan-logo-dourado.svg`). Não redesenhe a logo.
 - Site: `darzan-producoes/` (conteúdo em `darzan-producoes/js/conteudo.js`). **No ar em https://darzanproducoes.netlify.app/** (endereço provisório, até comprar o domínio próprio). Publicado pelo Netlify a partir da branch `main` (`netlify.toml`); cada push na `main` atualiza o site sozinho.
 - Financeiro: `financeiro/` (planilha + painel Google Apps Script; passo a passo em `financeiro/LEIA-ME.md`).
+- **App de finanças:** `darzan-producoes/financas/` (no ar em https://darzanproducoes.netlify.app/financas/), dados no Supabase. Como funciona e como testar: `financas-app/README.md`. Rode os testes antes de publicar. Nunca coloque dados pessoais no repositório (é público).
 - YouTube: `marca/youtube-capa.html` e `marca/youtube-perfil.html` geram as imagens do canal.
 - WhatsApp: (19) 99527-3041 · Instagram: @darzanproducoes
