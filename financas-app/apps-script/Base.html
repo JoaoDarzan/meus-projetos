@@ -1,0 +1,242 @@
+<!-- Base do app: utilidades, conversa com a planilha e contas. Incluído pelo Index.html. -->
+<script>
+window.A = window.A || {};
+(function (A) {
+  /* ================= utilidades ================= */
+  const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const u = A.u = { MESES, CURTO };
+  u.oculto = () => !!(A.ui && A.ui.oculto);
+  u.brl = (v, cents = true) => { v = +v || 0; if (u.oculto()) return 'R$ ••••'; return (v < 0 ? '−' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 }); };
+  u.k0 = v => u.brl(v, false);
+  u.big = v => { if (u.oculto()) return 'R$ ••••••'; const [a, b] = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `${v < 0 ? '−' : ''}R$ ${a}<span class="cents">,${b}</span>`; };
+  u.pct = v => Math.round((v || 0) * 100) + '%';
+  u.r2 = v => Math.round((+v || 0) * 100) / 100;
+  u.num = s => { if (typeof s === 'number') return s; s = String(s == null ? '' : s).replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, ''); const n = parseFloat(s); return isFinite(n) ? n : 0; };
+  u.sum = (a, f = x => x.valor) => a.reduce((s, x) => s + (+f(x) || 0), 0);
+  u.hoje = () => A.hoje || new Date().toISOString().slice(0, 10);
+  u.mes = d => String(d || '').slice(0, 7);
+  u.addMes = (m, n) => { let [y, mm] = m.split('-').map(Number); mm += n; y += Math.floor((mm - 1) / 12); mm = ((mm - 1) % 12 + 12) % 12 + 1; return `${y}-${String(mm).padStart(2, '0')}`; };
+  u.difMes = (a, b) => { const [y1, m1] = a.split('-').map(Number), [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
+  u.diaMax = m => { const [y, mm] = m.split('-').map(Number); return new Date(y, mm, 0).getDate(); };
+  u.dataNoMes = (m, dia) => `${m}-${String(Math.min(Math.max(1, dia), u.diaMax(m))).padStart(2, '0')}`;
+  u.dias = (a, b) => { const p = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); }; return Math.round((p(b) - p(a)) / 864e5); };
+  u.ateHoje = d => u.dias(u.hoje(), d);
+  u.nomeMes = m => MESES[+m.slice(5, 7) - 1];
+  u.dm = d => d ? `${d.slice(8, 10)}/${CURTO[+d.slice(5, 7) - 1]}${d.slice(0, 4) !== u.hoje().slice(0, 4) ? '/' + d.slice(2, 4) : ''}` : '';
+  u.ddmmaa = d => d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '';
+  u.quando = d => { const n = u.ateHoje(d); if (n === 0) return 'Hoje'; if (n === 1) return 'Amanhã'; if (n === -1) return 'Ontem'; return u.dm(d); };
+  u.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  u.cap = s => s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : '';
+  u.sem = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  u.svg = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(window.ICONES || {})[n] || (window.ICONES || {})['circle-help'] || ''}</svg>`;
+  u.ti = (s, tam = '') => `<span class="ti ${tam}" style="--a:${s[1]};--b:${s[2]}">${u.svg(s[0])}</span>`;
+
+  /* ================= conversa com a planilha ================= */
+  /* google.script.run em forma de Promise */
+  const chamar = (fn, ...args) => new Promise((ok, erro) => google.script.run.withSuccessHandler(ok).withFailureHandler(e => erro(e && e.message ? e : new Error(String(e))))[fn](...args));
+  const db = A.db = { abas: {}, fila: Promise.resolve(), pendentes: 0, ouvintes: [] };
+  db.aoSincronizar = f => db.ouvintes.push(f);
+  const avisar = (estado, msg) => db.ouvintes.forEach(f => f(estado, msg));
+  db.carregar = async () => {
+    const r = await chamar('carregar');
+    A.hoje = r.hoje; A.urlPlanilha = r.planilha;
+    db.abas = {};
+    Object.keys(r.abas).forEach(k => { db.abas[k] = r.abas[k].linhas; });
+    db.cab = Object.fromEntries(Object.keys(r.abas).map(k => [k, r.abas[k].cab]));
+    return db;
+  };
+  db.linhas = aba => db.abas[aba] || (db.abas[aba] = []);
+  db.achar = (aba, id) => db.linhas(aba).find(x => x.ID === id);
+  /* aplica na hora no app e manda para a planilha em seguida (em fila, na ordem) */
+  const PREF = { EXTRATO: 'L', CONTAS: 'C', CARTOES: 'K', PARCELADOS: 'P', FIXAS: 'F', EQUIPAMENTOS: 'E', TRABALHOS: 'J', TAREFAS: 'T', METAS: 'M' };
+  db.novoId = aba => (PREF[aba] || 'X') + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 46656).toString(36).toUpperCase();
+  /* aplica na hora no app e manda para a planilha em seguida (em fila, na ordem); se a planilha recusar, desfaz no app */
+  db.lote = (ops) => {
+    const desfazer = [];
+    ops.forEach(o => {
+      const lista = db.linhas(o.aba);
+      if (o.op === 'salvar') {
+        if (!o.registro.ID) o.registro.ID = db.novoId(o.aba);
+        const i = lista.findIndex(x => x.ID === o.registro.ID);
+        if (i >= 0) { desfazer.push({ aba: o.aba, antes: Object.assign({}, lista[i]), i }); Object.assign(lista[i], o.registro); }
+        else { lista.push(Object.assign({}, o.registro)); desfazer.push({ aba: o.aba, criado: o.registro.ID }); }
+      } else {
+        const i = lista.findIndex(x => x.ID === o.id);
+        if (i >= 0) { desfazer.push({ aba: o.aba, antes: lista[i], i, apagado: true }); lista.splice(i, 1); }
+      }
+    });
+    const envio = ops.map(o => o.op === 'salvar' ? { op: 'salvar', aba: o.aba, registro: Object.assign({}, o.registro) } : { op: 'apagar', aba: o.aba, id: o.id });
+    db.pendentes++; avisar('salvando');
+    db.fila = db.fila.then(() => chamar('lote', envio)).then(() => {
+      db.pendentes--; avisar(db.pendentes ? 'salvando' : 'ok');
+    }).catch(e => {
+      desfazer.reverse().forEach(d => {
+        const lista = db.linhas(d.aba);
+        if (d.criado) { const i = lista.findIndex(x => x.ID === d.criado); if (i >= 0) lista.splice(i, 1); }
+        else if (d.apagado) lista.splice(d.i, 0, d.antes);
+        else Object.assign(lista[d.i], d.antes);
+      });
+      db.pendentes--; avisar('erro', e.message);
+    });
+    return db.fila;
+  };
+  db.salvar = (aba, registro) => db.lote([{ op: 'salvar', aba, registro }]);
+  db.apagar = (aba, id) => db.lote([{ op: 'apagar', aba, id }]);
+
+  /* ================= contas do app ================= */
+  const c = A.c = {};
+  c.L = () => db.linhas('EXTRATO');
+  c.num = v => u.num(v);
+  c.categorias = () => db.linhas('CATEGORIAS');
+  c.listaCats = () => [...new Set(c.categorias().map(x => x['CATEGORIA']).filter(Boolean))];
+  c.subsDe = cat => c.categorias().filter(x => x['CATEGORIA'] === cat).map(x => x['SUB-CATEGORIA']);
+  c.grupoDe = cat => (c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
+  c.BANCOS = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Não informado'];
+  c.CORBANCO = { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Não informado': ['#b5bfd6', '#5c6886'] };
+  c.GRAD = { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' };
+  const ICAT = {
+    'Alimentação': ['shopping-cart', '#4ee0a0', '#05905c'], 'Alimentação fora': ['utensils', '#ff8aa0', '#d61c4e'], 'Transporte': ['car', '#6cc8ff', '#1f5fe0'],
+    'Casa': ['house', '#5ff0d6', '#0b8a78'], 'Saúde e beleza': ['pill', '#7cf0a8', '#15a352'], 'Trabalho': ['camera', '#8fb6ff', '#2148d6'],
+    'Assinaturas': ['tv', '#9aa5ff', '#4a46e0'], 'Lazer': ['party-popper', '#cf9cff', '#7a35e6'], 'Compras': ['shopping-bag', '#c2a8ff', '#6b34e0'],
+    'Doações': ['hand-heart', '#ffd97a', '#d0780a'], 'Dívidas': ['hand-coins', '#ffaab8', '#c0183f'], 'Guardado': ['piggy-bank', '#7cf0c0', '#068a5a'],
+    'Transferência': ['arrow-left-right', '#b9c3ff', '#5a5fe0'], 'Salário CLT': ['briefcase', '#7fb0ff', '#2a5fd6'], 'Darzan Produções': ['clapperboard', '#f2c46d', '#a86b16'],
+    'JPL SOM': ['speaker', '#d79bf0', '#8a3fb0'], 'Outras rendas': ['banknote', '#a7b3cf', '#56627f'], 'Outros': ['circle-help', '#b5bfd6', '#5c6886'],
+  };
+  const ISUB = { 'iFood': ['pizza', '#ff8a7a', '#d42a1f'], 'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'], 'Mercado': ['shopping-cart', '#4ee0a0', '#05905c'], 'Farmácia': ['pill', '#7cf0a8', '#15a352'], 'Presente': ['gift', '#ff9cd0', '#d2257f'], 'Equipamentos': ['camera', '#8fb6ff', '#2148d6'], 'Cursos': ['graduation-cap', '#9cc6ff', '#2a62e0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Streaming': ['tv', '#9aa5ff', '#4a46e0'], 'Apps': ['cloud', '#9cd3ff', '#2a7ad0'], 'Eletrônicos': ['cpu', '#5fe3f5', '#0a8bb0'], 'Roupas': ['shirt', '#9ad8ff', '#2a7ad0'], 'Futebol': ['volleyball', '#8ff0a0', '#1a9a3c'], 'Corte de cabelo': ['scissors', '#f2a0ff', '#a51fc4'], 'Pagamento de fatura': ['credit-card', '#b9c3ff', '#5a5fe0'] };
+  c.icone = (cat, sub) => ISUB[sub] || ICAT[cat] || ICAT['Outros'];
+  c.FONTES = { 'Salário CLT': '--s-clt', 'Darzan Produções': '--s-dz', 'JPL SOM': '--s-jpl', 'Outras rendas': '--s-out' };
+
+  /* lançamento do EXTRATO em forma fácil */
+  c.l = r => ({ id: r.ID, data: String(r['DATA'] || ''), banco: r['BANCO'] || '', desc: String(r['DESCRIÇÃO'] || ''), grupo: r['GRUPO'] || '', tipo: /cart/i.test(r['TIPO']) ? 'cartão' : 'conta', valor: c.num(r['VALOR']), cat: r['CATEGORIA'] || '', sub: r['SUB-CATEGORIA'] || '', status: r['STATUS'] || 'Pago', parcela: r['PARCELA'] || '', obs: String(r['OBS'] || ''), r });
+  c.lancs = () => c.L().filter(r => r['DATA']).map(c.l);
+  c.doMes = m => c.lancs().filter(l => u.mes(l.data) === m);
+  c.ehGasto = l => l.grupo === 'Necessidades' || l.grupo === 'Desejos';
+
+  c.resumo = m => {
+    const L = c.doMes(m);
+    const ent = L.filter(l => l.grupo === 'Renda'), gastos = L.filter(c.ehGasto), guard = L.filter(l => l.grupo === 'Guardado');
+    const fonte = { 'Salário CLT': 0, 'Darzan Produções': 0, 'JPL SOM': 0, 'Outras rendas': 0 };
+    ent.forEach(l => { fonte[fonte[l.cat] !== undefined ? l.cat : 'Outras rendas'] += l.valor; });
+    const cats = {};
+    gastos.forEach(l => { const k = l.cat || 'Outros'; const x = cats[k] || (cats[k] = { cat: k, valor: 0, n: 0, subs: {} }); x.valor -= l.valor; x.n++; x.subs[l.sub || '—'] = (x.subs[l.sub || '—'] || 0) - l.valor; });
+    const entr = u.r2(u.sum(ent)), saiu = u.r2(-u.sum(gastos)), guardou = u.r2(-u.sum(guard));
+    const nec = u.r2(-u.sum(gastos.filter(l => l.grupo === 'Necessidades')));
+    return { m, L, ent, gastos, guard, fonte, cats: Object.values(cats).map(x => (x.valor = u.r2(x.valor), x)).sort((a, b) => b.valor - a.valor), entr, saiu, guardou, sobra: u.r2(entr - saiu - guardou), nec, des: u.r2(saiu - nec), cartao: u.r2(-u.sum(gastos.filter(l => l.tipo === 'cartão'))), futuro: m > u.mes(u.hoje()) };
+  };
+  c.meses = () => {
+    const ms = [...new Set(c.lancs().map(l => u.mes(l.data)))].sort();
+    const ini = ms[0] || u.mes(u.hoje()), fim = u.addMes(u.mes(u.hoje()), 3), out = [];
+    for (let m = ini; m <= fim; m = u.addMes(m, 1)) out.push(m);
+    return out;
+  };
+  c.mesesPassados = () => c.meses().filter(m => m < u.mes(u.hoje()) && c.doMes(m).length);
+  c.media = (f, exceto) => { const ms = c.mesesPassados().filter(m => m !== exceto); return ms.length ? u.sum(ms, m => f(c.resumo(m))) / ms.length : 0; };
+
+  /* ---------- cartões ---------- */
+  c.cartoes = () => db.linhas('CARTOES').filter(k => k['CARTÃO']);
+  c.cartao = nome => c.cartoes().find(k => k['CARTÃO'] === nome);
+  c.ehCartao = banco => c.cartoes().some(k => k['CARTÃO'] === banco);
+  /* compra feita até o fechamento cai na fatura do mês; depois, na do mês seguinte */
+  c.faturaDe = (data, nome) => { const k = c.cartao(nome); const fecha = k ? parseInt(k['FECHA DIA'], 10) || 31 : 31; return +data.slice(8, 10) <= fecha ? u.mes(data) : u.addMes(u.mes(data), 1); };
+  c.vence = (nome, m) => {
+    const k = c.cartao(nome) || {}, fecha = parseInt(k['FECHA DIA'], 10) || 1;
+    let dia = parseInt(k['VENCE DIA'], 10), estimado = false;
+    if (!dia) { dia = Math.min(fecha + 7, 28); estimado = true; }
+    const mm = dia > fecha ? m : u.addMes(m, 1);
+    return { data: u.dataNoMes(mm, dia), estimado };
+  };
+  c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l));
+  c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m)));
+  c.pagFatura = (nome, m) => c.lancs().find(l => l.obs.indexOf(`Fatura ${nome} ${m}`) === 0);
+  c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
+  c.contaQuePaga = nome => { const k = c.cartao(nome) || {}; return String(k['PAGA PELA CONTA'] || nome).split('·')[0].trim(); };
+
+  /* ---------- bancos ---------- */
+  c.contas = () => db.linhas('CONTAS').filter(x => x['BANCO']);
+  c.paga = l => l.status === 'Pago' || (/d[eé]bito autom/i.test(l.obs) && l.data <= u.hoje());
+  c.movimentos = cx => {
+    const base = cx['DATA DA CONFERÊNCIA'], ehConta = String(cx['CONTA']).toLowerCase() === 'conta';
+    if (cx['SALDO CONFERIDO'] === '' || cx['SALDO CONFERIDO'] == null || !base) return [];
+    const nomeCx = u.sem(cx['CONTA']);
+    return c.lancs().filter(l => l.data > base && c.paga(l) && (ehConta ? (l.tipo === 'conta' && l.banco === cx['BANCO']) : (l.grupo === 'Guardado' && u.sem(l.obs).indexOf('para ' + nomeCx) >= 0)));
+  };
+  c.saldo = cx => {
+    if (cx['SALDO CONFERIDO'] === '' || cx['SALDO CONFERIDO'] == null) return null;
+    const ehConta = String(cx['CONTA']).toLowerCase() === 'conta';
+    return u.r2(c.num(cx['SALDO CONFERIDO']) + u.sum(c.movimentos(cx), l => ehConta ? l.valor : -l.valor));
+  };
+  c.saldoBanco = b => u.r2(u.sum(c.contas().filter(x => x['BANCO'] === b), x => c.saldo(x) || 0));
+  c.bancosComConta = () => [...new Set(c.contas().map(x => x['BANCO']))];
+  c.totalBancos = () => u.r2(u.sum(c.contas(), x => c.saldo(x) || 0));
+  c.semSaldo = () => c.contas().filter(x => c.saldo(x) == null).length;
+  c.caixinhas = () => c.contas().filter(x => String(x['CONTA']).toLowerCase() !== 'conta');
+
+  /* ---------- tarefas: contas previstas + faturas + aba TAREFAS ---------- */
+  c.XP = { conta: 40, fatura: 60, darzan: 30, pessoal: 20, receber: 30 };
+  c.tarefas = () => {
+    const T = [], hoje = u.hoje(), m0 = u.mes(hoje);
+    c.lancs().forEach(l => {
+      if (l.tipo !== 'conta' || /d[eé]bito autom/i.test(l.obs)) return;
+      const feitaPeloApp = /pago pelo app|recebido pelo app/i.test(l.obs) && l.status === 'Pago' && u.ateHoje(l.data) > -45;
+      if (l.status !== 'Previsto' && !feitaPeloApp) return;
+      if (u.mes(l.data) > u.addMes(m0, 2)) return;
+      const renda = l.grupo === 'Renda';
+      T.push({ id: 'l:' + l.id, grupo: renda ? 'receber' : 'conta', titulo: (renda ? 'Receber ' : 'Pagar ') + l.desc.charAt(0).toLowerCase() + l.desc.slice(1), valor: Math.abs(l.valor), data: l.data, banco: l.banco, feita: l.status === 'Pago', icone: c.icone(l.cat, l.sub), xp: c.XP[renda ? 'receber' : 'conta'] });
+    });
+    c.cartoes().forEach(k => {
+      const nome = k['CARTÃO'];
+      for (let m = u.addMes(m0, -1); m <= u.addMes(m0, 2); m = u.addMes(m, 1)) {
+        const v = c.fatura(nome, m), pg = c.pagFatura(nome, m), ven = c.vence(nome, m);
+        if (v < 0.01 && !pg) continue;
+        if (!pg && u.ateHoje(ven.data) < -10) continue; /* faturas antigas: já devem ter sido pagas */
+        T.push({ id: `f:${nome}:${m}`, grupo: 'conta', titulo: `Pagar fatura ${nome} de ${u.nomeMes(m).toLowerCase()}`, valor: pg ? Math.abs(pg.valor) : v, data: ven.data, estimado: ven.estimado, banco: c.contaQuePaga(nome), feita: !!pg, icone: ['credit-card', ...(c.CORBANCO[nome] || c.CORBANCO['Não informado'])], xp: c.XP.fatura });
+      }
+    });
+    const jaTem = (d, v) => v && T.some(x => x.data === d && Math.abs(x.valor - v) < 0.01);
+    db.linhas('TAREFAS').filter(t => t['TAREFA']).forEach(t => {
+      if (jaTem(String(t['DATA'] || ''), c.num(t['VALOR']))) return; /* a mesma conta já aparece pelo extrato */
+      const g = u.sem(t['TIPO']).indexOf('darzan') >= 0 ? 'darzan' : u.sem(t['TIPO']).indexOf('conta') >= 0 ? 'conta' : 'pessoal';
+      T.push({ id: 't:' + t.ID, grupo: g, titulo: t['TAREFA'], valor: c.num(t['VALOR']), data: String(t['DATA'] || hoje), feita: t['FEITA'] === true || String(t['FEITA']).toUpperCase() === 'TRUE', nota: t['OBS'], icone: g === 'darzan' ? ['clapperboard', '#f2c46d', '#a86b16'] : g === 'conta' ? ['receipt', '#b9c3ff', '#5a5fe0'] : ['user', '#9cc6ff', '#2a62e0'], xp: c.XP[g] });
+    });
+    return T.sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+  };
+  c.urgentes = () => c.tarefas().filter(t => !t.feita && u.ateHoje(t.data) <= 1).length;
+
+  /* ---------- equipamentos ---------- */
+  c.equips = () => db.linhas('EQUIPAMENTOS').filter(e => e['NOME']);
+  c.compraDo = e => { const m = String(e['OBS'] || '').match(/Compra (P[\w-]+)/); return m ? m[1] : null; };
+  c.lancDo = e => { const m = String(e['OBS'] || '').match(/Lançamento (L[\w-]+)/); return m ? m[1] : null; };
+  c.linhasDaCompra = pid => { const re = new RegExp('Compra ' + pid + '(?![\\w-])'); return c.lancs().filter(l => re.test(l.obs)); };
+  c.faltaPagar = e => { const p = c.compraDo(e); return p ? u.r2(-u.sum(c.linhasDaCompra(p).filter(l => l.status === 'Previsto' || l.data > u.hoje()))) : 0; };
+
+  /* ---------- trabalhos ---------- */
+  c.trabalhos = () => db.linhas('TRABALHOS').filter(j => j['CLIENTE']);
+  c.recebimentos = j => { const n = u.sem(j['CLIENTE']); return n ? c.lancs().filter(l => l.grupo === 'Renda' && u.sem(l.desc).indexOf(n) >= 0) : []; };
+  c.recebido = j => u.r2(u.sum(c.recebimentos(j)));
+  c.faltaReceber = j => { const t = c.num(j['VALOR TOTAL']); return t ? u.r2(t - c.recebido(j)) : null; };
+
+  /* ---------- jogo ---------- */
+  c.NIVEIS = ['Iniciante', 'Organizado', 'Poupador', 'Estrategista', 'Investidor', 'Magnata', 'Lenda'];
+  c.xp = () => { const rs = c.mesesPassados().map(c.resumo); return rs.filter(r => r.sobra > 0).length * 100 + rs.filter(r => r.guardou > 0).length * 100 + u.sum(c.tarefas().filter(t => t.feita), t => t.xp); };
+  c.nivel = xp => { const n = Math.floor(xp / 500); return { n: n + 1, nome: c.NIVEIS[Math.min(n, c.NIVEIS.length - 1)], atual: xp % 500, prox: 500 }; };
+
+  /* ---------- dicas ---------- */
+  c.dicas = m => {
+    const r = c.resumo(m), o = [], mm = u.nomeMes(m).toLowerCase(), cat = n => r.cats.find(x => x.cat === n) || { valor: 0, n: 0 };
+    const comer = cat('Alimentação fora');
+    const mc = c.media(x => (x.cats.find(k => k.cat === 'Alimentação fora') || { valor: 0 }).valor, m);
+    if (comer.valor > 150) o.push({ w: comer.valor, t: `Comer fora levou ${u.k0(comer.valor)}`, s: `${comer.n} pedidos e lanches em ${mm}${mc ? ` (média de ${u.k0(mc)})` : ''}. Pela metade, sobram uns ${u.k0(comer.valor / 2)} por mês.` });
+    const carro = cat('Transporte');
+    if (carro.valor > 300 && r.entr) o.push({ w: carro.valor * .8, t: `O carro custou ${u.k0(carro.valor)}`, s: `Gasolina, manutenção, seguro e Uber: ${u.pct(carro.valor / r.entr)} do que entrou. Inclua o deslocamento nos orçamentos.` });
+    const meta = .3 * r.entr;
+    if (r.entr && r.guardou < meta) o.push({ w: meta - r.guardou + 200, t: `Faltaram ${u.k0(meta - r.guardou)} para guardar 30%`, s: `Você guardou ${u.k0(r.guardou)} (${u.pct(r.guardou / r.entr)} da renda).${r.sobra > 0 ? ` Sobraram ${u.k0(r.sobra)}: dá para mandar a diferença pra reserva.` : ''}` });
+    const dz = c.media(x => x.fonte['Darzan Produções'], m);
+    if (dz && r.fonte['Darzan Produções'] < dz * .75) o.push({ w: dz - r.fonte['Darzan Produções'], t: `A Darzan faturou ${u.pct(1 - r.fonte['Darzan Produções'] / dz)} abaixo da média`, s: `${u.k0(r.fonte['Darzan Produções'])} em ${mm}, contra ${u.k0(dz)} por mês. Bom momento para chamar clientes.` });
+    if (r.entr && r.des / r.entr > .2) o.push({ w: r.des - .2 * r.entr + 100, t: 'Gastos com vontades passaram de 20%', s: `Desejos somaram ${u.k0(r.des)}, ${u.pct(r.des / r.entr)} da renda.` });
+    o.sort((a, b) => b.w - a.w);
+    if (!o.length) o.push({ t: r.L.length ? 'Mês equilibrado' : 'Nada lançado neste mês ainda', s: r.L.length ? 'Nenhum gasto fora do normal. Segue assim.' : 'Use o botão Gastei ou Recebi para começar.' });
+    return o;
+  };
+})(window.A);
+</script>

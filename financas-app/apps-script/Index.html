@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Darzan">
+<meta name="theme-color" content="#050a18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<?!= include('Estilo') ?>
+</head>
+<body>
+<div class="splash" id="splash" role="status">
+  <div class="spin"></div>
+  <p>Abrindo a sua planilha…</p>
+</div>
+
+<div class="app" id="app">
+  <aside class="side" aria-label="Menu">
+    <div class="sbrand" id="sbrand"></div>
+    <nav class="snav" id="snav"></nav>
+    <button class="sadd" type="button" data-a="novoL" data-t="saida"><span class="ic-plus"></span>Novo lançamento</button>
+  </aside>
+  <div class="main"><div class="wrap"><main id="view"></main></div></div>
+  <nav class="tabbar" id="tabbar" aria-label="Menu"></nav>
+  <div class="fabwrap" id="fabwrap" hidden><button class="fab" type="button" data-a="fab" aria-label="Adicionar"></button></div>
+</div>
+<div class="scrim" id="scrim2" hidden><form class="sheet f2" id="s2" autocomplete="off"></form></div>
+<canvas id="fx"></canvas>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<div class="sync" id="sync" hidden></div>
+
+<?!= include('Icones') ?>
+<?!= include('Fotos') ?>
+<?!= include('Base') ?>
+<?!= include('Telas') ?>
+<script>
+  document.querySelector('.fab').innerHTML = A.u.svg('plus');
+  document.querySelector('.sadd .ic-plus').outerHTML = A.u.svg('plus');
+  A.iniciar();
+</script>
+</body>
+</html>
