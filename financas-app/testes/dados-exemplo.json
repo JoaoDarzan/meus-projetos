@@ -902,6 +902,118 @@
    },
    {
     "ID": "L0065",
+    "DATA": "2026-05-03",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix estacionamento",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -15,
+    "CATEGORIA": "Transporte",
+    "SUB-CATEGORIA": "Estacionamento",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0066",
+    "DATA": "2026-06-14",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix lanche",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -16,
+    "CATEGORIA": "Alimentação fora",
+    "SUB-CATEGORIA": "Comida fora",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0067",
+    "DATA": "2026-07-22",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix estacionamento",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -17,
+    "CATEGORIA": "Transporte",
+    "SUB-CATEGORIA": "Estacionamento",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0068",
+    "DATA": "2026-08-09",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix lanche",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -18,
+    "CATEGORIA": "Alimentação fora",
+    "SUB-CATEGORIA": "Comida fora",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0069",
+    "DATA": "2026-08-25",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix estacionamento",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -19,
+    "CATEGORIA": "Transporte",
+    "SUB-CATEGORIA": "Estacionamento",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0070",
+    "DATA": "2026-09-30",
+    "BANCO": "Não informado",
+    "DESCRIÇÃO": "Pix lanche",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -20,
+    "CATEGORIA": "Alimentação fora",
+    "SUB-CATEGORIA": "Comida fora",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0071",
+    "DATA": "2026-09-08",
+    "BANCO": "Nubank",
+    "DESCRIÇÃO": "Gasolina",
+    "GRUPO": "Desejos",
+    "TIPO": "conta",
+    "VALOR": -150,
+    "CATEGORIA": "Outros",
+    "SUB-CATEGORIA": "Outros",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": ""
+   },
+   {
+    "ID": "L0072",
+    "DATA": "2026-08-16",
+    "BANCO": "PicPay",
+    "DESCRIÇÃO": "Evento som",
+    "GRUPO": "Renda",
+    "TIPO": "conta",
+    "VALOR": 300,
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "Evento",
+    "STATUS": "Pago",
+    "PARCELA": "",
+    "OBS": "Conferir: era JPL SOM?"
+   },
+   {
+    "ID": "L0073",
     "DATA": "2026-10-27",
     "BANCO": "Nubank",
     "DESCRIÇÃO": "Seguro do carro",
@@ -915,7 +1027,7 @@
     "OBS": "Fixa"
    },
    {
-    "ID": "L0066",
+    "ID": "L0074",
     "DATA": "2026-10-29",
     "BANCO": "Inter",
     "DESCRIÇÃO": "Conta de luz",
@@ -929,7 +1041,7 @@
     "OBS": ""
    },
    {
-    "ID": "L0067",
+    "ID": "L0075",
     "DATA": "2026-09-20",
     "BANCO": "Mercado Pago",
     "DESCRIÇÃO": "Microfone exemplo",
@@ -943,7 +1055,7 @@
     "OBS": "Compra P0900 · feita em 18/09/2026"
    },
    {
-    "ID": "L0068",
+    "ID": "L0076",
     "DATA": "2026-10-20",
     "BANCO": "Mercado Pago",
     "DESCRIÇÃO": "Microfone exemplo",
@@ -957,7 +1069,7 @@
     "OBS": "Compra P0900 · feita em 18/09/2026"
    },
    {
-    "ID": "L0069",
+    "ID": "L0077",
     "DATA": "2026-11-20",
     "BANCO": "Mercado Pago",
     "DESCRIÇÃO": "Microfone exemplo",
@@ -1146,247 +1258,247 @@
   ],
   "CATEGORIAS": [
    {
-    "ID": "G0070",
+    "ID": "G0078",
     "CATEGORIA": "Salário CLT",
     "SUB-CATEGORIA": "Salário",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0071",
+    "ID": "G0079",
     "CATEGORIA": "Salário CLT",
     "SUB-CATEGORIA": "Comissão",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0072",
+    "ID": "G0080",
     "CATEGORIA": "Salário CLT",
     "SUB-CATEGORIA": "Benefícios",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0073",
+    "ID": "G0081",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Storymaker",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0074",
+    "ID": "G0082",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Casamento",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0075",
+    "ID": "G0083",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Social media",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0076",
+    "ID": "G0084",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Evento",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0077",
+    "ID": "G0085",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Palestra",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0078",
+    "ID": "G0086",
     "CATEGORIA": "Darzan Produções",
     "SUB-CATEGORIA": "Outros",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0079",
+    "ID": "G0087",
     "CATEGORIA": "JPL SOM",
     "SUB-CATEGORIA": "Serviço",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0080",
+    "ID": "G0088",
     "CATEGORIA": "Outras rendas",
     "SUB-CATEGORIA": "Venda",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0081",
+    "ID": "G0089",
     "CATEGORIA": "Outras rendas",
     "SUB-CATEGORIA": "Outros",
     "GRUPO": "Renda"
    },
    {
-    "ID": "G0082",
+    "ID": "G0090",
     "CATEGORIA": "Alimentação",
     "SUB-CATEGORIA": "Mercado",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0083",
+    "ID": "G0091",
     "CATEGORIA": "Alimentação",
     "SUB-CATEGORIA": "Padaria",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0084",
+    "ID": "G0092",
     "CATEGORIA": "Alimentação fora",
     "SUB-CATEGORIA": "iFood",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0085",
+    "ID": "G0093",
     "CATEGORIA": "Alimentação fora",
     "SUB-CATEGORIA": "Comida fora",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0086",
+    "ID": "G0094",
     "CATEGORIA": "Transporte",
     "SUB-CATEGORIA": "Gasolina",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0087",
+    "ID": "G0095",
     "CATEGORIA": "Transporte",
     "SUB-CATEGORIA": "Uber/99",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0088",
+    "ID": "G0096",
     "CATEGORIA": "Transporte",
     "SUB-CATEGORIA": "Manutenção",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0089",
+    "ID": "G0097",
     "CATEGORIA": "Transporte",
     "SUB-CATEGORIA": "Seguro",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0090",
+    "ID": "G0098",
     "CATEGORIA": "Transporte",
     "SUB-CATEGORIA": "Estacionamento",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0091",
+    "ID": "G0099",
     "CATEGORIA": "Casa",
     "SUB-CATEGORIA": "Moradia",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0092",
+    "ID": "G0100",
     "CATEGORIA": "Casa",
     "SUB-CATEGORIA": "Contas",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0093",
+    "ID": "G0101",
     "CATEGORIA": "Saúde e beleza",
     "SUB-CATEGORIA": "Farmácia",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0094",
+    "ID": "G0102",
     "CATEGORIA": "Saúde e beleza",
     "SUB-CATEGORIA": "Corte de cabelo",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0095",
+    "ID": "G0103",
     "CATEGORIA": "Trabalho",
     "SUB-CATEGORIA": "Equipamentos",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0096",
+    "ID": "G0104",
     "CATEGORIA": "Trabalho",
     "SUB-CATEGORIA": "Cursos",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0097",
+    "ID": "G0105",
     "CATEGORIA": "Trabalho",
     "SUB-CATEGORIA": "Software",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0098",
+    "ID": "G0106",
     "CATEGORIA": "Assinaturas",
     "SUB-CATEGORIA": "Streaming",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0099",
+    "ID": "G0107",
     "CATEGORIA": "Assinaturas",
     "SUB-CATEGORIA": "Apps",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0100",
+    "ID": "G0108",
     "CATEGORIA": "Lazer",
     "SUB-CATEGORIA": "Lazer",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0101",
+    "ID": "G0109",
     "CATEGORIA": "Lazer",
     "SUB-CATEGORIA": "Presente",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0102",
+    "ID": "G0110",
     "CATEGORIA": "Lazer",
     "SUB-CATEGORIA": "Viagem",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0103",
+    "ID": "G0111",
     "CATEGORIA": "Compras",
     "SUB-CATEGORIA": "Eletrônicos",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0104",
+    "ID": "G0112",
     "CATEGORIA": "Compras",
     "SUB-CATEGORIA": "Roupas",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0105",
+    "ID": "G0113",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Reserva",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0106",
+    "ID": "G0114",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Caixinha",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0107",
+    "ID": "G0115",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Investimento",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0108",
+    "ID": "G0116",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Entre minhas contas",
     "GRUPO": "Transferência"
    },
    {
-    "ID": "G0109",
+    "ID": "G0117",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Pagamento de fatura",
     "GRUPO": "Transferência"
    },
    {
-    "ID": "G0110",
+    "ID": "G0118",
     "CATEGORIA": "Outros",
     "SUB-CATEGORIA": "Outros",
     "GRUPO": "Desejos"

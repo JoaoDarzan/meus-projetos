@@ -28,7 +28,8 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
 
 ## Testar
 ```sh
-node financas-app/testes/testar-app.js          # app no navegador contra um Supabase de mentira (dados de exemplo)
+node financas-app/testes/testar-app.js          # todos os caminhos de teste (etapas em testes/caminhos/, explicadas em testes/CAMINHOS.md)
+ETAPA=03 node financas-app/testes/testar-app.js # uma etapa só
 financas-app/testes/testar-sql.sh               # regras de segurança num Postgres (PGHOST/PGUSER apontando para ele)
 node financas-app/testes/supabase-de-mentira.js # abre o app na mão: http://127.0.0.1:8787/financas/
 ```

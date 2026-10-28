@@ -1,6 +1,6 @@
 (function (A) {
   const u = A.u, c = A.c, db = A.db;
-  const ui = A.ui = { view: 'inicio', mes: null, fseg: 'extrato', rseg: 'mes', tfil: 'todas', efil: 'Todos', filtro: 'tudo', q: '', cartao: null, oculto: false };
+  const ui = A.ui = { rvfil: 'banco', rvq: '', rvsel: new Set(), view: 'inicio', mes: null, fseg: 'extrato', rseg: 'mes', tfil: 'todas', efil: 'Todos', filtro: 'tudo', q: '', cartao: null, oculto: false };
   try { ui.oculto = localStorage.getItem('df-oculto') === '1'; } catch (e) { /* sem armazenamento */ }
   const R = {}, DEPOIS = {};
   const $ = id => document.getElementById(id);
@@ -74,6 +74,7 @@
         ${[['Salário CLT', 'Salário CLT'], ['Darzan Produções', 'Darzan'], ['JPL SOM', 'JPL SOM']].map(([k, n]) => `<button class="inc" type="button" data-a="irRel" data-v="${k === 'Darzan Produções' ? 'darzan' : k === 'JPL SOM' ? 'jpl' : 'mes'}">${u.ti(c.icone(k))}<span class="n">${n}</span><b class="v num">${u.k0(r.fonte[k])}</b>${dif(r.fonte[k], media(k))}</button>`).join('')}</div></section>
     </div><div class="col-r">
       <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer</h2><button class="more" type="button" data-a="go" data-v="tarefas">Ver tudo</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], 'Nada pendente. Tudo em dia!')}</section>
+      ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#ffd36b', '#c07a12'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
       <section class="sec"><div class="sec-h"><h2>Para onde foi</h2><span class="c-muted num" style="font-size:.86rem">${r.cats.length} categorias</span></div>
         <div class="panel">${r.cats.length ? `<div class="scrollbox">${barras(r.cats)}</div><div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div>` : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto neste mês.')}</div></section>
       <section class="sec"><div class="sec-h"><h2>Lançamentos de ${u.nomeMes(m).toLowerCase()}</h2><button class="more" type="button" data-a="irExtrato">Ver extrato</button></div>
@@ -135,8 +136,8 @@
 
   /* ================= FINANÇAS ================= */
   R.fin = () => {
-    const s = seg('fseg', ui.fseg, [['extrato', 'Extrato'], ['bancos', 'Bancos'], ['cartoes', 'Cartões'], ['metas', 'Metas'], ['relatorios', 'Relatórios']]);
-    return bar('Finanças', null, ui.fseg !== 'bancos' && ui.fseg !== 'metas') + `<div class="fin">${s}</div>` + (FIN[ui.fseg] || FIN.extrato)();
+    const s = seg('fseg', ui.fseg, [['extrato', 'Extrato'], ['revisar', 'Revisar'], ['bancos', 'Bancos'], ['cartoes', 'Cartões'], ['metas', 'Metas'], ['relatorios', 'Relatórios']]);
+    return bar('Finanças', null, !['bancos', 'metas', 'revisar'].includes(ui.fseg)) + `<div class="fin">${s}</div>` + (FIN[ui.fseg] || FIN.extrato)();
   };
   const FIN = {};
   FIN.extrato = () => {
@@ -175,6 +176,73 @@
         <section class="sec"><div class="panel"><div class="sec-h" style="margin:0"><h2>Próximas faturas</h2></div><div class="minibars">${prox.map((p, j) => `<div class="mb"><b class="num">${u.k0(p.v)}</b><i style="height:${Math.max(p.v / mx * 96, 4)}px;--d:${j * .1}s"></i><span>${u.CURTO[+p.m.slice(5) - 1]}</span></div>`).join('')}</div></div></section></div>
       <div><section class="sec"><div class="sec-h"><h2>Na fatura de ${u.nomeMes(m).toLowerCase()}</h2><b class="num">${u.brl(v)}</b></div><div class="panel" style="padding:6px 10px">${it.map(linhaL).join('') || vazio(['credit-card', '#9fd8ff', '#2a62d8'], 'Nenhuma compra nesta fatura.')}</div></section></div></div>`;
   };
+  /* ---------- revisar: consertar vários lançamentos de uma vez ---------- */
+  /* o que aparece na lista do Revisar (com o filtro digitado) */
+  const listaRevisar = () => { const q = u.sem(ui.rvq); return c.paraRevisar(ui.rvfil).filter(l => !q || u.sem(l.desc + ' ' + l.cat + ' ' + l.sub + ' ' + l.banco).indexOf(q) >= 0).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0); };
+  FIN.revisar = () => {
+    const K = ui.rvfil, mem = c.memoria();
+    const L = listaRevisar();
+    const ids = new Set(c.lancs().map(l => l.id));
+    [...ui.rvsel].forEach(id => { if (!ids.has(id)) ui.rvsel.delete(id); });
+    const sel = ui.rvsel.size, todosVis = L.length && L.every(l => ui.rvsel.has(l.id));
+    const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${k}" aria-pressed="${K === k}">${x.nome} · ${c.paraRevisar(k).length}</button>`).join('');
+    let html = '', mes = null;
+    L.forEach(l => {
+      const m = u.mes(l.data);
+      if (m !== mes) { mes = m; const doMes = L.filter(x => u.mes(x.data) === m), tudo = doMes.every(x => ui.rvsel.has(x.id)); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${m}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
+      const sug = K === 'categoria' ? c.sugerir(l.desc, mem) : null, on = ui.rvsel.has(l.id);
+      html += `<div class="rv ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarca" data-id="${l.id}" aria-pressed="${on}" aria-label="Marcar ${u.esc(l.desc)}">${u.svg('check')}</button>
+        <button type="button" class="rv-txt" data-a="rvMarca" data-id="${l.id}"><span class="t">${u.esc(u.cap(l.desc))}</span><span class="m">${u.dm(l.data)} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ''} · ${u.esc(l.sub || l.cat || 'sem categoria')}</span>${sug ? `<span class="sug">${u.svg('sparkles')}Sugestão: ${u.esc(sug.cat)} · ${u.esc(sug.sub)}</span>` : ''}</button>
+        <span class="v num ${l.grupo === 'Renda' ? 'c-in' : ''}">${u.brl(Math.abs(l.valor))}</span>
+        <button type="button" class="rv-ed" data-a="editL" data-id="${l.id}" aria-label="Editar">${u.svg('pencil')}</button></div>`;
+    });
+    const comSug = K === 'categoria' ? [...ui.rvsel].filter(id => { const l = c.lancs().find(x => x.id === id); return l && c.sugerir(l.desc, mem); }).length : 0;
+    return `<section class="sec rvwrap">
+      <p class="c-muted" style="margin:0 0 12px;font-size:.88rem">Marque os lançamentos e conserte todos de uma vez. Toque no lápis para mudar só um.</p>
+      <div class="chips">${chips}</div>
+      <div class="rv-topo"><input class="search" id="rvBusca" type="search" placeholder="Filtrar: uber, gasolina, cliente…" value="${u.esc(ui.rvq)}" aria-label="Filtrar"><button type="button" class="chip" data-a="rvTodos">${todosVis ? 'Desmarcar todos' : `Marcar todos (${L.length})`}</button></div>
+      <div class="panel rvlista">${html || vazio(['circle-check', '#7cf0c0', '#068a5a'], K === 'banco' ? 'Todos os lançamentos têm banco.' : K === 'categoria' ? 'Todos têm categoria.' : 'Nada para conferir.')}</div>
+      <div class="rv-barra" ${sel ? '' : 'hidden'}><b>${sel} marcado${sel > 1 ? 's' : ''}</b>${comSug ? `<button type="button" class="btn2" data-a="rvSugestoes">${u.svg('sparkles')}Usar sugestões (${comSug})</button>` : ''}<button type="button" class="btn2 pri" data-a="rvMudar">${u.svg('pencil')}Mudar</button></div>
+    </section>`;
+  };
+  DEPOIS.revisar = () => { const b = $('rvBusca'); if (b) b.addEventListener('input', () => { ui.rvq = b.value; const pos = b.selectionStart; render(false); const n = $('rvBusca'); n.focus(); n.setSelectionRange(pos, pos); }); };
+  /* aplica as mudanças em vários lançamentos; devolve o "desfazer" */
+  function mudarVarios(ids, mud) {
+    const antes = [], ops = [];
+    ids.forEach(id => {
+      const r = db.achar('EXTRATO', id); if (!r) return;
+      const reg = { ID: id };
+      if (mud.banco) reg['BANCO'] = mud.banco;
+      if (mud.cat) {
+        reg['CATEGORIA'] = mud.cat; reg['SUB-CATEGORIA'] = mud.sub || '';
+        const g = mud.grupo || c.grupoDe(mud.cat);
+        if (['Necessidades', 'Desejos'].includes(r['GRUPO']) && ['Necessidades', 'Desejos'].includes(g)) reg['GRUPO'] = g;
+      }
+      if (mud.conferido) reg['OBS'] = String(r['OBS'] || '').replace(/\s*·?\s*conferir[^·]*/ig, '').replace(/^\s*·\s*/, '').trim();
+      antes.push(Object.fromEntries(Object.keys(reg).map(k => [k, r[k]])));
+      ops.push({ op: 'salvar', aba: 'EXTRATO', registro: reg });
+    });
+    if (ops.length) db.lote(ops);
+    return () => { db.lote(antes.map(r => ({ op: 'salvar', aba: 'EXTRATO', registro: r }))); render(false); };
+  }
+  function formMudar() {
+    const ids = [...ui.rvsel], n = ids.length;
+    const cats = c.listaCats();
+    abrir(`<h3 style="margin:0 0 4px">Mudar ${n} lançamento${n > 1 ? 's' : ''}</h3><p class="c-muted" style="margin:0 0 6px;font-size:.88rem">Deixe em “Não mudar” o que deve ficar como está.</p>
+      ${campo('Banco', `<select class="txt" id="mB">${opts([['', 'Não mudar']].concat(c.BANCOS.filter(b => b !== 'Não informado')), '')}</select>`)}
+      <div class="grid2">${campo('Categoria', `<select class="txt" id="mC">${opts([['', 'Não mudar']].concat(cats), '')}</select>`)}${campo('Sub-categoria', `<select class="txt" id="mS"><option value="">—</option></select>`)}</div>
+      ${ui.rvfil === 'conferir' ? `<div class="checkline"><input type="checkbox" id="mOk" checked><label for="mOk">Marcar como conferido</label></div>` : ''}
+      <button class="save" type="submit">Mudar ${n}</button>`,
+      () => {
+        const mud = { banco: val('mB'), cat: val('mC'), sub: val('mS'), conferido: !!($('mOk') && $('mOk').checked) };
+        if (!mud.banco && !mud.cat && !mud.conferido) { toast('Escolha o que mudar'); return false; }
+        const desfazer = mudarVarios(ids, mud);
+        ui.rvsel.clear(); fechar(); render(false);
+        toast(`${n} lançamento${n > 1 ? 's' : ''} mudado${n > 1 ? 's' : ''}`, desfazer);
+      });
+    $('mC').addEventListener('change', () => { $('mS').innerHTML = $('mC').value ? opts(c.subsDe($('mC').value), '') : '<option value="">—</option>'; });
+  }
+
   FIN.metas = () => {
     const gs = db.linhas('METAS').filter(g => g['META']);
     const tem = g => { const cx = c.caixinhas().find(x => u.sem(x['CONTA']).indexOf(u.sem(g['ONDE ESTÁ'])) >= 0 && g['ONDE ESTÁ']); return cx ? (c.saldo(cx) || 0) : c.num(g['JÁ GUARDADO']); };
@@ -214,6 +282,7 @@
   REL.darzan = relFonte('Darzan Produções');
   REL.jpl = relFonte('JPL SOM');
   DEPOIS.fin = () => {
+    if (ui.fseg === 'revisar') DEPOIS.revisar();
     if (ui.fseg === 'relatorios' && ui.rseg === 'ano') { const ms = c.mesesPassados().concat(c.doMes(u.mes(u.hoje())).length ? [u.mes(u.hoje())] : []); colunas('chAno', ms.map(m => { const r = c.resumo(m); return { l: u.CURTO[+m.slice(5) - 1], parts: Object.entries(c.FONTES).map(([k, v]) => ({ k, v: r.fonte[k], c: v })), line: { k: 'Saiu', v: r.saiu } }; })); }
     const el = $('chFonte'); if (el) { const nome = el.dataset.fonte, ms = c.mesesPassados().concat([u.mes(u.hoje())]); colunas('chFonte', ms.map(m => ({ l: u.CURTO[+m.slice(5) - 1], parts: [{ k: nome, v: c.resumo(m).fonte[nome], c: c.FONTES[nome] }] }))); }
     const b = $('busca'); if (b) b.addEventListener('input', () => { ui.q = b.value; const pos = b.selectionStart; render(false); const n = $('busca'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
@@ -247,7 +316,8 @@
   function fechar() { $('scrim2').hidden = true; aoEnviar = null; }
   const val = id => { const e = $(id); return e ? e.value : ''; };
   const opts = (lista, atual) => lista.map(x => { const [v, n] = Array.isArray(x) ? x : [x, x]; return `<option value="${u.esc(v)}" ${String(v) === String(atual) ? 'selected' : ''}>${u.esc(n)}</option>`; }).join('');
-  const campo = (rot, html) => `<label class="fl">${rot}</label>${html}`;
+  /* nome do campo + caixa ficam juntos num bloco (em linhas de 2 colunas, cada bloco é uma coluna) */
+  const campo = (rot, html) => `<div class="campo"><label class="fl">${rot}</label>${html}</div>`;
 
   /* ---------- lançamento ---------- */
   function formLanc(tipo, l) {
@@ -264,7 +334,7 @@
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar lançamento' : titulo}</h3>
       ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(3,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div>`}
       <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${l ? String(Math.abs(l.valor).toFixed(2)).replace('.', ',') : ''}" aria-label="Valor" required></label>
-      ${campo('O que foi', `<input class="txt" id="fD" value="${u.esc(l ? l.desc : '')}" placeholder="${tipo === 'entrada' ? 'Ex.: Ana - casamento, JPL SOM 2 dias' : 'Ex.: gasolina, mercado'}" required>`)}
+      ${campo('O que foi', `<input class="txt" id="fD" value="${u.esc(l ? l.desc : '')}" placeholder="${tipo === 'entrada' ? 'Ex.: Ana - casamento, JPL SOM 2 dias' : 'Ex.: gasolina, mercado'}">`)}
       <div class="grid2">${campo('Data', `<input class="txt" id="fDt" type="date" value="${l ? l.data : hoje}">`)}${tipo === 'saida' && !ed ? campo('Como pagou', `<select class="txt" id="fF">${opts([['conta', 'Pix / débito'], ['cartão', 'Cartão de crédito']], forma0)}</select>`) : campo('Banco', `<select class="txt" id="fB">${opts(l && l.tipo === 'cartão' ? cartoes : bancosConta, l ? l.banco : 'Nubank')}</select>`)}</div>
       ${tipo === 'saida' && !ed ? `<div class="grid2" id="linhaBanco">${campo('Banco', `<select class="txt" id="fB">${opts(bancosConta, 'Nubank')}</select>`)}<div id="boxParc" hidden>${campo('Parcelas', `<select class="txt" id="fP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="avisoCartao" hidden></p>` : ''}
       ${tipo === 'guardar' ? campo('Para onde foi', `<select class="txt" id="fX">${opts(c.caixinhas().map(x => [x['CONTA'], `${x['CONTA']} (${x['BANCO']})`]).concat([['', 'Outro lugar']]), l ? (l.obs.match(/Para (.+)/) || [])[1] : '')}</select>`) : ''}
@@ -279,7 +349,20 @@
   }
   function ligarForm(tipo) {
     const fC = $('fC'), fS = $('fS'), fF = $('fF');
-    if (fC) fC.addEventListener('change', () => { fS.innerHTML = opts(c.subsDe(fC.value), ''); const g = c.grupoDe(fC.value); const r = document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; });
+    let mexeuNaCategoria = false;
+    if (fC) fC.addEventListener('change', () => { mexeuNaCategoria = true; fS.innerHTML = opts(c.subsDe(fC.value), ''); const g = c.grupoDe(fC.value); const r = document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; });
+    if (fS) fS.addEventListener('change', () => { mexeuNaCategoria = true; });
+    /* novo lançamento: escreveu "gasolina"? o app já põe a categoria que você costuma usar */
+    const fD = $('fD'), novo = !!$('fF') || tipo === 'entrada';
+    if (fD && fC && novo) fD.addEventListener('input', () => {
+      if (mexeuNaCategoria) return;
+      const s = c.sugerir(fD.value);
+      if (!s || ![...fC.options].some(o => o.value === s.cat)) return;
+      fC.value = s.cat; fS.innerHTML = opts(c.subsDe(s.cat), s.sub);
+      const r = document.querySelector(`input[name=fG][value="${s.grupo}"]`); if (r) r.checked = true;
+      let av = $('avisoSug'); if (!av) { fC.closest('.grid2').insertAdjacentHTML('afterend', '<p class="aviso" id="avisoSug"></p>'); av = $('avisoSug'); }
+      av.innerHTML = `${u.svg('sparkles')} Categoria pelo seu histórico (${s.n} de ${s.total} vezes). Pode trocar se quiser.`;
+    });
     const atualizaCartao = () => {
       if (!fF) return;
       const cart = fF.value === 'cartão', fB = $('fB');
@@ -320,7 +403,11 @@
     const obsFinal = transf ? l.obs : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], obs].filter(Boolean).join(' · ');
     if (l) {
       db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': grupo === 'Renda' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
-      fechar(); render(false); toast('Lançamento atualizado');
+      fechar(); render(false);
+      /* mudou a categoria: oferece mudar também os outros com a mesma descrição */
+      const k = c.chave(desc), outros = !transf && (cat !== l.cat || sub !== l.sub) && k ? c.lancs().filter(x => x.id !== l.id && c.chave(x.desc) === k && (x.cat !== cat || x.sub !== sub) && x.grupo === l.grupo) : [];
+      if (outros.length) toast(`Mudar também os outros ${outros.length} “${u.cap(k)}”?`, () => { const volta = mudarVarios(outros.map(x => x.id), { cat, sub, grupo }); render(false); toast(`${outros.length} mudado${outros.length > 1 ? 's' : ''} para ${sub || cat}`, volta); }, 'Mudar todos');
+      else toast('Lançamento atualizado');
       return;
     }
     if (tipo === 'saida' && val('fF') === 'cartão') {
@@ -522,11 +609,11 @@
   }
 
   /* ================= efeitos ================= */
-  function toast(t, desfazer) {
+  function toast(t, desfazer, rotulo = 'Desfazer') {
     const el = $('toast'); el.hidden = true; void el.offsetWidth;
-    el.innerHTML = `<span>${u.esc(t)}</span>${desfazer ? '<button type="button" class="ub">Desfazer</button>' : ''}`; el.hidden = false;
+    el.innerHTML = `<span>${u.esc(t)}</span>${desfazer ? `<button type="button" class="ub">${u.esc(rotulo)}</button>` : ''}`; el.hidden = false;
     if (desfazer) el.querySelector('.ub').onclick = () => { el.hidden = true; desfazer(); };
-    clearTimeout(toast.h); toast.h = setTimeout(() => el.hidden = true, desfazer ? 5500 : 3000);
+    clearTimeout(toast.h); toast.h = setTimeout(() => el.hidden = true, desfazer ? 6500 : 3000);
   }
   A.toast = toast;
   const fx = () => $('fx');
@@ -554,7 +641,7 @@
     $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
     const lv = c.nivel(c.xp());
     $('sbrand').innerHTML = `<div class="ringw">${anel(lv.atual / lv.prox, 56, 4, '#ffd36b')}${foto()}<span class="lvl">Nv ${lv.n}</span></div><div><b>João Darzan</b><span>${lv.nome}</span></div>`;
-    $('fabwrap').hidden = ui.view === 'inicio';
+    $('fabwrap').hidden = ui.view === 'inicio' || (ui.view === 'fin' && ui.fseg === 'revisar');
   }
   function render(anim = true) {
     nav();
@@ -571,9 +658,21 @@
   const ACOES = {
     go: b => go(b.dataset.v),
     mes: b => { const ms = c.meses(), i = ms.indexOf(ui.mes) + +b.dataset.d; if (ms[i]) { ui.mes = ms[i]; render(); } },
-    seg: b => { ui[b.dataset.s] = b.dataset.v; render(b.dataset.s !== 'filtro' && b.dataset.s !== 'tfil'); },
+    seg: b => { if (b.dataset.s === 'rvfil' && ui.rvfil !== b.dataset.v) ui.rvsel.clear(); ui[b.dataset.s] = b.dataset.v; render(!['filtro', 'tfil', 'rvfil'].includes(b.dataset.s)); },
     ocultar: () => { ui.oculto = !ui.oculto; try { localStorage.setItem('df-oculto', ui.oculto ? '1' : '0'); } catch (e) { /* sem armazenamento */ } render(false); },
     irBancos: () => { ui.fseg = 'bancos'; go('fin'); },
+    irRevisar: () => { ui.fseg = 'revisar'; go('fin'); },
+    rvMarca: b => { const id = b.dataset.id; if (ui.rvsel.has(id)) ui.rvsel.delete(id); else ui.rvsel.add(id); render(false); },
+    rvMes: b => { const L = listaRevisar().filter(l => u.mes(l.data) === b.dataset.v), tudo = L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
+    rvTodos: () => { const L = listaRevisar(), tudo = L.length && L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
+    rvMudar: () => formMudar(),
+    rvSugestoes: () => {
+      const mem = c.memoria(), por = {};
+      [...ui.rvsel].forEach(id => { const l = c.lancs().find(x => x.id === id), s = l && c.sugerir(l.desc, mem); if (s) (por[[s.cat, s.sub, s.grupo].join('|')] = por[[s.cat, s.sub, s.grupo].join('|')] || []).push(id); });
+      const voltas = Object.entries(por).map(([k, ids]) => { const [cat, sub, grupo] = k.split('|'); ids.forEach(id => ui.rvsel.delete(id)); return mudarVarios(ids, { cat, sub, grupo }); });
+      const n = Object.values(por).flat().length; render(false);
+      toast(`${n} lançamento${n > 1 ? 's' : ''} categorizado${n > 1 ? 's' : ''} pelas sugestões`, () => voltas.forEach(f => f()));
+    },
     irCartoes: b => { ui.fseg = 'cartoes'; if (b.dataset.v) ui.cartao = b.dataset.v; go('fin'); },
     irExtrato: () => { ui.fseg = 'extrato'; ui.filtro = 'tudo'; go('fin'); },
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },

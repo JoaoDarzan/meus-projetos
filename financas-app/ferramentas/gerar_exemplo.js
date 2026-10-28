@@ -34,6 +34,10 @@ for (let m = 3; m <= 10; m++) {
   ext.push(L(`${mm}-15`, 'PicPay', 'Netflix', 'Desejos', 'conta', -22.45, 'Assinaturas', 'Streaming', { OBS: 'Fixa · débito automático' }));
   ext.push(L(`${mm}-20`, 'Nubank', 'Guardar reserva', 'Guardado', 'conta', -500, 'Guardado', 'Caixinha', { OBS: 'Para Caixinha Reserva' }));
 }
+/* como na vida real: lançamentos antigos sem banco, sem categoria ou para conferir (a tela Revisar conserta) */
+['2026-05-03', '2026-06-14', '2026-07-22', '2026-08-09', '2026-08-25', '2026-09-30'].forEach((d, i) => ext.push(L(d, 'Não informado', i % 2 ? 'Pix lanche' : 'Pix estacionamento', 'Desejos', 'conta', -(15 + i), i % 2 ? 'Alimentação fora' : 'Transporte', i % 2 ? 'Comida fora' : 'Estacionamento')));
+ext.push(L('2026-09-08', 'Nubank', 'Gasolina', 'Desejos', 'conta', -150, 'Outros', 'Outros'));
+ext.push(L('2026-08-16', 'PicPay', 'Evento som', 'Renda', 'conta', 300, 'Darzan Produções', 'Evento', { OBS: 'Conferir: era JPL SOM?' }));
 ext.push(L('2026-10-27', 'Nubank', 'Seguro do carro', 'Necessidades', 'conta', -115, 'Transporte', 'Seguro', { STATUS: 'Previsto', OBS: 'Fixa' }));
 ext.push(L('2026-10-29', 'Inter', 'Conta de luz', 'Necessidades', 'conta', -140, 'Casa', 'Contas', { STATUS: 'Previsto' }));
 /* compra parcelada no cartão: 3x */

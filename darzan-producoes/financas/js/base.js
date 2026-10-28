@@ -323,6 +323,54 @@ window.A = window.A || {};
   c.recebido = j => u.r2(u.sum(c.recebimentos(j)));
   c.faltaReceber = j => { const t = c.num(j['VALOR TOTAL']); return t ? u.r2(t - c.recebido(j)) : null; };
 
+  /* ---------- memória de categorias: aprende com o que você já categorizou ---------- */
+  /* "PIX ENVIADO Posto Shell 123" e "posto shell" viram a mesma chave: "posto shell" */
+  const RUIDO = /\b(pix|enviado|enviada|recebido|recebida|transf\w*|compra|no|na|debito|credito|pagamento|pagto|pag|de|do|da|dos|das|para|em|com|cartao|parcela|ltda|me|sa)\b/g;
+  c.chave = d => u.sem(d).replace(/[^a-z\s]/g, ' ').replace(RUIDO, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
+  c.semCategoria = l => !l.cat || l.cat === 'Outros';
+  c.memoria = () => {
+    const m = new Map();
+    c.lancs().forEach(l => {
+      if (c.semCategoria(l) || l.grupo === 'Transferência') return;
+      const k = c.chave(l.desc); if (!k) return;
+      const x = m.get(k) || { total: 0, op: {} };
+      const id = [l.cat, l.sub, l.grupo].join('|');
+      x.total++; x.op[id] = (x.op[id] || 0) + 1;
+      m.set(k, x);
+    });
+    return m;
+  };
+  /* a categoria mais usada para essa descrição (só se for a escolha de pelo menos 60% das vezes) */
+  /* acha a descrição já conhecida: igual, ou que tem todas as palavras dela ("uber trip" acha "UBER *TRIP 4521") */
+  const conhecida = (desc, m) => {
+    const k = c.chave(desc); if (m.has(k)) return m.get(k);
+    const tem = new Set(u.sem(desc).replace(/[^a-z\s]/g, ' ').replace(RUIDO, ' ').split(/\s+/).filter(Boolean));
+    let melhor = null, pts = 0;
+    m.forEach((x, chave) => {
+      const ps = chave.split(' ');
+      if (!ps.every(w => tem.has(w))) return;
+      if (ps.length < 2 && ps[0].length < 5) return; /* uma palavra só vale se for comprida, tipo "netflix" */
+      const n = ps.join('').length;
+      if (n > pts) { melhor = x; pts = n; }
+    });
+    return melhor;
+  };
+  c.sugerir = (desc, mem) => {
+    const x = conhecida(desc, mem || c.memoria()); if (!x) return null;
+    const [id, n] = Object.entries(x.op).sort((a, b) => b[1] - a[1])[0];
+    if (n / x.total < .6) return null;
+    const [cat, sub, grupo] = id.split('|');
+    return { cat, sub, grupo, n, total: x.total };
+  };
+  /* o que precisa de conserto */
+  c.REVISAR = {
+    banco: { nome: 'Sem banco', f: l => l.tipo === 'conta' && (!l.banco || l.banco === 'Não informado') },
+    categoria: { nome: 'Sem categoria', f: l => c.semCategoria(l) && l.grupo !== 'Transferência' },
+    conferir: { nome: 'Para conferir', f: l => /conferir/i.test(l.obs) },
+  };
+  c.paraRevisar = k => c.lancs().filter(c.REVISAR[k].f);
+  c.totalRevisar = () => { const ids = new Set(); Object.keys(c.REVISAR).forEach(k => c.paraRevisar(k).forEach(l => ids.add(l.id))); return ids.size; };
+
   /* ---------- jogo ---------- */
   c.NIVEIS = ['Iniciante', 'Organizado', 'Poupador', 'Estrategista', 'Investidor', 'Magnata', 'Lenda'];
   c.xp = () => { const rs = c.mesesPassados().map(c.resumo); return rs.filter(r => r.sobra > 0).length * 100 + rs.filter(r => r.guardou > 0).length * 100 + u.sum(c.tarefas().filter(t => t.feita), t => t.xp); };

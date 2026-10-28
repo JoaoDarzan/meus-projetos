@@ -43,7 +43,7 @@ svg.i{display:block;flex:none}
 .ti.xl{width:72px;height:72px;border-radius:22px}.ti.xl svg{width:36px;height:36px}
 
 /* topo das telas */
-.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding-block:calc(14px + var(--sa-t)) 12px;background:linear-gradient(var(--bg) 70%,transparent)}
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding-block:calc(14px + var(--sa-t)) 12px;background:linear-gradient(var(--bg) 88%,rgba(5,10,24,0))}
 .bar h1{font-size:1.45rem;font-weight:800;margin:0;letter-spacing:-.02em;flex:1;min-width:0}
 .back{width:40px;height:40px;border-radius:50%;border:1px solid var(--stroke);background:var(--glass);display:grid;place-items:center;flex:none}
 .mpill{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--stroke);background:var(--glass);border-radius:999px;padding:3px;flex:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -635,3 +635,39 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
   .wrap{max-width:1320px}
 }
 @media (min-width:1000px){.sync{bottom:24px;left:auto;right:28px;transform:none}}
+/* formulários: cada campo é um bloco; nada passa da largura (a data do iPhone tem largura própria) */
+.campo{min-width:0;display:flex;flex-direction:column}
+.grid2>*{min-width:0}
+.grid2 .campo .fl{margin-top:16px}
+.f2 input.txt[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:48px;display:block;text-align:left}
+.f2 input.txt[type=date]::-webkit-date-and-time-value{text-align:left}
+.f2 .txt{max-width:100%}
+/* com um formulário aberto, o aviso "Salvo" não cobre os campos */
+.scrim:not([hidden]) ~ .sync{display:none}
+/* revisar */
+.rv-topo{display:flex;gap:10px;align-items:center;margin:14px 0 12px}
+.rv-topo .search{flex:1;min-width:0}
+.rv-topo .chip{flex:none}
+.rvlista{padding:6px 12px}
+.rv-mes{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 4px 6px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.rv-mes .more{font-size:.78rem;letter-spacing:0;text-transform:none}
+.rv{display:grid;grid-template-columns:36px minmax(0,1fr) auto 36px;gap:10px;align-items:center;padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
+.rv.on{background:rgba(76,125,255,.1);border-radius:12px}
+.rv-ck{width:30px;height:30px;border-radius:9px;border:2px solid var(--stroke);background:none;display:grid;place-items:center;color:transparent;padding:0}
+.rv.on .rv-ck{background:var(--blue);border-color:var(--blue);color:#fff}
+.rv-ck svg{width:18px;height:18px}
+.rv-txt{border:0;background:none;text-align:left;color:inherit;padding:0;min-width:0;display:grid;gap:2px}
+.rv-txt .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-txt .m{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-txt .sug{font-size:.74rem;color:var(--xp);display:flex;gap:4px;align-items:center}
+.rv-txt .sug svg{width:13px;height:13px}
+.rv .v{font-weight:700;font-size:.9rem}
+.rv-ed{width:36px;height:36px;border-radius:10px;border:0;background:none;color:var(--muted);display:grid;place-items:center;padding:0}
+.rv-ed svg{width:17px;height:17px}
+.rv-barra{position:sticky;bottom:calc(96px + var(--sa-b));z-index:15;margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:18px;background:rgba(16,26,56,.92);border:1px solid var(--stroke);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 14px 30px -12px rgba(0,0,0,.7)}
+.rv-barra b{flex:1;min-width:0}
+.rv-aviso{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;color:inherit;margin-top:18px;padding:14px;border-radius:18px;border:1px solid rgba(255,211,107,.35);background:rgba(255,211,107,.07)}
+.rv-aviso span{display:grid;gap:2px;min-width:0}.rv-aviso small{color:var(--muted);font-size:.8rem}
+.rv-aviso>svg{width:20px;height:20px;color:var(--muted)}
+.aviso svg{width:14px;height:14px;vertical-align:-2px;color:var(--xp)}
+@media (min-width:1000px){.rv-barra{bottom:20px}}
