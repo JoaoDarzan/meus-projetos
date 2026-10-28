@@ -17,7 +17,7 @@
   function linhaL(l) {
     const renda = l.grupo === 'Renda', ic = c.icone(l.cat, l.sub);
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
-    return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${renda ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
+    return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
   function barras(cats) {
     const mx = Math.max(...cats.map(x => x.valor), 1);
@@ -153,6 +153,7 @@
   FIN.bancos = () => {
     const tot = c.totalBancos(), falta = c.semSaldo();
     return `<section class="sec"><div class="sub">Dinheiro nos bancos</div><div class="bignum num" data-cnt="${tot}" data-fmt="big">${u.big(tot)}</div>${falta ? `<p class="c-warn" style="font-size:.84rem;margin:6px 0 0">● Falta informar ${falta} saldo${falta > 1 ? 's' : ''}. Toque em “Conferir saldo”.</p>` : ''}</section>
+      <div class="sec"><button type="button" class="btn2" data-a="transferir">${u.svg('arrow-left-right')}Transferir entre minhas contas</button></div>
       <div class="two"><div><section class="sec">${c.bancosComConta().map(b => {
         const cor = c.CORBANCO[b] || c.CORBANCO['Não informado'], subs = c.contas().filter(x => x['BANCO'] === b);
         return `<article class="bank" style="--a:${cor[0]}"><div class="bank-h">${u.ti(['landmark', cor[0], cor[1]])}<div><b>${u.esc(b)}</b><span class="c-muted" style="font-size:.78rem">conferência manual</span></div><div class="tot"><span>no banco</span><b class="num">${u.brl(c.saldoBanco(b))}</b></div></div>
@@ -332,7 +333,7 @@
     const compra = l && (l.obs.match(/Compra (P[\w-]+)/) || [])[1];
     const titulo = { saida: 'Gastei', entrada: 'Recebi', guardar: 'Guardei', transf: 'Transferência' }[tipo];
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar lançamento' : titulo}</h3>
-      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(3,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div>`}
+      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div>`}
       <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${l ? String(Math.abs(l.valor).toFixed(2)).replace('.', ',') : ''}" aria-label="Valor" required></label>
       ${campo('O que foi', `<input class="txt" id="fD" value="${u.esc(l ? l.desc : '')}" placeholder="${tipo === 'entrada' ? 'Ex.: Ana - casamento, JPL SOM 2 dias' : 'Ex.: gasolina, mercado'}">`)}
       <div class="grid2">${campo('Data', `<input class="txt" id="fDt" type="date" value="${l ? l.data : hoje}">`)}${tipo === 'saida' && !ed ? campo('Como pagou', `<select class="txt" id="fF">${opts([['conta', 'Pix / débito'], ['cartão', 'Cartão de crédito']], forma0)}</select>`) : campo('Banco', `<select class="txt" id="fB">${opts(l && l.tipo === 'cartão' ? cartoes : bancosConta, l ? l.banco : 'Nubank')}</select>`)}</div>
@@ -434,6 +435,71 @@
     if (db.achar('PARCELADOS', pid)) ops.push({ op: 'apagar', aba: 'PARCELADOS', id: pid });
     db.lote(ops); fechar(); render(false); toast(`Compra excluída (${linhas.length} parcelas)`);
   }
+
+  /* ---------- transferência entre as suas contas: não é entrada nem saída, só muda de banco ---------- */
+  function formTransferir(par) {
+    const ed = !!par, sai = par && par.sai, entra = par && par.entra, bancos = c.BANCOS.filter(b => b !== 'Não informado');
+    const nota = sai ? sai.obs.replace(/^Transferência T[\w-]+\s*·?\s*/, '') : '';
+    abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar transferência' : 'Transferi'}</h3>
+      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${k === 'transferir'}">${n}</button>`).join('')}</div>`}
+      <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${sai ? String(Math.abs(sai.valor).toFixed(2)).replace('.', ',') : ''}" aria-label="Valor" required></label>
+      <div class="grid2">${campo('Saiu do', `<select class="txt" id="tDe">${opts(bancos, sai ? sai.banco : 'Nubank')}</select>`)}${campo('Foi para o', `<select class="txt" id="tPara">${opts(bancos, entra ? entra.banco : 'PicPay')}</select>`)}</div>
+      ${campo('Data', `<input class="txt" id="fDt" type="date" value="${sai ? sai.data : u.hoje()}">`)}
+      ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(nota)}" placeholder="opcional">`)}
+      <p class="aviso">Dinheiro passando de uma conta sua para outra: <b>não conta como entrada nem como saída</b>. Só muda o saldo de cada banco.</p>
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarTransf" data-id="${sai.id}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Salvar</button>'}`,
+      () => {
+        const v = u.num(val('fV')), de = val('tDe'), para = val('tPara'), data = val('fDt') || u.hoje(), obs = val('fO').trim();
+        if (!(v > 0)) { toast('Digite um valor, por exemplo 200'); return false; }
+        if (de === para) { toast('Escolha bancos diferentes'); return false; }
+        const tid = ed ? (sai.obs.match(/Transferência (T[\w-]+)/) || [])[1] : 'T' + Date.now().toString(36).toUpperCase();
+        const base = { 'DATA': data, 'GRUPO': 'Transferência', 'TIPO': 'conta', 'CATEGORIA': 'Transferência', 'SUB-CATEGORIA': 'Entre minhas contas', 'STATUS': 'Pago', 'PARCELA': '', 'OBS': [`Transferência ${tid}`, obs].filter(Boolean).join(' · ') };
+        db.lote([
+          { op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: ed ? sai.id : db.novoId('EXTRATO'), 'BANCO': de, 'DESCRIÇÃO': `Transferência para ${para}`, 'VALOR': -u.r2(v) }, base) },
+          { op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: ed ? entra.id : db.novoId('EXTRATO') + 'E', 'BANCO': para, 'DESCRIÇÃO': `Transferência do ${de}`, 'VALOR': u.r2(v) }, base) },
+        ]);
+        fechar(); render(false); toast(ed ? 'Transferência atualizada' : `Transferido ${u.brl(v)}: ${de} → ${para}`);
+      });
+  }
+  function apagarTransf(id, botao) {
+    if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
+    const par = c.parTransf(c.l(db.achar('EXTRATO', id))), copias = [par.sai, par.entra].map(l => Object.assign({}, l.r));
+    db.lote(copias.map(r => ({ op: 'apagar', aba: 'EXTRATO', id: r.ID }))); fechar(); render(false);
+    toast('Transferência excluída', () => { db.lote(copias.map(r => ({ op: 'salvar', aba: 'EXTRATO', registro: r }))); render(false); });
+  }
+
+  /* ---------- trazer correções de um arquivo (o Claude manda): junta com o que já tem ---------- */
+  function trazerCorrecoes(dados) {
+    const ops = []; let novos = 0, mudados = 0;
+    Object.entries(dados.abas || {}).forEach(([aba, regs]) => {
+      if (!window.TABELAS[aba] || !Array.isArray(regs)) return;
+      regs.forEach(r => {
+        if (!r.ID) return;
+        const x = db.achar(aba, r.ID);
+        if (r._apagar) { if (x) { ops.push({ op: 'apagar', aba, id: r.ID }); mudados++; } return; }
+        if (x && Object.keys(r).every(k => k === 'ID' || String(x[k]) === String(r[k]))) return; /* já está igual */
+        x ? mudados++ : novos++;
+        ops.push({ op: 'salvar', aba, registro: r });
+      });
+    });
+    return { ops, novos, mudados };
+  }
+  function formCorrecoes() {
+    abrir(`<h3 style="margin:0 0 4px">Trazer correções</h3><p class="c-muted" style="margin:0 0 14px;font-size:.88rem">Escolha o arquivo que o Claude te mandou. Antes de mudar qualquer coisa, o app mostra o que vai fazer.</p>
+      <label class="btn2 pri" style="cursor:pointer;justify-content:center">${u.svg('file-text')}Escolher o arquivo<input type="file" id="corArq" accept=".json,application/json" hidden></label>
+      <div id="corRes" style="margin-top:14px"></div>`, null);
+    $('corArq').addEventListener('change', async ev => {
+      const arq = ev.target.files[0], res = $('corRes'); if (!arq) return;
+      try {
+        const dados = JSON.parse(await arq.text());
+        const r = trazerCorrecoes(dados);
+        if (!r.ops.length) { res.innerHTML = `<p class="aviso">Nada para mudar: o app já está igual ao arquivo.</p>`; return; }
+        res.innerHTML = `${dados.descricao ? `<p class="aviso">${u.esc(dados.descricao)}</p>` : ''}<p style="margin:12px 0">Vai <b>adicionar ${r.novos}</b> e <b>corrigir ${r.mudados}</b> lançamento(s).</p><button type="button" class="save" id="corOk">Fazer as correções</button>`;
+        $('corOk').addEventListener('click', () => { db.lote(r.ops); fechar(); render(false); toast(`Pronto: ${r.novos} adicionado(s) e ${r.mudados} corrigido(s)`); });
+      } catch (e) { res.innerHTML = `<p class="aviso" style="color:var(--out)">Não consegui ler esse arquivo: ${u.esc(e.message)}</p>`; }
+    });
+  }
+  A.trazerCorrecoes = trazerCorrecoes;
 
   /* ---------- equipamento ---------- */
   let fotoNova = null;
@@ -678,8 +744,11 @@
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },
     filtroCat: b => { ui.fseg = 'extrato'; ui.filtro = 'cat:' + b.dataset.v; go('fin'); },
     novoL: b => formLanc(b.dataset.t),
-    trocaTipo: b => formLanc(b.dataset.v),
-    editL: b => { const r = db.achar('EXTRATO', b.dataset.id); if (r) formLanc(null, c.l(r)); },
+    trocaTipo: b => b.dataset.v === 'transferir' ? formTransferir() : formLanc(b.dataset.v),
+    transferir: () => formTransferir(),
+    apagarTransf: b => apagarTransf(b.dataset.id, b),
+    correcoes: () => formCorrecoes(),
+    editL: b => { const r = db.achar('EXTRATO', b.dataset.id); if (!r) return; const par = c.parTransf(c.l(r)); if (par) formTransferir(par); else formLanc(null, c.l(r)); },
     apagarL: b => apagarLanc(b.dataset.id, b),
     apagarCompra: b => apagarCompra(b.dataset.id, b),
     novoE: () => formEquip(null),
@@ -794,6 +863,7 @@
     const ref = (N.config.url.match(/https:\/\/([^.]+)\./) || [])[1];
     abrir(`<h3 style="margin:0 0 4px">Sua conta</h3><p class="c-muted" style="margin:0 0 16px">${u.esc((N.sessao && N.sessao.user.email) || '')}</p>
       <div style="display:grid;gap:10px">
+        <button type="button" class="btn2" data-a="correcoes">${u.svg('upload')}Trazer correções de um arquivo</button>
         <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>

@@ -270,6 +270,14 @@ window.A = window.A || {};
   c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
   c.contaQuePaga = nome => { const k = c.cartao(nome) || {}; return String(k['PAGA PELA CONTA'] || nome).split('·')[0].trim(); };
 
+  /* transferência entre contas: as duas pontas (saiu de um banco, entrou no outro) */
+  c.parTransf = l => {
+    const t = l && (l.obs.match(/^Transferência (T[\w-]+)/) || [])[1]; if (!t) return null;
+    const dois = c.lancs().filter(x => x.obs.indexOf('Transferência ' + t) === 0);
+    const sai = dois.find(x => x.valor < 0), entra = dois.find(x => x.valor > 0);
+    return sai && entra ? { sai, entra } : null;
+  };
+
   /* ---------- bancos ---------- */
   c.contas = () => db.linhas('CONTAS').filter(x => x['BANCO']);
   c.paga = l => l.status === 'Pago' || (/d[eé]bito autom/i.test(l.obs) && l.data <= u.hoje());

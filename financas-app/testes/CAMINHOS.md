@@ -24,6 +24,7 @@ Fotos de cada tela e o relatório ficam em `financas-app/testes/capturas/` (no G
 | 09 · Dados | `caminhos/09-dados.js` | trazer os dados pelo arquivo; "Para onde foi" soma igual ao "Saiu"; baixar a cópia de segurança traz tudo |
 | 10 · Telas em vários aparelhos | `caminhos/10-telas.js` | todas as telas e todos os formulários em iPhone SE, iPhone 15, iPhone Pro Max, Android, iPad, notebook e monitor |
 | 11 · Avisos no celular | `caminhos/11-avisos.js` | sem as tabelas de avisos o app funciona normal; a agenda tem faturas, contas para pagar na mão (débito automático não) e trabalhos, 1 dia antes e no dia; pagou, o aviso sai; ligar os avisos e o aviso de teste chega **trancado** (só o aparelho abre); envio diário junta tudo numa mensagem, não repete, tira aparelho que sumiu e recusa segredo errado |
+| 12 · Transferências e correções | `caminhos/12-transferencias-correcoes.js` | transferir entre as minhas contas não mexe em entrou/saiu/guardou e muda o saldo dos dois bancos; editar muda as duas pontas; excluir e desfazer levam as duas; trazer correções mostra antes, adiciona, corrige só os campos do arquivo e não repete |
 
 ## O que a etapa 10 confere em cada tela e formulário
 - nada passa da largura da tela (sem rolar para o lado);

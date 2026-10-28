@@ -8,6 +8,8 @@ const FORMULARIOS = {
   'gastei': ['novoL', { t: 'saida' }],
   'gastei-no-cartao': ['novoL', { t: 'saida' }, `const f = document.getElementById('fF'); f.value = 'cartão'; f.dispatchEvent(new Event('change')); const n = document.getElementById('fP'); n.value = '3'; n.dispatchEvent(new Event('change'));`],
   'recebi': ['novoL', { t: 'entrada' }],
+  'transferi': ['transferir', {}],
+  'trazer-correcoes': ['correcoes', {}],
   'guardei': ['novoL', { t: 'guardar' }],
   'editar-lancamento': ['editL', { id: `A.db.linhas('EXTRATO').find(r => r['TIPO'] === 'conta' && r['GRUPO'] !== 'Renda').ID` }],
   'editar-parcela': ['editL', { id: `(A.db.linhas('EXTRATO').find(r => /Compra P/.test(r['OBS'])) || A.db.linhas('EXTRATO')[0]).ID` }],
