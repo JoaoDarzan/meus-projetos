@@ -800,7 +800,7 @@
         <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
       </div>
       <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
-      A.face.disponivel().then(ok => { const b = $('btFace'); if (b) b.hidden = !ok; });
+      A.face.disponivel().then(ok => { const b = $('btFace'); if (!b) return; b.hidden = false; if (!ok && !A.face.ligado()) { b.disabled = true; b.innerHTML = `${u.svg('scan-face')}Este aparelho não liberou o ${A.face.nome} para o app`; } });
   }
 
   function baixarCopia() {
@@ -842,10 +842,16 @@
       localStorage.setItem(face.chave(), face.b64(cred.rawId));
     },
     desligar: () => { try { localStorage.removeItem(face.chave()); } catch (e) { /* nada */ } },
+    pedido: null,
     async conferir() {
+      /* uma tentativa de cada vez: se a automática ainda está esperando, cancela antes da do toque */
+      if (face.pedido) face.pedido.abort();
+      const ctl = face.pedido = new AbortController();
       const id = localStorage.getItem(face.chave());
-      await navigator.credentials.get({ publicKey: { challenge: face.desafio(), allowCredentials: [{ type: 'public-key', id: face.bytes(id) }], userVerification: 'required', timeout: 60000 } });
+      try { await navigator.credentials.get({ signal: ctl.signal, publicKey: { challenge: face.desafio(), allowCredentials: [{ type: 'public-key', id: face.bytes(id), transports: ['internal', 'hybrid'] }], userVerification: 'required', timeout: 60000 } }); }
+      finally { if (face.pedido === ctl) face.pedido = null; }
     },
+    detalhe: e => e ? `${e.name || 'Erro'}: ${e.message || e}` : '',
   };
   A.face = face;
   let travado = false, saiuEm = 0;
@@ -865,7 +871,8 @@
       if (!db.carregado) await abrirApp(); else render(false);
     } catch (e) {
       if (porToque !== true) return;
-      er.textContent = e && e.name === 'NotAllowedError' ? `Não deu certo. Toque no botão para tentar de novo.` : `O ${face.nome} não funcionou aqui. Entre com a senha.`;
+      if (e && e.name === 'AbortError') return;
+      er.innerHTML = `${e && e.name === 'NotAllowedError' ? 'Não deu certo. Toque no botão para tentar de novo.' : `O ${face.nome} não funcionou aqui. Entre com a senha.`}<br><small style="opacity:.7">${u.esc(face.detalhe(e))}</small>`;
       er.hidden = false;
     }
   }
@@ -879,7 +886,7 @@
   ACOES.faceid = async b => {
     if (face.ligado()) { face.desligar(); toast(`${face.nome} desligado neste aparelho`); return formConta(); }
     try { await face.ligar(); toast(`Pronto! O app agora abre com ${face.nome}`); formConta(); }
-    catch (e) { toast(e && e.name === 'NotAllowedError' ? 'Cancelado.' : `Não consegui ligar o ${face.nome}: ${e.message}`); }
+    catch (e) { toast(e && e.name === 'NotAllowedError' ? `Não ligou (${face.detalhe(e)}). Tente de novo.` : `Não consegui ligar o ${face.nome}: ${face.detalhe(e)}`); }
   };
 
   async function iniciar() {
