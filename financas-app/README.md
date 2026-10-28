@@ -24,6 +24,9 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   corrige os dados direto (`ferramentas/claude.py`, funções `claude_ler` e `claude_gravar` do `esquema.sql`).
   O Supabase guarda só o sha256 da chave (tabela `acesso_claude`); a chave abre apenas os dados do João, nunca vai
   para o GitHub, e trocar ou desligar no app corta o acesso na hora.
+- **Planilha de backup** (Google Planilhas "Darzan Finanças — Backup", no Drive do João): o `backup/Backup.gs` (Apps Script
+  da própria planilha) lê tudo pelo `claude_ler` a cada hora e reescreve as abas Resumo, Bancos e uma aba por tabela.
+  Só lê; mudar a planilha não muda o app. A chave fica nas Propriedades do script, nunca na planilha.
 
 ## Pastas
 | Onde | O que tem |
@@ -34,6 +37,7 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
 | `darzan-producoes/financas/js/telas.js` | as telas e formulários |
 | `supabase/esquema.sql` | cria as tabelas e as regras de segurança (gerado por `ferramentas/gerar_sql.js`) |
 | `testes/` | testes automáticos (rodam no GitHub a cada mudança) |
+| `backup/Backup.gs` | planilha de backup que se atualiza sozinha (as abas saem de `ferramentas/gerar_backup.js`) |
 | `ferramentas/claude.py` | o Claude lê e corrige os dados com a chave do Acesso do Claude |
 | `ferramentas/gerar_importacao.py` | transforma a Planilha 2.0 no arquivo que o app importa |
 | `apps-script/` | scripts que montaram a Planilha 2.0 (histórico; a planilha virou backup) |

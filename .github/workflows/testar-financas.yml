@@ -21,6 +21,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: O SQL está em dia com as tabelas do app
         run: node financas-app/ferramentas/gerar_sql.js && git diff --exit-code financas-app/supabase/esquema.sql
+      - name: A planilha de backup está em dia com as tabelas do app
+        run: node financas-app/ferramentas/gerar_backup.js && git diff --exit-code financas-app/backup/Backup.gs
       - name: Regras de segurança (cada um só vê o que é seu)
         env: { PGHOST: localhost, PGUSER: postgres, PGPASSWORD: teste }
         run: financas-app/testes/testar-sql.sh
