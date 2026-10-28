@@ -10,11 +10,8 @@ export const APP = 'https://joaodarzan.github.io/meus-projetos/financas/';
 export const hojeEmSP = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d);
 export const horaEmSP = (d = new Date()) => +new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hourCycle: 'h23' }).format(d);
 
-/* junta os avisos do dia numa mensagem só (se for mais de um) */
-export function mensagem(lista) {
-  if (lista.length === 1) return { titulo: lista[0].titulo, corpo: lista[0].corpo || '', url: APP, tag: lista[0].id };
-  return { titulo: `Você tem ${lista.length} avisos`, corpo: lista.map(a => `• ${a.titulo}${a.corpo ? ' · ' + a.corpo : ''}`).join('\n'), url: APP, tag: 'avisos-' + lista[0].quando };
-}
+/* cada aviso vira uma notificação separada (a "etiqueta" diferente faz uma não substituir a outra) */
+export const mensagem = a => ({ titulo: a.titulo, corpo: a.corpo || '', url: APP, tag: a.id });
 
 export async function enviarAvisos({ soTeste = false, segredo = process.env.AVISOS_SEGREDO, supabase = SUPABASE, publica = PUBLICA, hoje = hojeEmSP(), enviar = mandar } = {}) {
   if (!segredo) return { erro: 'falta o segredo AVISOS_SEGREDO no GitHub' };
@@ -36,17 +33,21 @@ export async function enviarAvisos({ soTeste = false, segredo = process.env.AVIS
   for (const [dono, avs] of Object.entries(porDono)) {
     const meus = aparelhos.filter(x => x.user_id === dono);
     if (!meus.length) { res.motivo = 'nenhum aparelho com avisos ligados'; continue; }
-    let chegou = false;
-    for (const ap of meus) {
-      res.aparelhos++;
-      try {
-        const st = await enviar(ap, mensagem(avs), chaves, APP);
-        if (st >= 200 && st < 300) chegou = true;
-        else if (st === 404 || st === 410) { res.sumiram++; await rpc('aparelho_sumiu', { p_segredo: segredo, p_id: ap.id }); }
-        else res.falhas.push(`aparelho ${ap.id}: resposta ${st}`);
-      } catch (e) { res.falhas.push(`aparelho ${ap.id}: ${e.message}`); }
+    const vivos = new Set(meus), chegaram = [];
+    res.aparelhos += meus.length;
+    for (const a of avs) {
+      let chegou = false;
+      for (const ap of [...vivos]) {
+        try {
+          const st = await enviar(ap, mensagem(a), chaves, APP);
+          if (st >= 200 && st < 300) chegou = true;
+          else if (st === 404 || st === 410) { res.sumiram++; vivos.delete(ap); await rpc('aparelho_sumiu', { p_segredo: segredo, p_id: ap.id }); }
+          else res.falhas.push(`aparelho ${ap.id}: resposta ${st}`);
+        } catch (e) { res.falhas.push(`aparelho ${ap.id}: ${e.message}`); }
+      }
+      if (chegou) chegaram.push(a.id);
     }
-    if (chegou) { await rpc('avisos_enviados', { p_segredo: segredo, p_ids: avs.map(a => a.id) }); res.enviados += avs.length; }
+    if (chegaram.length) { await rpc('avisos_enviados', { p_segredo: segredo, p_ids: chegaram }); res.enviados += chegaram.length; }
   }
   if (!res.enviados && !res.motivo) res.motivo = res.falhas[0] || 'nenhum aparelho recebeu';
   return res;

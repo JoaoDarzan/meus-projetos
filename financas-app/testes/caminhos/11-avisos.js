@@ -59,6 +59,8 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     await p.waitForSelector('#s2 [data-a=avisoTeste]');
     await clica(p, '#s2 [data-a=avisoTeste]');
     await p.waitForFunction(() => /até 30 minutos/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+    const naHora = await p.evaluate(() => window.DF_NOTIFS || []);
+    certo(naHora.some(n => n.titulo === 'Teste do Darzan Finanças'), 'o teste mostra um aviso na hora: ' + JSON.stringify(naHora));
     /* o GitHub roda o envio (antes das 9h, só os de teste) */
     const { enviarAvisos } = await import('../../avisos/avisos.mjs'), { oQueMandar } = await import('../../avisos/enviar.mjs');
     certo(oQueMandar(new Date('2026-10-27T10:00:00Z'), false).soTeste && !oQueMandar(new Date('2026-10-27T12:30:00Z'), false).soTeste && oQueMandar(new Date('2026-10-27T12:30:00Z'), true).soTeste, 'regra das 9h');
@@ -69,13 +71,13 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     certo(pu.headers['content-encoding'] === 'aes128gcm' && /^vapid t=.+, k=/.test(pu.headers.authorization) && pu.headers.ttl, 'cabeçalhos do aviso: ' + JSON.stringify(pu.headers));
     certo(!pu.corpo.toString('latin1').includes('Teste do Darzan'), 'o aviso foi aberto, sem trancar');
     const msg = await lerAviso(pu, cel);
-    certo(msg.titulo === 'Teste do Darzan Finanças' && /funcionando/.test(msg.corpo), 'aviso: ' + JSON.stringify(msg));
+    certo(msg.titulo === 'Teste pelo servidor' && /app fechado/.test(msg.corpo), 'aviso: ' + JSON.stringify(msg));
     certo(st.linhas('avisos').filter(a => a.tipo === 'teste').every(a => a.enviado), 'o teste não ficou marcado como enviado');
     /* desligar tira o aparelho */
     await clica(p, '#s2 [data-a=avisoDesligar]'); await calmo(p);
     certo(!st.linhas('aparelhos').length, 'aparelho continuou depois de desligar');
   }],
-  ['envio diário: junta os avisos do dia numa mensagem, não manda de novo e tira aparelho que sumiu', async (st, abrir) => {
+  ['envio diário: cada aviso numa notificação separada, não manda de novo e tira aparelho que sumiu', async (st, abrir) => {
     const cel = celular(st, 'cel1'), velho = celular(st, 'velho');
     const p = await abrir({ push: cel.sub });
     await clica(p, '#view [data-a=conta]'); await clica(p, '#s2 [data-a=avisoLigar]'); await calmo(p);
@@ -91,13 +93,15 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     const r = await enviarAvisos(conf);
     certo(r.enviados === deHoje, 'resultado: ' + JSON.stringify(r));
     const meus = st.pushes.filter(x => x.id === 'cel1');
-    certo(meus.length === 1, `o celular recebeu ${meus.length} mensagens (devia ser 1 com tudo junto)`);
-    const msg = await lerAviso(meus[0], cel);
-    certo(new RegExp(`Você tem ${deHoje} avisos`).test(msg.titulo) && /aluguel/.test(msg.corpo) && /academia/.test(msg.corpo), 'mensagem: ' + JSON.stringify(msg));
-    certo(!/coisa de ontem/.test(msg.corpo), 'mandou um aviso de ontem');
+    certo(meus.length === deHoje, `o celular recebeu ${meus.length} notificações (devia ser ${deHoje}, uma por aviso)`);
+    const msgs = await Promise.all(meus.map(m => lerAviso(m, cel)));
+    certo(msgs.some(m => /aluguel/i.test(m.titulo)) && msgs.some(m => /academia/i.test(m.titulo)), 'notificações: ' + JSON.stringify(msgs));
+    certo(new Set(msgs.map(m => m.tag)).size === msgs.length, 'cada notificação com etiqueta própria (uma não substitui a outra)');
+    certo(!msgs.some(m => /coisa de ontem/.test(m.titulo + m.corpo)), 'mandou um aviso de ontem');
+    certo(st.pushes.filter(x => x.id === 'velho').length === 1, 'insistiu no aparelho que sumiu');
     certo(!st.linhas('aparelhos').some(a => a.id === 'DVELHO'), 'o aparelho que sumiu continuou na lista');
     const de2 = await enviarAvisos(conf);
-    certo(de2.enviados === 0 && st.pushes.filter(x => x.id === 'cel1').length === 1, 'mandou de novo: ' + JSON.stringify(de2));
+    certo(de2.enviados === 0 && st.pushes.filter(x => x.id === 'cel1').length === deHoje, 'mandou de novo: ' + JSON.stringify(de2));
     const errado = await enviarAvisos(Object.assign({}, conf, { segredo: 'chute' })).catch(e => ({ erro: e.message }));
     certo(errado.erro, 'segredo errado conseguiu ler os avisos');
   }],

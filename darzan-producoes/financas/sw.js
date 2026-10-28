@@ -1,5 +1,5 @@
 /* Deixa o app abrir mesmo sem internet: tenta buscar a versão nova e, se não der, usa a guardada. */
-const CACHE = 'darzan-financas-v15';
+const CACHE = 'darzan-financas-v16';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
@@ -20,13 +20,14 @@ self.addEventListener('fetch', e => {
   })());
 });
 
+/* cada aviso com etiqueta própria (um não some debaixo do outro), com som/vibração do aparelho (silent: false;
+   vibrate vale no Android, no iPhone quem manda é Ajustes → Notificações → Finanças → Sons) */
+const opcoesAviso = (corpo, tag, url) => ({ body: corpo || '', icon: 'img/icone-192.png', badge: 'img/icone-192.png', tag: tag || 'aviso-' + Date.now(), renotify: true, silent: false, vibrate: [200, 100, 200], timestamp: Date.now(), data: { url: url || './' } });
 /* avisos no celular: chegou um aviso (mesmo com o app fechado), mostra na tela */
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { titulo: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.titulo || 'Darzan Finanças', {
-    body: d.corpo || '', icon: 'img/icone-192.png', badge: 'img/icone-192.png', tag: d.tag || undefined, data: { url: d.url || './' },
-  }));
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Darzan Finanças', opcoesAviso(d.corpo, d.tag, d.url)));
 });
 /* tocou no aviso: abre o app */
 self.addEventListener('notificationclick', e => {

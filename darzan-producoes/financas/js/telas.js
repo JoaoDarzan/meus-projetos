@@ -1025,7 +1025,14 @@
       db.salvar('APARELHOS', { ID: id, 'NOME': avisos.nome(), 'ENDPOINT': j.endpoint, 'P256DH': j.keys.p256dh, 'AUTH': j.keys.auth });
       try { localStorage.setItem('df-aparelho', id); } catch (e) { /* nada */ }
       sincronizarAvisos();
-      if (!window.DF_PUSH_FALSO) navigator.serviceWorker.ready.then(reg => reg.showNotification('Avisos ligados', { body: 'Você vai receber aqui as faturas, contas e trabalhos, 1 dia antes e no dia.', icon: 'img/icone-192.png' })).catch(() => { });
+      avisos.agora('Avisos ligados', 'Você vai receber aqui as faturas, contas e trabalhos, 1 dia antes e no dia.').catch(() => { });
+    },
+    /* mostra um aviso na hora, neste aparelho (sem passar pelo servidor) */
+    async agora(titulo, corpo) {
+      if (window.DF_PUSH_FALSO) { (window.DF_NOTIFS = window.DF_NOTIFS || []).push({ titulo, corpo }); return; } /* testes */
+      if (!window.Notification || Notification.permission !== 'granted') throw new Error('os avisos não estão liberados para o app nos Ajustes do iPhone');
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(titulo, { body: corpo, icon: 'img/icone-192.png', badge: 'img/icone-192.png', tag: 'agora-' + Date.now(), renotify: true, silent: false, vibrate: [200, 100, 200] });
     },
     async desligar() {
       const id = avisos.meu();
@@ -1033,8 +1040,10 @@
       try { localStorage.removeItem('df-aparelho'); } catch (e) { /* nada */ }
       if (!window.DF_PUSH_FALSO && avisos.suporte()) { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); }
     },
+    /* teste: um aviso na hora (confere se aparece, toca e vibra) e outro pelo servidor (confere o caminho com o app fechado) */
     async teste() {
-      db.salvar('AVISOS', { ID: 'AV-teste-' + Date.now().toString(36), 'QUANDO': u.hoje(), 'TITULO': 'Teste do Darzan Finanças', 'CORPO': 'Se você está vendo isto, os avisos estão funcionando.', 'TIPO': 'teste', 'ENVIADO': '' });
+      await avisos.agora('Teste do Darzan Finanças', 'Chegou! Os avisos estão funcionando neste aparelho.');
+      db.salvar('AVISOS', { ID: 'AV-teste-' + Date.now().toString(36), 'QUANDO': u.hoje(), 'TITULO': 'Teste pelo servidor', 'CORPO': 'Este veio pelo servidor: os avisos chegam mesmo com o app fechado.', 'TIPO': 'teste', 'ENVIADO': '' });
       for (let i = 0; i < 40 && db.pendentes(); i++) await new Promise(r => setTimeout(r, 250));
       if (db.pendentes()) throw new Error('sem internet agora');
     },
@@ -1081,14 +1090,14 @@
   function blocoAvisos() {
     if (!avisos.suporte() && !window.DF_PUSH_FALSO) return `<div class="aviso">${u.svg('bell')} ${avisos.noIphoneSemIcone() ? 'Para receber avisos no iPhone, abra o app pelo <b>ícone da tela de início</b> (Safari → Compartilhar → Adicionar à Tela de Início) e volte aqui.' : 'Este navegador não recebe avisos.'}</div>`;
     if (avisos.ligado()) return `<div class="aviso ok-av">${u.svg('bell-ring')} Avisos ligados neste aparelho: faturas, contas para pagar e trabalhos, 1 dia antes e no dia, às 9h.</div>
-      <button type="button" class="btn2" data-a="avisoTeste">${u.svg('bell')}Mandar um aviso de teste</button>
+      <button type="button" class="btn2" data-a="avisoTeste">${u.svg('bell')}Testar os avisos agora</button>
       <button type="button" class="btn2" data-a="avisoDesligar">${u.svg('bell')}Desligar os avisos neste aparelho</button>`;
     return `<button type="button" class="btn2 pri" data-a="avisoLigar">${u.svg('bell-ring')}Ligar avisos neste aparelho</button>`;
   }
   Object.assign(ACOES, {
     avisoLigar: async b => { b.disabled = true; try { await avisos.ligar(); toast('Avisos ligados!'); formConta(); } catch (e) { b.disabled = false; toast('Não deu para ligar os avisos: ' + e.message); } },
     avisoDesligar: async () => { await avisos.desligar(); toast('Avisos desligados neste aparelho'); formConta(); },
-    avisoTeste: async b => { b.disabled = true; try { await avisos.teste(); toast('Aviso de teste marcado: chega no celular em até 30 minutos, mesmo com o app fechado.'); } catch (e) { toast('Não deu para marcar o teste: ' + e.message); } finally { b.disabled = false; } },
+    avisoTeste: async b => { b.disabled = true; try { await avisos.teste(); toast('Aviso de teste enviado agora. Outro vem pelo servidor em até 30 minutos, mesmo com o app fechado.'); } catch (e) { toast('Não deu para testar: ' + e.message); } finally { b.disabled = false; } },
   });
 
   async function iniciar() {
