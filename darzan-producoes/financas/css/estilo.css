@@ -686,3 +686,33 @@ body.demo .bar h1::after,body.demo .hello .hi b::after{content:'DEMO';display:in
 .dest{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;font-size:.88rem;line-height:1.4;color:var(--muted)}
 .dest svg{width:20px;height:20px;color:#8fb0ff}
 .dest b{color:var(--fg)}
+/* ficha do trabalho: vídeos, anexos e recebimentos */
+.jsec h4 svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+.jres{border:1px solid var(--stroke);background:var(--glass);border-radius:16px;padding:12px 14px;display:grid;gap:8px}
+.jres small{color:var(--muted);font-size:.8rem}
+.vids{display:grid;gap:6px;margin-bottom:8px}
+.vid{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;border:1px solid var(--stroke);background:var(--glass);border-radius:14px}
+.vid .vck{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 12px;border:0;background:none;color:var(--fg);text-align:left;font-weight:600;font-size:.92rem;min-width:0}
+.vid .vck span{min-width:0;overflow-wrap:anywhere}
+.vid .vck svg{width:22px;height:22px;flex:none;color:var(--faint)}
+.vid.ok .vck svg{color:var(--in)}
+.vid.ok .vck span{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.25)}
+.vid .vx{width:44px;height:44px;border:0;background:none;color:var(--faint);display:grid;place-items:center}
+.vid .vx svg{width:16px;height:16px}
+.addv,.addx{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.addx{margin-top:8px}
+.addx .btn2,.addv .btn2{white-space:nowrap}
+label.btn2{cursor:pointer}
+.btn2.comp{width:100%;margin-top:8px;font-weight:600;font-size:.88rem}
+.btn2.comp span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vercomp{display:inline-flex;align-items:center;gap:6px;margin:-4px 0 6px 54px;border:0;background:none;color:var(--blue-hi);font-weight:700;font-size:.82rem;padding:6px 0;min-height:32px}
+.vercomp svg{width:15px;height:15px}
+.xver{border:1px solid var(--stroke);background:rgba(0,0,0,.25);border-radius:16px;overflow:hidden;display:grid;gap:10px;padding:10px;min-height:120px;place-items:center}
+.xver img{width:100%;height:auto;border-radius:10px;display:block}
+.xver object{width:100%;height:60vh;border:0;border-radius:10px;background:#fff}
+.xver .btn2{width:100%}
+.pgs{width:100%;display:grid;gap:10px;place-items:center}
+.pgs canvas{width:100%;height:auto;border-radius:8px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+.jsec h4{display:flex;align-items:center;gap:2px}
+textarea.txt{font-family:inherit;line-height:1.45}
+a.btn2{text-decoration:none}

@@ -12,16 +12,16 @@ create or replace function public.marcar_atualizado() returns trigger language p
 begin new.atualizado_em = now(); return new; end $$;
 `];
 Object.entries(T).forEach(([aba, t]) => {
-  const n = 'public.' + t.tabela;
+  const n = 'public.' + t.tabela, cols = t.colunas.map(x => x.slice(1)).concat(t.extras || []); /* extras: colunas que o app não lê junto (o arquivo dos anexos) */
   out.push(`-- ${aba}
 create table if not exists ${n} (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-${t.colunas.map(([, col, tipo]) => `  ${col} ${tipo}${tipo === 'boolean' ? ' not null default false' : ''},`).join('\n')}
+${cols.map(([col, tipo]) => `  ${col} ${tipo}${tipo === 'boolean' ? ' not null default false' : ''},`).join('\n')}
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now()
 );
-${t.colunas.map(([, col, tipo]) => `alter table ${n} add column if not exists ${col} ${tipo}${tipo === 'boolean' ? ' not null default false' : ''};`).join('\n')}
+${cols.map(([col, tipo]) => `alter table ${n} add column if not exists ${col} ${tipo}${tipo === 'boolean' ? ' not null default false' : ''};`).join('\n')}
 create index if not exists ${t.tabela}_user_id on ${n} (user_id);
 alter table ${n} enable row level security;
 drop policy if exists "so o dono" on ${n};
@@ -106,12 +106,12 @@ create or replace function public.claude_tabela_ok(p_tabela text) returns boolea
   select p_tabela = any (array[%TABELAS%]);
 $$;
 
--- ler uma tabela inteira do dono da chave
+-- ler uma tabela inteira do dono da chave (sem o arquivo dos anexos, que é pesado)
 create or replace function public.claude_ler(p_chave text, p_tabela text) returns json language plpgsql security definer set search_path = '' as $$
 declare u uuid := public.claude_dono(p_chave); r json;
 begin
   if not public.claude_tabela_ok(p_tabela) then raise exception 'tabela não permitida: %', p_tabela; end if;
-  execute format('select coalesce(json_agg(t order by t.id), ''[]''::json) from (select * from public.%I where user_id = $1) t', p_tabela) into r using u;
+  execute format('select coalesce(json_agg(to_jsonb(t) - ''conteudo'' order by t.id), ''[]''::json) from (select * from public.%I where user_id = $1) t', p_tabela) into r using u;
   return r;
 end $$;
 

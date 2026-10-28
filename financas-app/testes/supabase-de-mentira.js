@@ -12,7 +12,7 @@ const SEGREDO_TESTE = 'segredo-de-teste';
 function criar(op = {}) {
   const usuarios = op.usuarios || [{ id: 'u-joao', email: 'joao@teste.com', senha: 'senha-certa' }, { id: 'u-outro', email: 'outro@teste.com', senha: 'outra' }];
   const tabelas = Object.fromEntries(Object.values(T).map(t => [t.tabela, []]));
-  const colunas = Object.fromEntries(Object.values(T).map(t => [t.tabela, Object.fromEntries([['id', 'text'], ['user_id', 'uuid'], ...t.colunas.map(c => [c[1], c[2]])])]));
+  const colunas = Object.fromEntries(Object.values(T).map(t => [t.tabela, Object.fromEntries([['id', 'text'], ['user_id', 'uuid'], ...t.colunas.map(c => [c[1], c[2]]), ...(t.extras || [])])]));
   /* acesso do Claude (tabela fora do app: só a impressão digital da chave) */
   tabelas.acesso_claude = []; colunas.acesso_claude = { id: 'text', user_id: 'uuid', hash: 'text', ultimo_uso: 'text', criado_em: 'text' };
   const tokens = {}; /* token → {user, vence} */
@@ -81,7 +81,7 @@ function criar(op = {}) {
         if (!ac) return json(res, 400, { message: 'chave do Claude errada ou desligada' });
         ac.ultimo_uso = new Date().toISOString();
         const ok = t => Object.values(T).some(x => x.tabela === t) && t !== 'aparelhos';
-        if (p.endsWith('claude_ler')) { if (!ok(dados.p_tabela)) return json(res, 400, { message: 'tabela não permitida' }); return json(res, 200, tabelas[dados.p_tabela].filter(l => l.user_id === ac.user_id)); }
+        if (p.endsWith('claude_ler')) { if (!ok(dados.p_tabela)) return json(res, 400, { message: 'tabela não permitida' }); return json(res, 200, tabelas[dados.p_tabela].filter(l => l.user_id === ac.user_id).map(l => { const o = Object.assign({}, l); delete o.conteudo; return o; })); }
         let n = 0;
         for (const o of dados.p_ops) {
           if (!ok(o.tabela)) return json(res, 400, { message: 'tabela não permitida' });
@@ -112,9 +112,12 @@ function criar(op = {}) {
       if (!us) return json(res, 401, { code: 'PGRST301', message: 'JWT expired' });
       const minhas = lista.filter(l => l.user_id === us.id);
       if (req.method === 'GET') {
-        const ord = minhas.slice().sort((a, b) => a.id < b.id ? -1 : 1);
+        /* como o PostgREST: select=col1,col2 escolhe as colunas (* = todas, até as pesadas); id=eq.X filtra */
+        const sel = String(u.query.select || '*'), f = String(u.query.id || '').match(/^eq\.(.*)$/);
+        if (sel !== '*') { const ruim = sel.split(',').find(k => !colunas[tab][k]); if (ruim) return json(res, 400, { code: '42703', message: `column ${tab}.${ruim} does not exist` }); }
+        const ord = minhas.filter(l => !f || l.id === f[1]).sort((a, b) => a.id < b.id ? -1 : 1);
         const de = +(u.query.offset || 0), ate = de + +(u.query.limit || 1000);
-        return json(res, 200, ord.slice(de, Math.min(ate, de + 1000)).map(l => { const o = Object.assign({}, l); delete o.user_id; return o; }));
+        return json(res, 200, ord.slice(de, Math.min(ate, de + 1000)).map(l => { const o = Object.assign({}, l); delete o.user_id; return sel === '*' ? o : Object.fromEntries(sel.split(',').map(k => [k, o[k] === undefined ? null : o[k]])); }));
       }
       if (req.method === 'POST') {
         const linhas = Array.isArray(dados) ? dados : [dados];
@@ -161,6 +164,10 @@ function criar(op = {}) {
   /* o Supabase "esquece" os logins (como se tivessem vencido lá antes do que o celular acha) */
   st.vencerLogins = () => Object.keys(tokens).filter(k => k.startsWith('acc-')).forEach(k => delete tokens[k]);
   st.linhas = (tab, userId = 'u-joao') => st.tabelas[tab].filter(l => l.user_id === userId);
+  /* Supabase "antigo": como se ainda não tivessem rodado a atualização do SQL */
+  st.semColunas = (tab, cols) => cols.forEach(col => { delete colunas[tab][col]; tabelas[tab].forEach(l => { delete l[col]; }); });
+  st.semTabela = tab => { delete tabelas[tab]; };
+  st.criarTabela = tab => { if (!tabelas[tab]) tabelas[tab] = []; };
   return st;
 }
 module.exports = { criar };

@@ -17,7 +17,8 @@ var ABAS = [
   { aba: 'PARCELADOS', nome: 'Parcelados', tabela: 'parcelados', colunas: [['DATA DA COMPRA','data_da_compra','date'],['DESCRIÇÃO','descricao','text'],['CARTÃO','cartao','text'],['VALOR TOTAL','valor_total','numeric'],['PARCELAS','parcelas','numeric'],['VALOR DA PARCELA','valor_da_parcela','numeric'],['1ª PARCELA','primeira_parcela','text'],['CATEGORIA','categoria','text'],['SUB-CATEGORIA','subcategoria','text']] },
   { aba: 'FIXAS', nome: 'Fixas', tabela: 'fixas', colunas: [['DESCRIÇÃO','descricao','text'],['VALOR','valor','numeric'],['DIA','dia','numeric'],['BANCO','banco','text'],['TIPO','tipo','text'],['GRUPO','grupo','text'],['CATEGORIA','categoria','text'],['SUB-CATEGORIA','subcategoria','text'],['ATIVA','ativa','text'],['OBS','obs','text']] },
   { aba: 'EQUIPAMENTOS', nome: 'Equipamentos', tabela: 'equipamentos', colunas: [['NOME','nome','text'],['TIPO','tipo','text'],['VALOR','valor','numeric'],['DATA DA COMPRA','data_da_compra','date'],['COMO PAGOU','como_pagou','text'],['ESTADO','estado','text'],['Nº DE SÉRIE','numero_de_serie','text'],['OBS','obs','text'],['FOTO','foto','text']] },
-  { aba: 'TRABALHOS', nome: 'Trabalhos', tabela: 'trabalhos', colunas: [['CLIENTE','cliente','text'],['TIPO DE EVENTO','tipo_de_evento','text'],['DATA DO EVENTO','data_do_evento','date'],['LOCAL','local','text'],['O QUE FOI FECHADO','o_que_foi_fechado','text'],['VALOR TOTAL','valor_total','numeric'],['ENTREGA','entrega','date'],['ETAPA','etapa','text'],['TELEFONE','telefone','text'],['CONTRATO','contrato','text'],['OBS','obs','text']] },
+  { aba: 'TRABALHOS', nome: 'Trabalhos', tabela: 'trabalhos', colunas: [['CLIENTE','cliente','text'],['TIPO DE EVENTO','tipo_de_evento','text'],['DATA DO EVENTO','data_do_evento','date'],['LOCAL','local','text'],['O QUE FOI FECHADO','o_que_foi_fechado','text'],['VALOR TOTAL','valor_total','numeric'],['ENTREGA','entrega','date'],['ETAPA','etapa','text'],['TELEFONE','telefone','text'],['CONTRATO','contrato','text'],['OBS','obs','text'],['BRIEFING','briefing','text'],['ENTREGAS','entregas','text'],['PARCELA MENSAL','parcela_mensal','numeric'],['DIA DA PARCELA','dia_da_parcela','numeric']] },
+  { aba: 'ANEXOS', nome: 'Anexos', tabela: 'anexos', opcional: true, colunas: [['TRABALHO','trabalho','text'],['LANÇAMENTO','lancamento','text'],['NOME','nome','text'],['TIPO','tipo','text'],['DATA','data','date'],['VALOR','valor','numeric'],['ARQUIVO','arquivo','text'],['TAMANHO','tamanho','numeric']] },
   { aba: 'TAREFAS', nome: 'Tarefas', tabela: 'tarefas', colunas: [['TAREFA','tarefa','text'],['DATA','data','date'],['VALOR','valor','numeric'],['TIPO','tipo','text'],['FEITA','feita','boolean'],['OBS','obs','text']] },
   { aba: 'METAS', nome: 'Metas', tabela: 'metas', colunas: [['META','meta','text'],['VALOR ALVO','valor_alvo','numeric'],['JÁ GUARDADO','ja_guardado','numeric'],['ONDE ESTÁ','onde_esta','text'],['PRAZO','prazo','date'],['OBS','obs','text']] },
   { aba: 'CATEGORIAS', nome: 'Categorias', tabela: 'categorias', colunas: [['CATEGORIA','categoria','text'],['SUB-CATEGORIA','subcategoria','text'],['GRUPO','grupo','text']] },
@@ -70,7 +71,10 @@ function atualizar() {
   if (!chave) throw new Error('Backup desligado: use o menu Darzan → Ligar o backup');
   // lê tudo antes de mexer na planilha: se der erro no meio, o último backup bom fica como está
   var dados = {};
-  ABAS.forEach(function (a) { dados[a.aba] = ler(a.tabela, chave); });
+  ABAS.forEach(function (a) {
+    /* tabela nova (anexos) que o Supabase ainda não tem: o backup segue sem ela */
+    try { dados[a.aba] = ler(a.tabela, chave); } catch (e) { if (!a.opcional || /chave/i.test(e.message)) throw e; dados[a.aba] = []; }
+  });
   escreverTudo(SpreadsheetApp.getActiveSpreadsheet(), dados, new Date());
 }
 

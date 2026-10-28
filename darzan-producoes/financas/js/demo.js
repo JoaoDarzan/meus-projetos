@@ -3,10 +3,25 @@
 window.A = window.A || {};
 (function (A) {
   A.demo = { usuario: 'teste', senha: '123456' };
+  /* comprovante de mentira: um desenho (SVG) com o valor */
+  A.demo.recibo = (titulo, valor, quem) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="760" viewBox="0 0 600 760"><rect width="600" height="760" fill="#f4f6fb"/><rect x="40" y="40" width="520" height="680" rx="24" fill="#fff" stroke="#d9deea"/><circle cx="300" cy="150" r="46" fill="#21c25e"/><path d="M278 150l16 16 30-32" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="300" y="250" font-family="Arial" font-size="30" font-weight="700" text-anchor="middle" fill="#1b2130">${titulo}</text><text x="300" y="320" font-family="Arial" font-size="52" font-weight="700" text-anchor="middle" fill="#1b2130">${valor}</text><text x="300" y="400" font-family="Arial" font-size="24" text-anchor="middle" fill="#5b6478">De: ${quem}</text><text x="300" y="440" font-family="Arial" font-size="24" text-anchor="middle" fill="#5b6478">Para: Darzan Produções</text><text x="300" y="660" font-family="Arial" font-size="20" text-anchor="middle" fill="#9aa3b5">DEMONSTRAÇÃO · não é um comprovante de verdade</text></svg>`;
+    return { tipo: 'image/svg+xml', dado: 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg))) };
+  };
+  /* contrato de mentira: um PDF de uma página com um título */
+  A.demo.pdf = titulo => {
+    const txt = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[()\\]/g, ''), conteudo = `BT /F1 20 Tf 60 760 Td (${txt}) Tj ET BT /F1 12 Tf 60 730 Td (Darzan Producoes - documento de demonstracao) Tj ET`;
+    const obj = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>', `<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+    let pdf = '%PDF-1.4\n'; const pos = [];
+    obj.forEach((o, i) => { pos.push(pdf.length); pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+    const x = pdf.length;
+    pdf += `xref\n0 ${obj.length + 1}\n0000000000 65535 f \n${pos.map(p => String(p).padStart(10, '0') + ' 00000 n \n').join('')}trailer\n<< /Size ${obj.length + 1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+    return { tipo: 'application/pdf', dado: 'data:application/pdf;base64,' + btoa(pdf) };
+  };
 
   A.demo.dados = hoje => {
     const u = A.u, m0 = u.mes(hoje), dHoje = +hoje.slice(8, 10);
-    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
+    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], ANEXOS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
     let n = 0;
     const id = p => p + 'D' + String(++n).padStart(4, '0');
     const dia = (k, d) => u.dataNoMes(u.addMes(m0, k), d);
@@ -69,10 +84,19 @@ window.A = window.A || {};
       if (ok(24)) compra(D(24), 'Inter', 64.5, 1, 'Cinema', 'Lazer', 'Lazer');
     }
     /* trabalhos da Darzan e o que já entrou de cada um */
-    const J = (cliente, tipo, data, local, fechado, valor, entrega, etapa, obs) => abas.TRABALHOS.push({ ID: id('J'), 'CLIENTE': cliente, 'TIPO DE EVENTO': tipo, 'DATA DO EVENTO': data, 'LOCAL': local, 'O QUE FOI FECHADO': fechado, 'VALOR TOTAL': valor, 'ENTREGA': entrega, 'ETAPA': etapa, 'TELEFONE': '(19) 90000-0000', 'CONTRATO': '', 'OBS': obs });
-    J('Ana e Pedro', 'Casamento', mais(25), 'Espaço Jardim, Campinas', 'Filme do casamento + teaser + making of', 4500, mais(55), 'Fechado', 'Sinal de 30% pago');
-    renda(dia(-1, 4), 'PicPay', 'Ana e Pedro - sinal', 1350, 'Darzan Produções', 'Casamento');
-    J('Júlia 15 anos', '15 anos', mais(-20), 'Salão Estrela, Valinhos', 'Vídeo da festa + reels', 2200, mais(3), 'Em andamento', 'Falta entregar o vídeo da festa');
+    const J = (cliente, tipo, data, local, fechado, valor, entrega, etapa, obs, mais2) => { const j = Object.assign({ ID: id('J'), 'CLIENTE': cliente, 'TIPO DE EVENTO': tipo, 'DATA DO EVENTO': data, 'LOCAL': local, 'O QUE FOI FECHADO': fechado, 'VALOR TOTAL': valor, 'ENTREGA': entrega, 'ETAPA': etapa, 'TELEFONE': '(19) 90000-0000', 'CONTRATO': '', 'OBS': obs, 'BRIEFING': '', 'ENTREGAS': '', 'PARCELA MENSAL': '', 'DIA DA PARCELA': '' }, mais2); abas.TRABALHOS.push(j); return j; };
+    /* comprovante e contrato de mentira (desenhados aqui mesmo), só para mostrar como fica */
+    const X = (j, tipo, nome, data, valor, arquivo, lanc) => abas.ANEXOS.push({ ID: id('X'), 'TRABALHO': j.ID, 'LANÇAMENTO': lanc ? lanc.ID : '', 'NOME': nome, 'TIPO': tipo, 'DATA': data, 'VALOR': valor || '', 'ARQUIVO': arquivo.tipo, 'TAMANHO': arquivo.dado.length, _arquivo: arquivo.dado });
+    const ana = J('Ana e Pedro', 'Casamento', mais(25), 'Espaço Jardim, Campinas', 'Filme do casamento + teaser + making of', 4500, mais(55), 'Fechado', 'Sinal de 30% pago',
+      { 'BRIEFING': 'Horário: 16h às 23h\nEquipe: 2 profissionais · vídeo em 4K\n✅ Filme de até 7 minutos\n✅ Teaser vertical\n✅ Making of da noiva', 'ENTREGAS': '[ ] Teaser\n[ ] Making of da noiva\n[ ] Filme do casamento' });
+    const sinal = renda(dia(-1, 4), 'PicPay', 'Ana e Pedro - sinal', 1350, 'Darzan Produções', 'Casamento');
+    X(ana, 'Contrato', 'Contrato Ana e Pedro', dia(-1, 3), '', A.demo.pdf('Contrato de prestação de serviço (demonstração)'));
+    X(ana, 'Comprovante', 'Comprovante do sinal', dia(-1, 4), 1350, A.demo.recibo('Pix recebido', 'R$ 1.350,00', 'Ana e Pedro'), sinal);
+    J('Júlia 15 anos', '15 anos', mais(-20), 'Salão Estrela, Valinhos', 'Vídeo da festa + reels', 2200, mais(3), 'Em andamento', 'Falta entregar o vídeo da festa',
+      { 'ENTREGAS': '[x] Reels da valsa\n[x] Trend com as amigas\n[x] Vídeo da decoração\n[ ] Vídeo da festa' });
+    J('Bia e Léo', 'Casamento', mais(300), 'Chácara Primavera, Campinas', 'Filme + drone', 3000, '', 'Fechado', 'Paga R$ 300 todo mês até o casamento',
+      { 'PARCELA MENSAL': 300, 'DIA DA PARCELA': 10 });
+    renda(dia(-1, 10), 'PicPay', 'Bia e Léo - parcela', 300, 'Darzan Produções', 'Casamento');
     renda(dia(-2, 15), 'PicPay', 'Júlia 15 anos - sinal', 1100, 'Darzan Produções', 'Evento');
     J('Loja Bella Moda', 'Social media', '', '', '8 vídeos por mês', 2700, '', 'Em andamento', 'Contrato de 3 meses');
     [-2, -1, 0].forEach(k => { if (k < 0 || dHoje >= 10) renda(dia(k, 10), 'PicPay', 'Loja Bella Moda - social media', 900, 'Darzan Produções', 'Social media'); });

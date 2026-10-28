@@ -25,7 +25,14 @@
     TRABALHOS: { tabela: 'trabalhos', prefixo: 'J', colunas: [
       ['CLIENTE', 'cliente', 'text'], ['TIPO DE EVENTO', 'tipo_de_evento', 'text'], ['DATA DO EVENTO', 'data_do_evento', 'date'], ['LOCAL', 'local', 'text'],
       ['O QUE FOI FECHADO', 'o_que_foi_fechado', 'text'], ['VALOR TOTAL', 'valor_total', 'numeric'], ['ENTREGA', 'entrega', 'date'], ['ETAPA', 'etapa', 'text'],
-      ['TELEFONE', 'telefone', 'text'], ['CONTRATO', 'contrato', 'text'], ['OBS', 'obs', 'text']] },
+      ['TELEFONE', 'telefone', 'text'], ['CONTRATO', 'contrato', 'text'], ['OBS', 'obs', 'text'],
+      /* briefing do orçamento; vídeos a entregar, um por linha ("[x] teaser" = pronto); parcela que o cliente paga todo mês */
+      ['BRIEFING', 'briefing', 'text'], ['ENTREGAS', 'entregas', 'text'], ['PARCELA MENSAL', 'parcela_mensal', 'numeric'], ['DIA DA PARCELA', 'dia_da_parcela', 'numeric']] },
+    /* comprovantes, contratos e orçamentos dos trabalhos. O arquivo (conteudo) não vem junto com o resto:
+       é pesado, então o app só busca quando você abre o anexo */
+    ANEXOS: { tabela: 'anexos', prefixo: 'X', opcional: true, extras: [['conteudo', 'text']], colunas: [
+      ['TRABALHO', 'trabalho', 'text'], ['LANÇAMENTO', 'lancamento', 'text'], ['NOME', 'nome', 'text'], ['TIPO', 'tipo', 'text'], ['DATA', 'data', 'date'],
+      ['VALOR', 'valor', 'numeric'], ['ARQUIVO', 'arquivo', 'text'], ['TAMANHO', 'tamanho', 'numeric']] },
     TAREFAS: { tabela: 'tarefas', prefixo: 'T', colunas: [
       ['TAREFA', 'tarefa', 'text'], ['DATA', 'data', 'date'], ['VALOR', 'valor', 'numeric'], ['TIPO', 'tipo', 'text'], ['FEITA', 'feita', 'boolean'], ['OBS', 'obs', 'text']] },
     METAS: { tabela: 'metas', prefixo: 'M', colunas: [
@@ -42,10 +49,12 @@
   };
   /* registro do app ({'DESCRIÇÃO': ...}) ⇄ linha do Supabase ({descricao: ...}) */
   const vazio = v => v === '' || v === null || v === undefined;
+  /* colunas que o Supabase ainda não tem (falta rodar a atualização do SQL): o app não manda, para não dar erro */
+  const falta = {};
   function paraNuvem(aba, reg) {
     const out = { id: reg.ID };
     T[aba].colunas.forEach(([nome, col, tipo]) => {
-      if (!(nome in reg)) return;
+      if (!(nome in reg) || (falta[aba] && falta[aba].has(col))) return;
       let v = reg[nome];
       if (tipo === 'numeric') v = vazio(v) ? null : (typeof v === 'number' ? v : (isFinite(+String(v).replace(',', '.')) ? +String(v).replace(',', '.') : null));
       else if (tipo === 'date') v = vazio(v) ? null : String(v).slice(0, 10);
@@ -61,5 +70,5 @@
     return reg;
   }
   raiz.TABELAS = T;
-  raiz.TAB = { paraNuvem, doNuvem };
+  raiz.TAB = { paraNuvem, doNuvem, falta };
 })(typeof window !== 'undefined' ? window : globalThis);

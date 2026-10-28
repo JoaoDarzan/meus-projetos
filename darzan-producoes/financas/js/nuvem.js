@@ -42,7 +42,7 @@ window.A = window.A || {};
       if (!b) {
         const hoje = A.u.hoje(), dados = A.demo.dados(hoje);
         b = {};
-        Object.entries(dados.abas).forEach(([aba, regs]) => { b[TABELAS[aba].tabela] = regs.map(r => Object.assign(TAB.paraNuvem(aba, r), { user_id: 'demo' })); });
+        Object.entries(dados.abas).forEach(([aba, regs]) => { b[TABELAS[aba].tabela] = regs.map(r => Object.assign(TAB.paraNuvem(aba, r), r._arquivo ? { conteudo: r._arquivo } : {}, { user_id: 'demo' })); });
         gravar(CHAVE_DEMO, b);
       }
       return b;
@@ -108,11 +108,13 @@ window.A = window.A || {};
     }
   }
   const POR_VEZ = 1000;
+  /* tabela com coluna pesada (o arquivo dos anexos): lê só as colunas do app, o arquivo vem quando abrir */
+  const colunasDe = tabela => { const t = Object.values(TABELAS).find(x => x.tabela === tabela); return t && t.extras ? ['id', ...t.colunas.map(x => x[1])].join(',') : '*'; };
   n.ler = async tabela => {
     if (n.ehDemo()) return demo.ler(tabela);
     const out = [];
     for (let de = 0; ; de += POR_VEZ) {
-      const parte = await rest('GET', `${tabela}?select=*&order=id&limit=${POR_VEZ}&offset=${de}`);
+      const parte = await rest('GET', `${tabela}?select=${colunasDe(tabela)}&order=id&limit=${POR_VEZ}&offset=${de}`);
       out.push(...parte);
       if (parte.length < POR_VEZ) return out;
     }
@@ -123,6 +125,16 @@ window.A = window.A || {};
     const grupos = {};
     linhas.forEach(l => { const k = Object.keys(l).sort().join(','); (grupos[k] = grupos[k] || []).push(l); });
     for (const g of Object.values(grupos)) for (let i = 0; i < g.length; i += 500) await rest('POST', `${tabela}?on_conflict=id`, g.slice(i, i + 500), 'resolution=merge-duplicates,return=minimal');
+  };
+  /* arquivo de um anexo (foto ou PDF em "data:..."); vai e vem direto, sem esperar na fila, porque é pesado */
+  n.arquivo = async id => {
+    if (n.ehDemo()) { const x = (demo.banco().anexos || []).find(l => l.id === id); return x ? x.conteudo || null : null; }
+    const r = await rest('GET', `anexos?select=conteudo&id=eq.${encodeURIComponent(id)}`);
+    return r && r[0] ? r[0].conteudo : null;
+  };
+  n.guardarArquivo = async (id, conteudo) => {
+    if (n.ehDemo()) return demo.gravar('anexos', [{ id, conteudo }]);
+    await rest('POST', 'anexos?on_conflict=id', [{ id, conteudo }], 'resolution=merge-duplicates,return=minimal');
   };
   n.apagar = async (tabela, ids) => {
     if (n.ehDemo()) return demo.apagar(tabela, ids);

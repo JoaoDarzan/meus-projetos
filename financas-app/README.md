@@ -6,11 +6,18 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
 **No ar em:** https://joaodarzan.github.io/meus-projetos/financas/ (GitHub Pages, sem selo) e https://darzanproducoes.netlify.app/financas/ (com login; só o João entra)
 
 ## Como funciona
-- **App** (`darzan-producoes/financas/`): páginas simples (HTML, CSS e JS, sem biblioteca de fora), publicadas pelo
+- **App** (`darzan-producoes/financas/`): páginas simples (HTML, CSS e JS, sem biblioteca de fora; só o leitor de PDF,
+  pdf.js do cdnjs, é baixado na primeira vez que abre um PDF), publicadas pelo
   Netlify junto com o site. Guarda uma cópia dos dados no aparelho: abre na hora e funciona sem internet.
   Cada mudança entra numa fila e vai para o Supabase assim que der.
 - **Dados** (Supabase): uma tabela por assunto (extrato, contas, cartões, parcelados, fixas, equipamentos, trabalhos,
-  tarefas, metas, categorias). Cada linha tem dono e só o dono vê e mexe (Row Level Security).
+  anexos, tarefas, metas, categorias). Cada linha tem dono e só o dono vê e mexe (Row Level Security).
+- **Trabalhos**: cada trabalho tem briefing, a lista de vídeos a entregar (marca quando fica pronto), os recebimentos
+  (lançamentos com "Trabalho J…" na anotação, ou com o nome do cliente) e os anexos: comprovantes, contrato e orçamento
+  (tabela `anexos`; foto vira JPEG de até 1600px, PDF vai como está até 8 MB). O arquivo fica na coluna `conteudo`, que o
+  app só baixa quando você abre o anexo (não entra na cópia do aparelho nem no backup). Cliente que paga por mês
+  (ex.: R$ 200 todo dia 26) vira um "a receber" previsto no mês atual e no próximo, com aviso, até completar o valor.
+  A atualização do Supabase para isso está em `supabase/atualizacao-trabalhos.sql`; antes dela o app funciona e avisa.
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
   a cada 3 dias) e, de reserva, Netlify (`netlify/functions/manter-supabase-acordado.mjs`, todo dia).
 

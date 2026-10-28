@@ -99,14 +99,16 @@
 
   /* ================= TRABALHOS ================= */
   const ETAPAS = [['Orçamento', '#9eabcd'], ['Fechado', '#8fb0ff'], ['Em andamento', '#ffc86b'], ['Entregue', '#5fe0a1']];
-  const TIPOEV = { 'Casamento': ['heart', '#ff9cd0', '#d2257f'], '15 anos': ['cake', '#cf9cff', '#7a35e6'], 'Aniversário': ['cake', '#cf9cff', '#7a35e6'], 'Social media': ['smartphone', '#8fb6ff', '#2148d6'], 'Corporativo': ['building-2', '#5fe3f5', '#0a8bb0'], 'Palestra': ['speaker', '#d79bf0', '#8a3fb0'], 'Evento': ['party-popper', '#ffd97a', '#c07a0a'] };
+  const TIPOEV = { 'Casamento': ['heart', '#ff9cd0', '#d2257f'], '15 anos': ['cake', '#cf9cff', '#7a35e6'], 'Aniversário': ['cake', '#cf9cff', '#7a35e6'], 'Social media': ['smartphone', '#8fb6ff', '#2148d6'], 'Corporativo': ['building-2', '#5fe3f5', '#0a8bb0'], 'Palestra': ['speaker', '#d79bf0', '#8a3fb0'], 'Formatura': ['graduation-cap', '#9cc6ff', '#2a62e0'], 'Evento': ['party-popper', '#ffd97a', '#c07a0a'] };
   function cardJob(j) {
     const s = TIPOEV[j['TIPO DE EVENTO']] || TIPOEV.Evento, tot = c.num(j['VALOR TOTAL']), rec = c.recebido(j), falta = c.faltaReceber(j), d = String(j['DATA DO EVENTO'] || '');
+    const vs = c.entregas(j), ok = vs.filter(v => v.feito).length, nx = c.anexos(j).length;
     return `<button type="button" class="job" data-a="editJ" data-id="${j.ID}" style="--a:${s[1]};--b:${s[2]}"><div class="cov"></div><div class="in">
       <div class="tp"><span>${u.esc(j['TIPO DE EVENTO'] || 'Trabalho')}</span>${j['ETAPA'] === 'Entregue' ? '<span class="c-in">✓</span>' : ''}</div><div class="nm">${u.esc(j['CLIENTE'])}</div>
       <div class="meta">${d ? `<span>${u.svg('calendar-days')}${u.dm(d)}${u.ateHoje(d) >= 0 && u.ateHoje(d) <= 60 ? ` · em ${u.ateHoje(d)} dias` : ''}</span>` : ''}${j['LOCAL'] ? `<span>${u.svg('map-pin')}${u.esc(j['LOCAL'])}</span>` : ''}</div>
       ${tot ? `<div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span class="c-muted">${u.k0(rec)} de ${u.k0(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.k0(falta)}</b>` : '<b class="c-in">pago</b>'}</div>` : `<div class="mrow num"><span class="c-muted">Recebido ${u.k0(rec)}</span><span class="estim">sem valor total</span></div>`}
-      ${j['O QUE FOI FECHADO'] ? `<div class="ft"><span>${u.svg('package')}${u.esc(j['O QUE FOI FECHADO'])}</span></div>` : ''}</div></button>`;
+      ${j['O QUE FOI FECHADO'] ? `<div class="ft"><span>${u.svg('package')}${u.esc(j['O QUE FOI FECHADO'])}</span></div>` : ''}
+      ${vs.length || nx ? `<div class="meta">${vs.length ? `<span class="${ok < vs.length ? 'c-warn' : ''}">${u.svg('clapperboard')}${ok} de ${vs.length} vídeos</span>` : ''}${nx ? `<span>${u.svg('paperclip')}${nx} ${nx > 1 ? 'arquivos' : 'arquivo'}</span>` : ''}</div>` : ''}</div></button>`;
   }
   R.trabalhos = () => {
     const js = c.trabalhos(), abertos = js.filter(j => j['ETAPA'] !== 'Entregue' && j['ETAPA'] !== 'Orçamento');
@@ -117,7 +119,7 @@
       <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${js.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
       <section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
         <div class="board">${ETAPAS.map(([n, cor]) => { const l = js.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted" style="font-size:.84rem;margin:6px 4px">Nada aqui.</p>'}</div>`; }).join('')}</div>
-        <p class="aviso">“Recebido” soma sozinho as entradas do extrato que têm o nome do cliente na descrição (ex.: “Ana - casamento”). Use o botão <b>Registrar recebimento</b> dentro do trabalho.</p></section>`;
+        <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
   };
 
   /* ================= EQUIPAMENTOS ================= */
@@ -592,11 +594,11 @@
     }));
   }
   /* foto pequena (até 420px) para caber na célula da planilha */
-  function reduzirFoto(arq) {
+  function reduzirFoto(arq, lado = 420, maximo = 45000) {
     return new Promise((ok, erro) => {
       const rd = new FileReader();
       rd.onerror = erro;
-      rd.onload = () => { const img = new Image(); img.onerror = erro; img.onload = () => { const s = Math.min(1, 420 / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); let q = .72, url = cv.toDataURL('image/jpeg', q); while (url.length > 45000 && q > .3) { q -= .1; url = cv.toDataURL('image/jpeg', q); } ok(url); }; img.src = rd.result; };
+      rd.onload = () => { const img = new Image(); img.onerror = erro; img.onload = () => { const s = Math.min(1, lado / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); let q = lado > 420 ? .82 : .72, url = cv.toDataURL('image/jpeg', q); while (url.length > maximo && q > .3) { q -= .1; url = cv.toDataURL('image/jpeg', q); } ok(url); }; img.src = rd.result; };
       rd.readAsDataURL(arq);
     });
   }
@@ -645,31 +647,149 @@
   }
 
   /* ---------- trabalhos ---------- */
+  const SUBJ = { 'Casamento': 'Casamento', 'Social media': 'Social media', 'Palestra': 'Palestra' };
+  const TIPOANX = { 'Comprovante': ['receipt', '#5fe0a1', '#0f8a55'], 'Contrato': ['file-text', '#9cc6ff', '#2a62e0'], 'Orçamento': ['file-text', '#ffd97a', '#c07a0a'], 'Outro': ['paperclip', '#b9c3ff', '#5a5fe0'] };
+  const arquivos = {}; /* arquivos já abertos nesta visita (para não baixar de novo) */
+  const semAnexos = () => db.faltando && db.faltando.has('ANEXOS');
+  const anexoDoLanc = id => db.linhas('ANEXOS').find(x => x['LANÇAMENTO'] === id);
+  function videosJob(j) {
+    const vs = c.entregas(j), ok = vs.filter(v => v.feito).length;
+    return `<h4>${u.svg('clapperboard')} Vídeos${vs.length ? ` · ${ok} de ${vs.length} prontos` : ''}</h4>
+      ${vs.length ? `<div class="vids">${vs.map((v, i) => `<div class="vid${v.feito ? ' ok' : ''}"><button type="button" class="vck" data-a="vidJ" data-id="${j.ID}" data-i="${i}" aria-pressed="${v.feito}">${u.svg(v.feito ? 'circle-check' : 'circle')}<span>${u.esc(v.nome)}</span></button><button type="button" class="vx" data-a="tiraVid" data-id="${j.ID}" data-i="${i}" aria-label="Tirar ${u.esc(v.nome)}">${u.svg('x')}</button></div>`).join('')}</div>` : '<p class="c-muted" style="font-size:.86rem;margin:0 0 8px">Coloque aqui cada vídeo que precisa entregar e marque quando ficar pronto.</p>'}
+      <div class="addv"><input class="txt" id="jNv" placeholder="Novo vídeo, ex.: teaser" aria-label="Novo vídeo"><button type="button" class="btn2" data-a="addVid" data-id="${j.ID}">${u.svg('plus')}Pôr</button></div>`;
+  }
+  function anexosJob(j) {
+    const xs = c.anexos(j);
+    return `<h4>${u.svg('paperclip')} Comprovantes e contratos${xs.length ? ` · ${xs.length}` : ''}</h4>
+      ${xs.map(x => `<button type="button" class="it btn" data-a="verX" data-id="${x.ID}">${u.ti(TIPOANX[x['TIPO']] || TIPOANX.Outro)}<div style="min-width:0"><div class="t">${u.esc(x['NOME'] || x['TIPO'])}</div><div class="m">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', /pdf/.test(x['ARQUIVO']) ? 'PDF' : 'foto'].filter(Boolean).map(t => `<span>${u.esc(t)}</span>`).join('<span>·</span>')}</div></div><div class="v num">${c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : u.svg('eye')}</div></button>`).join('')}
+      ${semAnexos() ? '<p class="aviso">Para guardar arquivos aqui, falta rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : `<div class="addx"><select class="txt" id="aT" aria-label="Tipo do arquivo">${opts(Object.keys(TIPOANX), xs.some(x => x['TIPO'] === 'Contrato') ? 'Comprovante' : 'Contrato')}</select><label class="btn2" for="aArq">${u.svg('upload')}Pôr foto ou PDF</label><input type="file" id="aArq" accept="image/*,application/pdf" hidden></div><p class="c-muted" id="aSt" style="font-size:.82rem;margin:6px 2px 0" hidden></p>`}`;
+  }
+  function recebimentosJob(j) {
+    const recs = c.recebimentos(j), prev = c.parcelasPrevistas(j), tot = c.num(j['VALOR TOTAL']);
+    return `<h4>${u.svg('hand-coins')} Recebimentos · ${u.brl(c.recebido(j))}${tot ? ` de ${u.brl(tot)}` : ''}</h4>${recs.map(l => { const x = anexoDoLanc(l.id); return linhaL(l) + (x ? `<button type="button" class="vercomp" data-a="verX" data-id="${x.ID}">${u.svg('receipt')}Ver comprovante</button>` : ''); }).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
+      ${prev.length ? `<p class="c-muted" style="font-size:.84rem;margin:10px 2px 4px">${u.svg('calendar-clock')} Parcelas a receber (aparecem nas Tarefas, com aviso no celular):</p>${prev.map(linhaL).join('')}` : ''}
+      <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, parcela" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.hoje()}" aria-label="Data"></div>
+        ${semAnexos() ? '' : `<label class="btn2 comp" for="rArq">${u.svg('paperclip')}<span id="rArqN">Anexar comprovante (opcional)</span></label><input type="file" id="rArq" accept="image/*,application/pdf" hidden>`}
+        <button type="button" class="btn2 pri" data-a="receber" data-id="${j.ID}" data-sub="${SUBJ[j['TIPO DE EVENTO']] || 'Evento'}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div>`;
+  }
   function formJob(j) {
-    const ed = !!j, recs = j ? c.recebimentos(j) : [];
-    const SUBJ = { 'Casamento': 'Casamento', 'Social media': 'Social media', 'Palestra': 'Palestra', '15 anos': 'Evento', 'Aniversário': 'Evento', 'Corporativo': 'Evento', 'Evento': 'Evento' };
+    const ed = !!j, tot = j ? c.num(j['VALOR TOTAL']) : 0, rec = j ? c.recebido(j) : 0, falta = j ? c.faltaReceber(j) : null, prox = j ? c.parcelasPrevistas(j)[0] : null;
+    const sem = TAB.falta.TRABALHOS || new Set();
     abrir(`<h3 style="margin:0 0 12px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
+      ${ed && tot ? `<div class="jres"><div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span>${u.brl(rec)} de ${u.brl(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.brl(falta)}</b>` : '<b class="c-in">pago</b>'}</div>${prox ? `<small>Próxima parcela: ${u.brl(prox.valor)} em ${u.dm(prox.data)}</small>` : ''}</div>` : ''}
+      ${ed ? `<div class="jsec" id="jVid">${videosJob(j)}</div><div class="jsec" id="jAnx">${anexosJob(j)}</div><div class="jsec" id="jRec">${recebimentosJob(j)}</div><div class="jsec"><h4>${u.svg('pencil')} Dados do trabalho</h4></div>` : ''}
       ${campo('Cliente ou casal', `<input class="txt" id="jC" required value="${u.esc(j ? j['CLIENTE'] : '')}" placeholder="Ex.: Ana e Pedro">`)}
       <div class="grid2">${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : 'Casamento')}</select>`)}${campo('Etapa', `<select class="txt" id="jE">${opts(ETAPAS.map(x => x[0]), j ? j['ETAPA'] || 'Orçamento' : 'Orçamento')}</select>`)}</div>
       <div class="grid2">${campo('Data do evento', `<input class="txt" id="jD" type="date" value="${j ? String(j['DATA DO EVENTO'] || '') : ''}">`)}${campo('Entrega', `<input class="txt" id="jEn" type="date" value="${j ? String(j['ENTREGA'] || '') : ''}">`)}</div>
       <div class="grid2">${campo('Valor total', `<input class="txt num" id="jV" inputmode="decimal" value="${j && j['VALOR TOTAL'] !== '' ? String(c.num(j['VALOR TOTAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}${campo('Local', `<input class="txt" id="jL" value="${u.esc(j ? j['LOCAL'] || '' : '')}">`)}</div>
+      <div class="grid2">${campo('Paga por mês', `<input class="txt num" id="jPm" inputmode="decimal" value="${j && c.num(j['PARCELA MENSAL']) ? String(c.num(j['PARCELA MENSAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="se paga parcelado">`)}${campo('Todo dia', `<input class="txt num" id="jPd" inputmode="numeric" value="${j && j['DIA DA PARCELA'] ? parseInt(j['DIA DA PARCELA'], 10) : ''}" placeholder="ex.: 26">`)}</div>
       ${campo('O que foi fechado', `<input class="txt" id="jF" value="${u.esc(j ? j['O QUE FOI FECHADO'] || '' : '')}" placeholder="Ex.: Teaser + filme completo + 10 reels">`)}
-      <div class="grid2">${campo('WhatsApp', `<input class="txt" id="jW" inputmode="tel" value="${u.esc(j ? j['TELEFONE'] || '' : '')}" placeholder="(19) 9…">`)}${campo('Contrato (link)', `<input class="txt" id="jK" value="${u.esc(j ? j['CONTRATO'] || '' : '')}" placeholder="link do PDF no Drive">`)}</div>
+      ${campo('Briefing / orçamento', `<textarea class="txt" id="jBr" rows="5" placeholder="Horário, equipe, o que está incluso, adicionais…">${u.esc(j ? j['BRIEFING'] || '' : '')}</textarea>`)}
+      <div class="grid2">${campo('WhatsApp', `<input class="txt" id="jW" inputmode="tel" value="${u.esc(j ? j['TELEFONE'] || '' : '')}" placeholder="(19) 9…">`)}${campo('Contrato (link)', `<input class="txt" id="jK" value="${u.esc(j ? j['CONTRATO'] || '' : '')}" placeholder="ou anexe o PDF acima">`)}</div>
       ${campo('Anotações', `<textarea class="txt" id="jO">${u.esc(j ? j['OBS'] || '' : '')}</textarea>`)}
-      ${ed ? `<div class="jsec"><h4>Recebimentos · ${u.brl(c.recebido(j))}${c.num(j['VALOR TOTAL']) ? ` de ${u.brl(c.num(j['VALOR TOTAL']))}` : ''}</h4>${recs.map(linhaL).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
-        <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, restante" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.hoje()}" aria-label="Data"></div><button type="button" class="btn2 pri" data-a="receber" data-id="${j.ID}" data-sub="${SUBJ[j['TIPO DE EVENTO']] || 'Outros'}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div></div>
-        <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${j.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
+      ${sem.has('briefing') ? '<p class="aviso">Briefing, vídeos e parcela mensal só ficam salvos depois de rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : ''}
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${j.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
       () => {
         const nome = val('jC').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
-        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE'), 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), 'O QUE FOI FECHADO': val('jF'), 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
-        fechar(); render(false); toast(j ? 'Trabalho atualizado' : 'Trabalho criado');
+        const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10);
+        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE'), 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
+        db.garantirFixas(); fechar(); render(false); toast(j ? 'Trabalho atualizado' : 'Trabalho criado');
       }, true);
+    if (ed) ligarArquivosJob(j);
   }
-  function receber(id, sub) {
-    const j = db.achar('TRABALHOS', id), v = u.num(val('rV'));
+  /* troca só um pedaço da ficha (o que você digitou nos outros campos continua lá) */
+  function refazJob(id, secoes) {
+    const j = db.achar('TRABALHOS', id); if (!j) return;
+    const f = { jVid: videosJob, jAnx: anexosJob, jRec: recebimentosJob };
+    secoes.forEach(k => { const el = $(k); if (el) el.innerHTML = f[k](j); });
+    ligarArquivosJob(j); render(false);
+  }
+  function ligarArquivosJob(j) {
+    const a = $('aArq'); if (a) a.onchange = ev => { const arq = ev.target.files[0]; ev.target.value = ''; if (arq) anexar(j.ID, arq, { 'TIPO': val('aT') }); };
+    const r = $('rArq'); if (r) r.onchange = ev => { const arq = ev.target.files[0]; $('rArqN').textContent = arq ? arq.name : 'Anexar comprovante (opcional)'; };
+  }
+  function mexerVideos(id, f) {
+    const j = db.achar('TRABALHOS', id), vs = c.entregas(j);
+    f(vs); db.salvar('TRABALHOS', { ID: id, 'ENTREGAS': c.textoEntregas(vs) }); refazJob(id, ['jVid']);
+  }
+  function addVideo(id) {
+    const n = val('jNv').trim(); if (!n) { toast('Escreva o nome do vídeo'); return; }
+    mexerVideos(id, vs => vs.push({ feito: false, nome: n }));
+    const i = $('jNv'); if (i) i.focus();
+  }
+  /* foto vira JPEG de até ~1600px; PDF vai como está (até 8 MB) */
+  function lerArquivo(arq) {
+    if (/^image\//.test(arq.type) && !/pdf/.test(arq.type)) return reduzirFoto(arq, 1600, 900000).then(dado => ({ dado, tipo: 'image/jpeg' }));
+    if (arq.type === 'application/pdf' || /\.pdf$/i.test(arq.name)) {
+      if (arq.size > 8e6) return Promise.reject(new Error('O PDF passa de 8 MB'));
+      return new Promise((ok, erro) => { const rd = new FileReader(); rd.onerror = () => erro(new Error('Não consegui ler o arquivo')); rd.onload = () => ok({ dado: String(rd.result).replace(/^data:[^;,]*/, 'data:application/pdf'), tipo: 'application/pdf' }); rd.readAsDataURL(arq); });
+    }
+    return Promise.reject(new Error('Use uma foto ou um PDF'));
+  }
+  async function anexar(trabalho, arq, extra) {
+    const st = $('aSt'), diz = t => { if (st) { st.hidden = false; st.textContent = t; } };
+    try {
+      diz('Preparando o arquivo…');
+      const { dado, tipo } = await lerArquivo(arq), id = db.novoId('ANEXOS');
+      diz('Enviando…');
+      await N.guardarArquivo(id, dado);
+      arquivos[id] = dado;
+      db.salvar('ANEXOS', Object.assign({ ID: id, 'TRABALHO': trabalho, 'NOME': arq.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || extra['TIPO'], 'DATA': u.hoje(), 'ARQUIVO': tipo, 'TAMANHO': dado.length, 'VALOR': '', 'LANÇAMENTO': '' }, extra));
+      refazJob(trabalho, ['jAnx', 'jRec']); toast(`${extra['TIPO'] || 'Arquivo'} guardado`);
+      return id;
+    } catch (e) {
+      diz(''); if (st) st.hidden = true;
+      toast(e.semInternet ? 'Sem internet: o arquivo não foi. Tente de novo quando voltar.' : e.status === 404 ? 'Falta rodar a atualização no Supabase para guardar arquivos' : e.message || 'Não consegui guardar o arquivo');
+      return null;
+    }
+  }
+  async function receber(id, sub) {
+    const j = db.achar('TRABALHOS', id), v = u.num(val('rV')), arq = $('rArq') && $('rArq').files[0];
     if (!(v > 0)) { toast('Digite o valor recebido'); return; }
-    db.salvar('EXTRATO', { 'DATA': val('rDt') || u.hoje(), 'BANCO': val('rB'), 'DESCRIÇÃO': `${j['CLIENTE']} - ${val('rD').trim() || 'pagamento'}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': u.r2(v), 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': sub, 'STATUS': 'Pago', 'PARCELA': '', 'OBS': 'Recebido pelo app' });
-    confete(innerWidth / 2, 200); formJob(j); render(false); toast(`Recebido ${u.brl(v)} de ${j['CLIENTE']}`);
+    const lid = db.novoId('EXTRATO'), data = val('rDt') || u.hoje(), desc = val('rD').trim() || 'pagamento';
+    db.salvar('EXTRATO', { ID: lid, 'DATA': data, 'BANCO': val('rB'), 'DESCRIÇÃO': `${j['CLIENTE']} - ${desc}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': u.r2(v), 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': sub, 'STATUS': 'Pago', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · Recebido pelo app` });
+    confete(innerWidth / 2, 200); toast(`Recebido ${u.brl(v)} de ${j['CLIENTE']}`);
+    if (arq) await anexar(id, arq, { 'TIPO': 'Comprovante', 'NOME': `Comprovante ${desc} ${u.dm(data)}`, 'VALOR': u.r2(v), 'DATA': data, 'LANÇAMENTO': lid });
+    formJob(db.achar('TRABALHOS', id)); render(false);
+  }
+  async function verAnexo(id) {
+    const x = db.achar('ANEXOS', id); if (!x) return;
+    const pdf = /pdf/.test(x['ARQUIVO']);
+    abrir(`<h3 style="margin:0 0 4px">${u.esc(x['NOME'] || x['TIPO'])}</h3><p class="c-muted" style="margin:0 0 12px;font-size:.86rem">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : ''].filter(Boolean).map(u.esc).join(' · ')}</p>
+      <div class="xver" id="xVer"><p class="c-muted">Abrindo…</p></div>
+      <div class="acoes"><button type="button" class="btn2" data-a="editJ" data-id="${x['TRABALHO']}">${u.svg('chevron-left')}Voltar</button><button type="button" class="btn2 perigo" data-a="apagarX" data-id="${x.ID}">${u.svg('trash-2')}Excluir</button></div>`, null, true);
+    let dado = arquivos[id];
+    try { if (!dado) dado = arquivos[id] = await N.arquivo(id); } catch (e) { dado = null; }
+    const el = $('xVer'); if (!el) return;
+    if (!dado) { el.innerHTML = '<p class="aviso">Não consegui abrir agora (sem internet?). Tente de novo.</p>'; return; }
+    if (!pdf) { el.innerHTML = `<img src="${dado}" alt="${u.esc(x['NOME'] || 'comprovante')}">`; return; }
+    const bin = atob(dado.split(',')[1] || ''), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/pdf' }), url = URL.createObjectURL(blob);
+    el.innerHTML = `<div class="pgs" id="xPgs"><p class="c-muted">Desenhando as páginas…</p></div><a class="btn2 pri" href="${url}" target="_blank" rel="noopener">${u.svg('eye')}Abrir o PDF em tela cheia</a>`;
+    try {
+      const lib = await carregarPdfjs(), doc = await lib.getDocument({ data: bytes }).promise, box = $('xPgs'); if (!box) return;
+      box.innerHTML = '';
+      for (let i = 1; i <= Math.min(doc.numPages, 30); i++) {
+        const pg = await doc.getPage(i), v1 = pg.getViewport({ scale: 1 }), esc = Math.min(2.5, (box.clientWidth || 360) * (devicePixelRatio || 1) / v1.width), vp = pg.getViewport({ scale: esc });
+        const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height; cv.setAttribute('aria-label', `Página ${i} de ${doc.numPages}`);
+        box.appendChild(cv); await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+      }
+    } catch (e) { const box = $('xPgs'); if (box) box.innerHTML = '<p class="c-muted" style="font-size:.86rem">Toque no botão abaixo para ver o PDF.</p>'; }
+  }
+  /* leitor de PDF (pdf.js), baixado só na primeira vez que abrir um PDF */
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  let pdfjs = null;
+  const carregarPdfjs = () => pdfjs || (pdfjs = new Promise((ok, erro) => {
+    const sc = document.createElement('script'); sc.src = PDFJS + 'pdf.min.js';
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; ok(window.pdfjsLib); };
+    sc.onerror = () => { pdfjs = null; erro(new Error('leitor de PDF não carregou')); };
+    document.head.appendChild(sc);
+  }));
+  function apagarAnexo(id, botao) {
+    if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
+    const x = db.achar('ANEXOS', id); db.apagar('ANEXOS', id); delete arquivos[id];
+    toast('Arquivo excluído'); if (x) formJob(db.achar('TRABALHOS', x['TRABALHO'])); render(false);
   }
 
   /* ---------- tarefas ---------- */
@@ -819,6 +939,11 @@
     editJ: b => formJob(db.achar('TRABALHOS', b.dataset.id)),
     apagarJ: b => apagarSimples('TRABALHOS', b.dataset.id, b, 'Trabalho excluído'),
     receber: b => receber(b.dataset.id, b.dataset.sub),
+    vidJ: b => mexerVideos(b.dataset.id, vs => { const v = vs[+b.dataset.i]; if (v) v.feito = !v.feito; }),
+    tiraVid: b => mexerVideos(b.dataset.id, vs => vs.splice(+b.dataset.i, 1)),
+    addVid: b => addVideo(b.dataset.id),
+    verX: b => verAnexo(b.dataset.id),
+    apagarX: b => apagarAnexo(b.dataset.id, b),
     tarefa: b => alternarTarefa(b.dataset.id, b),
     novoT: () => formTarefa(null),
     editT: b => { const [tp, id] = b.dataset.id.split(':'); if (tp === 't') formTarefa(db.achar('TAREFAS', id)); else if (tp === 'l') { const r = db.achar('EXTRATO', id); if (r) formLanc(null, c.l(r)); } else { ui.fseg = 'cartoes'; ui.cartao = id; ui.mes = b.dataset.id.split(':')[2]; go('fin'); } },

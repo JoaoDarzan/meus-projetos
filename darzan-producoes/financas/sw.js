@@ -1,10 +1,10 @@
 /* Deixa o app abrir mesmo sem internet: tenta buscar a versão nova e, se não der, usa a guardada. */
-const CACHE = 'darzan-financas-v19';
+const CACHE = 'darzan-financas-v20';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
-  const nosso = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
+  const nosso = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$|^cdnjs\.cloudflare\.com$/.test(url.hostname); /* cdnjs: leitor de PDF */
   if (req.method !== 'GET' || !nosso) return; /* dados do Supabase nunca passam por aqui */
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);

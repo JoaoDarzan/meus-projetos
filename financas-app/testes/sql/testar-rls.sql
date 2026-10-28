@@ -89,8 +89,15 @@ do $$ declare j json; begin
     {"tabela":"extrato","op":"salvar","linha":{"id":"C2","valor":0}},{"tabela":"extrato","op":"apagar","linha":{"id":"C2"}}]');
   perform public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"apagar","linha":{"id":"C4"}}]');
 end $$;
+-- anexos: o Claude grava o arquivo, mas ao ler a tabela o arquivo (pesado) não vem junto
+do $$ declare j json; begin
+  perform public.claude_gravar('chave-do-joao', '[{"tabela":"anexos","op":"salvar","linha":{"id":"X1","trabalho":"J1","nome":"comprovante","conteudo":"data:image/jpeg;base64,AAAA"}}]');
+  j := public.claude_ler('chave-do-joao', 'anexos');
+  if not (j::text like '%"X1"%') or j::text like '%conteudo%' or j::text like '%base64%' then raise exception 'FALHOU: ler anexos trouxe o arquivo: %', j; end if;
+end $$;
 reset role;
 do $$ begin
+  if (select conteudo from public.anexos where id = 'X1') <> 'data:image/jpeg;base64,AAAA' then raise exception 'FALHOU: o arquivo do anexo não foi gravado'; end if;
   if (select categoria from public.extrato where id = 'C1') <> 'Transporte' or (select descricao from public.extrato where id = 'C1') <> 'do joao' or (select valor from public.extrato where id = 'C1') <> -10 then raise exception 'FALHOU: correção parcial'; end if;
   if (select user_id from public.extrato where id = 'C3') <> 'aaaaaaaa-0000-0000-0000-000000000001' then raise exception 'FALHOU: linha nova foi para outra pessoa'; end if;
   if (select valor from public.extrato where id = 'C2') <> -99 then raise exception 'FALHOU: mexeu na linha de outra pessoa'; end if;

@@ -88,7 +88,12 @@ window.A = window.A || {};
     /* tabelas opcionais (avisos): se ainda não existem no Supabase, o app abre normal sem elas */
     const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela).catch(e => { if (T[aba].opcional && !e.semInternet && e.status !== 401) { db.faltando = (db.faltando || new Set()).add(aba); return []; } throw e; })));
     const abas = {};
-    ABAS.forEach((aba, i) => { abas[aba] = lido[i].map(l => TAB.doNuvem(aba, l)); });
+    ABAS.forEach((aba, i) => {
+      abas[aba] = lido[i].map(l => TAB.doNuvem(aba, l));
+      /* coluna nova que o Supabase ainda não tem: o app segue funcionando e só não manda essa coluna */
+      const sem = lido[i].length ? T[aba].colunas.map(x => x[1]).filter(col => !(col in lido[i][0])) : [];
+      if (sem.length) TAB.falta[aba] = new Set(sem); else delete TAB.falta[aba];
+    });
     db.abas = abas;
     aplicar(db.fila.flatMap(x => x.ops));
     db.carregado = true; db.quando = Date.now();
@@ -168,7 +173,7 @@ window.A = window.A || {};
   db.salvar = (aba, registro) => db.lote([{ op: 'salvar', aba, registro }]);
   db.apagar = (aba, id) => db.lote([{ op: 'apagar', aba, id }]);
 
-  /* contas fixas viram lançamentos "previstos" no mês atual e no próximo; o ID fixo evita repetir em dois aparelhos */
+  /* contas fixas (e parcelas de trabalhos) viram lançamentos "previstos" no mês atual e no próximo; o ID fixo evita repetir em dois aparelhos */
   db.garantirFixas = () => {
     const ops = [], ext = db.linhas('EXTRATO'), m0 = u.mes(u.hoje());
     db.linhas('FIXAS').filter(f => String(f['ATIVA']).toLowerCase() !== 'não' && f['DESCRIÇÃO'] && f['VALOR'] && !/anual|parcel/i.test(f['TIPO'])).forEach(f => {
@@ -179,10 +184,31 @@ window.A = window.A || {};
         ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(m, parseInt(f['DIA'], 10) || 1), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': tipo === 'cartão' ? 'Pago' : 'Previsto', 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
       });
     });
+    ops.push(...parcelasDosTrabalhos(m0));
     if (!db.linhas('CATEGORIAS').some(x => x['SUB-CATEGORIA'] === 'Pagamento de fatura') && db.linhas('CATEGORIAS').length) ops.push({ op: 'salvar', aba: 'CATEGORIAS', registro: { ID: 'G-PAGFATURA', 'CATEGORIA': 'Transferência', 'SUB-CATEGORIA': 'Pagamento de fatura', 'GRUPO': 'Transferência' } });
     if (ops.length) db.lote(ops);
     return ops.length;
   };
+
+  /* cliente que paga um tanto por mês (ex.: R$ 200 todo dia 26): a parcela vira um "a receber" no mês atual e no próximo,
+     com aviso no celular, até completar o valor do trabalho. Se a parcela do mês já entrou, não cria de novo */
+  const SUBJ = { 'Casamento': 'Casamento', 'Social media': 'Social media', 'Palestra': 'Palestra' };
+  function parcelasDosTrabalhos(m0) {
+    const ops = [];
+    A.c.trabalhos().forEach(j => {
+      const mensal = A.c.num(j['PARCELA MENSAL']), total = A.c.num(j['VALOR TOTAL']);
+      if (!(mensal > 0) || !(total > 0)) return;
+      const recs = A.c.recebimentos(j), dia = parseInt(j['DIA DA PARCELA'], 10) || 1;
+      let resta = u.r2(total - u.sum(recs) - u.sum(A.c.parcelasPrevistas(j)));
+      [m0, u.addMes(m0, 1)].forEach(m => {
+        const id = `LJP-${j.ID}-${m}`;
+        if (resta < 0.01 || db.achar('EXTRATO', id) || recs.some(l => u.mes(l.data) === m)) return;
+        const v = u.r2(Math.min(mensal, resta)); resta = u.r2(resta - v);
+        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(m, dia), 'BANCO': (recs[recs.length - 1] || {}).banco || 'PicPay', 'DESCRIÇÃO': `${j['CLIENTE']} - parcela`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': v, 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': SUBJ[j['TIPO DE EVENTO']] || 'Evento', 'STATUS': 'Previsto', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · parcela mensal` } });
+      });
+    });
+    return ops;
+  }
 
   /* trazer os dados da planilha (arquivo .json) e fazer cópia de segurança */
   db.importar = async (dados, progresso) => {
@@ -374,7 +400,15 @@ window.A = window.A || {};
 
   /* ---------- trabalhos ---------- */
   c.trabalhos = () => db.linhas('TRABALHOS').filter(j => j['CLIENTE']);
-  c.recebimentos = j => { const n = u.sem(j['CLIENTE']); return n ? c.lancs().filter(l => l.grupo === 'Renda' && u.sem(l.desc).indexOf(n) >= 0) : []; };
+  /* o que entrou do trabalho: lançamentos ligados a ele ("Trabalho J012" na anotação) ou com o nome do cliente na descrição.
+     Parcela ainda prevista não conta como recebida */
+  c.doTrabalho = (j, l) => new RegExp('Trabalho ' + j.ID + '(?![\\w-])').test(l.obs);
+  c.recebimentos = j => { const n = u.sem(j['CLIENTE']); return c.lancs().filter(l => l.grupo === 'Renda' && l.status !== 'Previsto' && (c.doTrabalho(j, l) || (n && u.sem(l.desc).indexOf(n) >= 0))); };
+  c.parcelasPrevistas = j => c.lancs().filter(l => l.grupo === 'Renda' && l.status === 'Previsto' && c.doTrabalho(j, l));
+  /* vídeos a entregar: uma linha cada, "[x] teaser" quando está pronto */
+  c.entregas = j => String(j['ENTREGAS'] || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^\[([ xX])\]\s*(.*)$/); return m ? { feito: m[1] !== ' ', nome: m[2] } : { feito: false, nome: x }; });
+  c.textoEntregas = lista => lista.map(e => `[${e.feito ? 'x' : ' '}] ${e.nome}`).join('\n');
+  c.anexos = j => db.linhas('ANEXOS').filter(x => x['TRABALHO'] === j.ID).sort((a, b) => String(a['DATA']) < String(b['DATA']) ? -1 : 1);
   c.recebido = j => u.r2(u.sum(c.recebimentos(j)));
   c.faltaReceber = j => { const t = c.num(j['VALOR TOTAL']); return t ? u.r2(t - c.recebido(j)) : null; };
 
