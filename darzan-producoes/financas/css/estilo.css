@@ -707,12 +707,56 @@ label.btn2{cursor:pointer}
 .btn2.comp span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vercomp{display:inline-flex;align-items:center;gap:6px;margin:-4px 0 6px 54px;border:0;background:none;color:var(--blue-hi);font-weight:700;font-size:.82rem;padding:6px 0;min-height:32px}
 .vercomp svg{width:15px;height:15px}
-.xver{border:1px solid var(--stroke);background:rgba(0,0,0,.25);border-radius:16px;overflow:hidden;display:grid;gap:10px;padding:10px;min-height:120px;place-items:center}
-.xver img{width:100%;height:auto;border-radius:10px;display:block}
-.xver object{width:100%;height:60vh;border:0;border-radius:10px;background:#fff}
-.xver .btn2{width:100%}
+.xver{width:100%;border:1px solid var(--stroke);background:rgba(0,0,0,.25);border-radius:16px;overflow:hidden;display:grid;gap:8px;padding:10px;min-height:120px;place-items:center;color:var(--fg);position:relative}
+.xver img,.xver canvas{width:100%;height:auto;border-radius:10px;display:block;background:#fff;max-height:70vh;object-fit:contain}
+.xver .xpag{font-size:.78rem;color:var(--muted)}
+.xarq{display:grid;justify-items:center;gap:8px;text-align:center;font-size:.86rem;color:var(--muted);padding:16px}
+.xarq svg{width:34px;height:34px}
 .pgs{width:100%;display:grid;gap:10px;place-items:center}
 .pgs canvas{width:100%;height:auto;border-radius:8px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35)}
 .jsec h4{display:flex;align-items:center;gap:2px}
 textarea.txt{font-family:inherit;line-height:1.45}
 a.btn2{text-decoration:none}
+
+/* anexar: dois botões grandes */
+.addx2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.btn2.grande{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:14px 10px;font-size:.9rem;line-height:1.2;min-height:96px}
+.btn2.grande svg{width:24px;height:24px;color:var(--blue-hi)}
+.btn2.grande small{display:block;font-weight:500;font-size:.74rem;color:var(--muted);margin-top:3px}
+/* tela cheia do anexo */
+.visor{position:fixed;inset:0;z-index:90;background:#05070d;display:grid;grid-template-rows:auto 1fr;animation:up .25s var(--ease)}
+body.com-visor{overflow:hidden}
+.vbar{display:flex;align-items:center;gap:6px;padding:calc(8px + var(--sa-t)) 10px 8px;background:rgba(10,14,24,.96);border-bottom:1px solid var(--stroke)}
+.vbar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.vbar button{width:44px;height:44px;border-radius:12px;border:1px solid var(--stroke);background:var(--glass-2);color:var(--fg);display:grid;place-items:center;flex:none}
+.vbar button svg{width:20px;height:20px}
+.vpg{--z:1;overflow:auto;padding:12px 10px calc(24px + env(safe-area-inset-bottom));display:grid;gap:12px;justify-items:start;align-content:start;-webkit-overflow-scrolling:touch}
+.vpg img,.vpg canvas{width:calc(100% * var(--z));max-width:none;height:auto;background:#fff;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.vpg .aviso,.vpg p{width:100%;max-width:520px}
+/* etapas na ficha do trabalho */
+.etapas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.etapas .chip{display:inline-flex;align-items:center;gap:6px}
+.etapas .chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.etapas .chip[aria-pressed=true]{border-color:var(--c);color:var(--fg);background:color-mix(in srgb,var(--c) 22%,transparent)}
+/* quadro: arrastar entre colunas */
+.dica-q{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin:-4px 2px 10px}
+.dica-q svg{width:16px;height:16px;flex:none}
+.job{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.job.arrastando{opacity:.35}
+.job.fantasma{position:fixed;left:0;top:0;z-index:95;pointer-events:none;box-shadow:0 18px 40px rgba(0,0,0,.55);opacity:.96}
+.board.arrastando{scroll-snap-type:none}
+.col{transition:background .15s,border-color .15s}
+.col.alvo{border-color:var(--blue);background:rgba(91,139,255,.12)}
+.vaziocol{font-size:.84rem;margin:6px 4px;min-height:40px}
+/* recorrentes e balanço */
+.recp+.recp{margin-top:12px}
+.rech{display:grid;grid-template-columns:42px minmax(0,1fr) 20px;gap:12px;align-items:center;width:100%;border:0;background:none;color:var(--fg);text-align:left;padding:0 0 12px}
+.rech b{display:block;font-size:1.02rem}
+.rech small{display:block;color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rech>svg{width:18px;height:18px;color:var(--faint)}
+.recm{margin-top:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:4px}
+.balm+.balm{margin-top:10px}
+.balj{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:10px;width:100%;border:0;border-top:1px solid rgba(255,255,255,.06);background:none;color:var(--fg);text-align:left;padding:9px 0;min-height:44px}
+.balj span{grid-row:span 2;font-size:.8rem;color:var(--muted);font-weight:700;align-self:center}
+.balj b{font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.balj small{font-size:.76rem;color:var(--muted)}

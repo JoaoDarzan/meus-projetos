@@ -86,7 +86,10 @@ window.A = window.A || {};
   /* busca tudo no Supabase; mudanças que ainda estão na fila continuam valendo por cima */
   db.atualizar = async () => {
     /* tabelas opcionais (avisos): se ainda não existem no Supabase, o app abre normal sem elas */
-    const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela).catch(e => { if (T[aba].opcional && !e.semInternet && e.status !== 401) { db.faltando = (db.faltando || new Set()).add(aba); return []; } throw e; })));
+    /* começa do zero a cada leitura: se a tabela passou a existir (rodou a atualização), o aviso some */
+    const faltando = new Set();
+    const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela).catch(e => { if (T[aba].opcional && !e.semInternet && e.status !== 401) { faltando.add(aba); return []; } throw e; })));
+    db.faltando = faltando;
     const abas = {};
     ABAS.forEach((aba, i) => {
       abas[aba] = lido[i].map(l => TAB.doNuvem(aba, l));
@@ -411,6 +414,22 @@ window.A = window.A || {};
   /* vídeos a entregar: uma linha cada, "[x] teaser" quando está pronto */
   c.entregas = j => String(j['ENTREGAS'] || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^\[([ xX])\]\s*(.*)$/); return m ? { feito: m[1] !== ' ', nome: m[2] } : { feito: false, nome: x }; });
   c.textoEntregas = lista => lista.map(e => `[${e.feito ? 'x' : ' '}] ${e.nome}`).join('\n');
+  /* cliente recorrente (ex.: social media todo mês): fica fora do quadro, com o que rende mês a mês */
+  c.recorrente = j => j['ETAPA'] === 'Recorrente';
+  c.ganhosPorMes = j => { const o = {}; c.recebimentos(j).forEach(l => { const m = u.mes(l.data); o[m] = u.r2((o[m] || 0) + l.valor); }); return o; };
+  /* balanço da Darzan num ano: por mês, o que faturou (trabalhos e recorrentes) e quais trabalhos aconteceram */
+  c.anosDarzan = () => [...new Set(c.lancs().filter(l => l.cat === 'Darzan Produções').map(l => l.data.slice(0, 4)).concat(c.trabalhos().map(j => String(j['DATA DO EVENTO'] || '').slice(0, 4)).filter(a => a && a <= u.hoje().slice(0, 4))))].sort();
+  c.balancoDarzan = ano => {
+    const fim = ano === u.hoje().slice(0, 4) ? u.mes(u.hoje()) : ano + '-12', rec = {};
+    c.trabalhos().filter(c.recorrente).forEach(j => Object.entries(c.ganhosPorMes(j)).forEach(([m, v]) => { rec[m] = u.r2((rec[m] || 0) + v); }));
+    const out = [];
+    for (let m = ano + '-01'; m <= fim; m = u.addMes(m, 1)) {
+      const fat = u.r2(u.sum(c.lancs().filter(l => l.cat === 'Darzan Produções' && l.grupo === 'Renda' && l.status !== 'Previsto' && u.mes(l.data) === m)));
+      const jobs = c.trabalhos().filter(j => !c.recorrente(j) && (j['ETAPA'] || 'Orçamento') !== 'Orçamento' && String(j['DATA DO EVENTO'] || '').slice(0, 7) === m).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1);
+      out.push({ m, fat, rec: rec[m] || 0, trab: u.r2(fat - (rec[m] || 0)), jobs });
+    }
+    return out;
+  };
   c.anexos = j => db.linhas('ANEXOS').filter(x => x['TRABALHO'] === j.ID).sort((a, b) => String(a['DATA']) < String(b['DATA']) ? -1 : 1);
   c.recebido = j => u.r2(u.sum(c.recebimentos(j)));
   c.faltaReceber = j => { const t = c.num(j['VALOR TOTAL']); return t ? u.r2(t - c.recebido(j)) : null; };

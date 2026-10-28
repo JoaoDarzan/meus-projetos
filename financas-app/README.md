@@ -18,6 +18,10 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   app só baixa quando você abre o anexo (não entra na cópia do aparelho nem no backup). Cliente que paga por mês
   (ex.: R$ 200 todo dia 26) vira um "a receber" previsto no mês atual e no próximo, com aviso, até completar o valor.
   A atualização do Supabase para isso está em `supabase/atualizacao-trabalhos.sql`; antes dela o app funciona e avisa.
+  No quadro, segurar e arrastar o cartão muda a etapa (ou pelos botões de etapa dentro do trabalho). Cliente recorrente
+  (etapa "Recorrente", ex.: social media) sai do quadro e ganha a aba Recorrentes, com quanto rendeu em cada mês; a aba
+  Balanço mostra os trabalhos e o faturamento da Darzan por mês e no ano. Anexo aceita qualquer arquivo (foto vira JPEG
+  leve; PDF e outros vão como estão, até 8 MB); abre em tela cheia com zoom e dá para compartilhar ou salvar.
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
   a cada 3 dias) e, de reserva, Netlify (`netlify/functions/manter-supabase-acordado.mjs`, todo dia).
 

@@ -52,26 +52,29 @@ module.exports = { etapa: 'Trabalhos: vídeos, anexos e parcelas', testes: [
     await p2.waitForSelector('#xVer img');
     certo(st.pedidos.some(x => /anexos\?select=conteudo&id=eq\./.test(x.caminho)), 'o arquivo foi buscado só na hora de abrir');
   }],
-  ['contrato em PDF: guarda, abre e exclui', async (st, abrir) => {
+  ['contrato em PDF e arquivo de outro tipo: guarda, abre e exclui', async (st, abrir) => {
     st.tabelas.trabalhos.push(JOB('JT3'));
     const p = await abrir();
     await abrirJob(p, 'JT3');
     await p.fill('#jNv', 'Filme'); await clica(p, '#s2 [data-a=addVid]'); /* mexer nos vídeos antes não pode fazer o arquivo ir duas vezes */
-    await p.selectOption('#aT', 'Contrato');
-    await p.setInputFiles('#aArq', PDF);
-    await p.waitForSelector('#jAnx [data-a=verX]'); await calmo(p); await p.waitForTimeout(300);
+    await p.setInputFiles('#aArqD', PDF);
+    await p.waitForSelector('#s2 #xVer'); await calmo(p); await p.waitForTimeout(300);
+    certo(/Guardado no trabalho/.test(await p.textContent('#s2')), 'depois de anexar, abre o arquivo para conferir');
     igual(st.linhas('anexos').length, 1, 'o contrato foi guardado uma vez só');
     const x = st.linhas('anexos')[0];
     certo(x && x.tipo === 'Contrato' && x.arquivo === 'application/pdf' && x.nome === 'contrato teste' && /^data:application\/pdf;base64,/.test(x.conteudo), 'contrato guardado: ' + JSON.stringify(x && Object.assign({}, x, { conteudo: String(x.conteudo).slice(0, 40) })));
     certo(Buffer.from(x.conteudo.split(',')[1], 'base64').equals(PDF.buffer), 'o PDF guardado é igual ao original');
-    await p.setInputFiles('#aArq', { name: 'planilha.xlsx', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from('x') });
-    await p.waitForTimeout(300);
-    igual(st.linhas('anexos').length, 1, 'arquivo que não é foto nem PDF não entra');
-    await clica(p, '#jAnx [data-a=verX]');
-    await p.waitForSelector('#xVer a[href^="blob:"]');
+    await clica(p, '#s2 [data-a=editJ]');
+    await p.setInputFiles('#aArqD', { name: 'planilha.xlsx', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from('xyz') });
+    await p.waitForSelector('#s2 #xVer .xarq'); await calmo(p);
+    const xl = st.linhas('anexos').find(a => a.arquivo === 'application/vnd.ms-excel');
+    certo(xl && Buffer.from(xl.conteudo.split(',')[1], 'base64').toString() === 'xyz', 'arquivo de outro tipo também entra, igual ao original');
+    await clica(p, '#s2 [data-a=apagarX]'); await clica(p, '#s2 [data-a=apagarX]'); await calmo(p);
+    await clica(p, `#jAnx [data-a=verX]`);
+    await p.waitForSelector('#xVer canvas, #xVer .xarq', { timeout: 15000 });
     await clica(p, '#s2 [data-a=apagarX]'); await clica(p, '#s2 [data-a=apagarX]');
     await calmo(p);
-    igual(st.linhas('anexos').length, 0, 'contrato excluído do Supabase');
+    igual(st.linhas('anexos').length, 0, 'contrato e planilha excluídos do Supabase');
     certo(await p.isVisible('#s2 #jAnx'), 'volta para a ficha do trabalho');
   }],
   ['cliente que paga todo mês: a parcela vira "a receber" com aviso, e para quando completa o valor', async (st, abrir) => {
@@ -116,7 +119,7 @@ module.exports = { etapa: 'Trabalhos: vídeos, anexos e parcelas', testes: [
     const p = await abrir();
     const j = await p.evaluate(() => A.c.trabalhos()[0].ID);
     await abrirJob(p, j);
-    certo(await p.isVisible('#jAnx .aviso') && !(await p.$('#aArq')) && !(await p.$('#rArq')), 'avisa que falta a atualização para os anexos');
+    certo(await p.isVisible('#jAnx .aviso') && !(await p.$('#aArqC')) && !(await p.$('#aArqD')) && !(await p.$('#rArq')), 'avisa que não conseguiu carregar os anexos');
     certo(/rodar a atualização/.test(await p.textContent('#s2')), 'avisa que briefing e parcela dependem da atualização');
     await p.fill('#jL', 'Local novo'); await p.fill('#jBr', 'briefing que ainda não tem onde ficar');
     await clica(p, '#s2 .save'); await calmo(p);

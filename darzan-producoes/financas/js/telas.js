@@ -1,6 +1,6 @@
 (function (A) {
   const u = A.u, c = A.c, db = A.db;
-  const ui = A.ui = { rvfil: 'banco', rvq: '', rvsel: new Set(), view: 'inicio', mes: null, fseg: 'extrato', rseg: 'mes', tfil: 'todas', efil: 'Todos', filtro: 'tudo', q: '', cartao: null, oculto: false };
+  const ui = A.ui = { jseg: 'quadro', jano: '', rvfil: 'banco', rvq: '', rvsel: new Set(), view: 'inicio', mes: null, fseg: 'extrato', rseg: 'mes', tfil: 'todas', efil: 'Todos', filtro: 'tudo', q: '', cartao: null, oculto: false };
   try { ui.oculto = localStorage.getItem('df-oculto') === '1'; } catch (e) { /* sem armazenamento */ }
   const R = {}, DEPOIS = {};
   const $ = id => document.getElementById(id);
@@ -110,17 +110,104 @@
       ${j['O QUE FOI FECHADO'] ? `<div class="ft"><span>${u.svg('package')}${u.esc(j['O QUE FOI FECHADO'])}</span></div>` : ''}
       ${vs.length || nx ? `<div class="meta">${vs.length ? `<span class="${ok < vs.length ? 'c-warn' : ''}">${u.svg('clapperboard')}${ok} de ${vs.length} vídeos</span>` : ''}${nx ? `<span>${u.svg('paperclip')}${nx} ${nx > 1 ? 'arquivos' : 'arquivo'}</span>` : ''}</div>` : ''}</div></button>`;
   }
+  const BAL_COR = [['trab', 'Trabalhos e outros', '--clt-sal'], ['rec', 'Recorrentes', '--clt-bon']];
   R.trabalhos = () => {
-    const js = c.trabalhos(), abertos = js.filter(j => j['ETAPA'] !== 'Entregue' && j['ETAPA'] !== 'Orçamento');
-    const receber = u.sum(abertos, j => Math.max(c.faltaReceber(j) || 0, 0)), orc = u.sum(js.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
-    const prox = js.filter(j => j['DATA DO EVENTO'] && u.ateHoje(String(j['DATA DO EVENTO'])) >= 0).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1)[0];
-    const fat = c.resumo(ui.mes).fonte['Darzan Produções'];
-    return bar('Trabalhos', null, false) + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
-      <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${js.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
-      <section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
-        <div class="board">${ETAPAS.map(([n, cor]) => { const l = js.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted" style="font-size:.84rem;margin:6px 4px">Nada aqui.</p>'}</div>`; }).join('')}</div>
+    const js = c.trabalhos(), quadro = js.filter(j => !c.recorrente(j)), abertos = quadro.filter(j => j['ETAPA'] !== 'Entregue' && j['ETAPA'] !== 'Orçamento');
+    const receber = u.sum(abertos, j => Math.max(c.faltaReceber(j) || 0, 0)), orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
+    const prox = quadro.filter(j => j['DATA DO EVENTO'] && u.ateHoje(String(j['DATA DO EVENTO'])) >= 0).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1)[0];
+    const fat = c.resumo(ui.mes).fonte['Darzan Produções'], S = ui.jseg || 'quadro';
+    const corpo = S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
+        <p class="dica-q">${u.svg('hand-coins')}Segure um cartão e arraste para outra coluna para mudar a etapa.</p>
+        <div class="board">${ETAPAS.map(([n, cor]) => { const l = quadro.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col" data-etapa="${n}"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted vaziocol">Nada aqui.</p>'}</div>`; }).join('')}</div>
         <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
+    return bar('Trabalhos', null, false) + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
+      <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
+      <div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço']])}</div>` + corpo;
   };
+  /* clientes que pagam todo mês: quanto rendeu cada mês, a média e o total */
+  function recorrentes(rs) {
+    const m0 = u.mes(u.hoje());
+    return `<section class="sec"><div class="sec-h"><h2>${u.svg('refresh-cw')}Clientes recorrentes</h2><button class="chip" type="button" data-a="novoRec" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo</button></div>
+      ${rs.length ? rs.map((j, i) => {
+        const g = c.ganhosPorMes(j), ms = Object.keys(g).sort(), ini = ms[0] || m0, lista = [];
+        for (let m = ini; m <= m0; m = u.addMes(m, 1)) lista.push(m);
+        const tot = u.sum(Object.values(g), v => v), meses = lista.length, media = meses ? tot / meses : 0, n = c.recebimentos(j);
+        return `<div class="panel recp"><button type="button" class="rech" data-a="editJ" data-id="${j.ID}"><span>${u.ti(TIPOEV[j['TIPO DE EVENTO']] ? [TIPOEV[j['TIPO DE EVENTO']][0], TIPOEV[j['TIPO DE EVENTO']][1], TIPOEV[j['TIPO DE EVENTO']][2]] : ['user', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['O QUE FOI FECHADO'] || j['TIPO DE EVENTO'] || '')}</small></div>${u.svg('chevron-right')}</button>
+          <div class="kpis"><div class="kpi"><span>Este mês</span><b class="num c-in">${u.k0(g[m0] || 0)}</b><small>${u.nomeMes(m0).toLowerCase()}</small></div><div class="kpi"><span>Média por mês</span><b class="num">${u.k0(media)}</b><small>em ${meses} ${meses > 1 ? 'meses' : 'mês'}</small></div><div class="kpi"><span>Total</span><b class="num">${u.k0(tot)}</b><small>desde ${u.nomeMes(ini).toLowerCase()}${ini.slice(0, 4) !== m0.slice(0, 4) ? ' de ' + ini.slice(0, 4) : ''}</small></div><div class="kpi"><span>Pagamentos</span><b class="num">${n.length}</b><small>${n.length ? 'último em ' + u.dm(n[n.length - 1].data) : '—'}</small></div></div>
+          <div class="chart" id="chRec${i}" data-id="${j.ID}" style="margin-top:12px"></div>
+          <div class="recm">${lista.slice().reverse().map(m => `<div class="mrow2"><span>${u.cap(u.nomeMes(m))}${m.slice(0, 4) !== m0.slice(0, 4) ? ' ' + m.slice(0, 4) : ''}</span><b class="num ${g[m] ? '' : 'c-muted'}">${g[m] ? u.brl(g[m]) : '—'}</b></div>`).join('')}</div></div>`;
+      }).join('') : `<div class="panel">${vazio(['refresh-cw', '#c9a7ff', '#7a35e6'], 'Nenhum cliente recorrente ainda. Abra um trabalho e toque em “Recorrente”.')}</div>`}
+      <p class="aviso">Cliente recorrente é quem te paga todo mês (social media, pacote de vídeos). Ele não fica no quadro; aqui aparece quanto rendeu em cada mês, somando as entradas com o nome dele.</p></section>`;
+  }
+  /* balanço da Darzan: trabalhos por mês e no ano, faturamento e clientes */
+  function balanco() {
+    const anos = c.anosDarzan(), ano = anos.includes(ui.jano) ? ui.jano : anos[anos.length - 1] || u.hoje().slice(0, 4), ms = c.balancoDarzan(ano);
+    const jobs = ms.flatMap(x => x.jobs), fat = u.sum(ms, x => x.fat), rec = u.sum(ms, x => x.rec), vt = u.sum(jobs, j => c.num(j['VALOR TOTAL'])), comValor = jobs.filter(j => c.num(j['VALOR TOTAL'])).length;
+    const melhor = ms.slice().sort((a, b) => b.fat - a.fat)[0];
+    return `${anos.length > 1 ? `<div class="sec chips">${anos.map(a => `<button class="chip" type="button" data-a="seg" data-s="jano" data-v="${a}" aria-pressed="${a === ano}">${a}</button>`).join('')}</div>` : ''}
+      <section class="sec"><div class="kpis k4"><div class="kpi"><span>Trabalhos em ${ano}</span><b class="num">${jobs.length}</b><small>eventos que aconteceram</small></div><div class="kpi"><span>Faturou em ${ano}</span><b class="num c-in">${u.k0(fat)}</b><small>tudo da Darzan</small></div><div class="kpi"><span>Dos recorrentes</span><b class="num">${u.k0(rec)}</b><small>${fat ? u.pct(rec / fat) + ' do total' : '—'}</small></div><div class="kpi"><span>Valor médio</span><b class="num">${u.k0(comValor ? vt / comValor : 0)}</b><small>por trabalho fechado</small></div></div></section>
+      <section class="sec"><div class="panel"><div class="sec-h"><h2>${u.svg('chart-column')}Quanto entrou por mês</h2></div><div class="lgd">${BAL_COR.map(([, n, cor]) => `<span><i style="background:var(${cor})"></i>${n}</span>`).join('')}</div><div class="chart" id="chBal" data-ano="${ano}"></div>${melhor && melhor.fat ? `<p class="c-muted" style="font-size:.84rem;margin:8px 2px 0">Melhor mês: ${u.nomeMes(melhor.m).toLowerCase()}, com ${u.k0(melhor.fat)}.</p>` : ''}</div></section>
+      <section class="sec"><div class="sec-h"><h2>${u.svg('calendar-days')}Mês a mês</h2></div>
+        ${ms.slice().reverse().filter(x => x.fat || x.jobs.length).map(x => `<div class="panel balm"><div class="mrow2"><b>${u.cap(u.nomeMes(x.m))}</b><b class="num c-in">${u.brl(x.fat)}</b></div><div class="c-muted" style="font-size:.8rem;margin-bottom:${x.jobs.length ? 8 : 0}px">${x.jobs.length} ${x.jobs.length === 1 ? 'trabalho' : 'trabalhos'}${x.rec ? ` · ${u.k0(x.rec)} dos recorrentes` : ''}</div>${x.jobs.map(j => `<button type="button" class="balj" data-a="editJ" data-id="${j.ID}"><span>${u.dm(String(j['DATA DO EVENTO']))}</span><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['TIPO DE EVENTO'] || '')}${c.num(j['VALOR TOTAL']) ? ' · ' + u.k0(c.num(j['VALOR TOTAL'])) : ''}</small></button>`).join('')}</div>`).join('') || `<div class="panel">${vazio(['calendar-days', '#9cc6ff', '#2a62e0'], 'Nada neste ano ainda.')}</div>`}</section>`;
+  }
+  DEPOIS.trabalhos = () => {
+    const b = $('chBal');
+    if (b) colunas('chBal', c.balancoDarzan(b.dataset.ano).map(x => ({ l: u.CURTO[+x.m.slice(5) - 1], parts: BAL_COR.map(([k, n, cor]) => ({ k: n, v: Math.max(x[k], 0), c: cor })) })));
+    document.querySelectorAll('#view [id^=chRec]').forEach(el => {
+      const j = db.achar('TRABALHOS', el.dataset.id), g = c.ganhosPorMes(j), m0 = u.mes(u.hoje()), ms = [];
+      for (let m = Object.keys(g).sort()[0] || m0; m <= m0; m = u.addMes(m, 1)) ms.push(m);
+      colunas(el.id, ms.slice(-12).map(m => ({ l: u.CURTO[+m.slice(5) - 1], parts: [{ k: 'Recebido', v: g[m] || 0, c: '--clt-bon' }] })));
+    });
+    /* no celular o gráfico rola para o lado: começa mostrando os meses mais novos */
+    document.querySelectorAll('#view #chBal, #view [id^=chRec]').forEach(el => { el.scrollLeft = el.scrollWidth; });
+  };
+  /* arrastar cartões entre as colunas: no celular segura ~0,3s e arrasta; no computador é só arrastar */
+  (() => {
+    let s = null, engole = false;
+    const limpa = () => { if (!s) return; clearTimeout(s.t); cancelAnimationFrame(s.raf); if (s.fant) s.fant.remove(); s.card.classList.remove('arrastando'); const bd = s.card.closest('.board'); if (bd) bd.classList.remove('arrastando'); document.querySelectorAll('.board .col.alvo').forEach(x => x.classList.remove('alvo')); s = null; };
+    const segue = () => {
+      s.fant.style.transform = `translate(${s.x - s.dx}px,${s.y - s.dy}px) rotate(2deg)`;
+      /* a coluna é escolhida pela posição na horizontal: dá para soltar em qualquer altura, mesmo com a coluna curta */
+      const bd = s.card.closest('.board'), b = bd && bd.getBoundingClientRect(), dentro = b && s.y >= b.top - 60 && s.y <= Math.max(b.bottom, innerHeight - 90);
+      let col = null, perto = Infinity;
+      if (dentro) document.querySelectorAll('#view .board .col').forEach(x => { const r = x.getBoundingClientRect(), d = s.x < r.left ? r.left - s.x : s.x > r.right ? s.x - r.right : 0; if (d < perto && d < 40) { perto = d; col = x; } });
+      document.querySelectorAll('#view .board .col').forEach(x => x.classList.toggle('alvo', x === col && x.dataset.etapa !== s.de));
+      s.alvo = col;
+    };
+    const comeca = () => {
+      const r = s.card.getBoundingClientRect(), bd = s.card.closest('.board');
+      s.on = true; s.dx = s.x - r.left; s.dy = s.y - r.top;
+      s.fant = s.card.cloneNode(true); s.fant.classList.add('fantasma'); s.fant.style.width = r.width + 'px'; s.fant.removeAttribute('data-a');
+      document.body.appendChild(s.fant); s.card.classList.add('arrastando'); bd.classList.add('arrastando'); segue();
+      if (navigator.vibrate) navigator.vibrate(12);
+      const rola = () => { if (!s) return; const b = bd.getBoundingClientRect(); if (s.x < b.left + 40) bd.scrollLeft -= 14; else if (s.x > b.right - 40) bd.scrollLeft += 14; if (s.y < 80) scrollBy(0, -12); else if (s.y > innerHeight - 120) scrollBy(0, 12); segue(); s.raf = requestAnimationFrame(rola); };
+      s.raf = requestAnimationFrame(rola);
+    };
+    document.addEventListener('pointerdown', e => {
+      const card = e.target.closest('#view .board .job'); if (!card || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      limpa();
+      s = { card, id: card.dataset.id, de: card.closest('.col').dataset.etapa, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, on: false, toque: e.pointerType !== 'mouse' };
+      if (s.toque) s.t = setTimeout(() => { if (s && !s.on) comeca(); }, 300);
+    });
+    document.addEventListener('pointermove', e => {
+      if (!s) return;
+      s.x = e.clientX; s.y = e.clientY;
+      if (!s.on) { const d = Math.hypot(s.x - s.x0, s.y - s.y0); if (s.toque) { if (d > 10) limpa(); } else if (d > 6) comeca(); return; }
+      e.preventDefault(); segue();
+    });
+    document.addEventListener('touchmove', e => { if (s && s.on) e.preventDefault(); }, { passive: false });
+    document.addEventListener('pointerup', () => {
+      if (!s) return;
+      if (!s.on) { limpa(); return; }
+      const alvo = s.alvo && s.alvo.dataset.etapa, id = s.id, de = s.de;
+      engole = true; setTimeout(() => { engole = false; }, 400); limpa();
+      if (alvo && alvo !== de) moverJob(id, alvo);
+    });
+    document.addEventListener('pointercancel', () => limpa());
+    document.addEventListener('contextmenu', e => { if (s) e.preventDefault(); });
+    document.addEventListener('click', e => { if (engole && e.target.closest('#view .board')) { e.stopPropagation(); e.preventDefault(); engole = false; } }, true);
+  })();
+
 
   /* ================= EQUIPAMENTOS ================= */
   const TIPOS_EQ = ['Câmera', 'Lente', 'Celular', 'Áudio', 'Iluminação', 'Estabilizador', 'Armazenamento', 'Computador', 'Acessório'];
@@ -598,7 +685,7 @@
     return new Promise((ok, erro) => {
       const rd = new FileReader();
       rd.onerror = erro;
-      rd.onload = () => { const img = new Image(); img.onerror = erro; img.onload = () => { const s = Math.min(1, lado / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); let q = lado > 420 ? .82 : .72, url = cv.toDataURL('image/jpeg', q); while (url.length > maximo && q > .3) { q -= .1; url = cv.toDataURL('image/jpeg', q); } ok(url); }; img.src = rd.result; };
+      rd.onload = () => { const img = new Image(); img.onerror = erro; img.onload = () => { const s = Math.min(1, lado / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height); let q = lado > 420 ? .82 : .72, url = cv.toDataURL('image/jpeg', q); while (url.length > maximo && q > .3) { q -= .1; url = cv.toDataURL('image/jpeg', q); } ok(url); }; img.src = rd.result; };
       rd.readAsDataURL(arq);
     });
   }
@@ -658,28 +745,34 @@
       ${vs.length ? `<div class="vids">${vs.map((v, i) => `<div class="vid${v.feito ? ' ok' : ''}"><button type="button" class="vck" data-a="vidJ" data-id="${j.ID}" data-i="${i}" aria-pressed="${v.feito}">${u.svg(v.feito ? 'circle-check' : 'circle')}<span>${u.esc(v.nome)}</span></button><button type="button" class="vx" data-a="tiraVid" data-id="${j.ID}" data-i="${i}" aria-label="Tirar ${u.esc(v.nome)}">${u.svg('x')}</button></div>`).join('')}</div>` : '<p class="c-muted" style="font-size:.86rem;margin:0 0 8px">Coloque aqui cada vídeo que precisa entregar e marque quando ficar pronto.</p>'}
       <div class="addv"><input class="txt" id="jNv" placeholder="Novo vídeo, ex.: teaser" aria-label="Novo vídeo"><button type="button" class="btn2" data-a="addVid" data-id="${j.ID}">${u.svg('plus')}Pôr</button></div>`;
   }
+  const tipoArq = m => /pdf/.test(m) ? 'PDF' : /^image\//.test(m) ? 'foto' : 'arquivo';
   function anexosJob(j) {
     const xs = c.anexos(j);
     return `<h4>${u.svg('paperclip')} Comprovantes e contratos${xs.length ? ` · ${xs.length}` : ''}</h4>
-      ${xs.map(x => `<button type="button" class="it btn" data-a="verX" data-id="${x.ID}">${u.ti(TIPOANX[x['TIPO']] || TIPOANX.Outro)}<div style="min-width:0"><div class="t">${u.esc(x['NOME'] || x['TIPO'])}</div><div class="m">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', /pdf/.test(x['ARQUIVO']) ? 'PDF' : 'foto'].filter(Boolean).map(t => `<span>${u.esc(t)}</span>`).join('<span>·</span>')}</div></div><div class="v num">${c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : u.svg('eye')}</div></button>`).join('')}
-      ${semAnexos() ? '<p class="aviso">Para guardar arquivos aqui, falta rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : `<div class="addx"><select class="txt" id="aT" aria-label="Tipo do arquivo">${opts(Object.keys(TIPOANX), xs.some(x => x['TIPO'] === 'Contrato') ? 'Comprovante' : 'Contrato')}</select><label class="btn2" for="aArq">${u.svg('upload')}Pôr foto ou PDF</label><input type="file" id="aArq" accept="image/*,application/pdf" hidden></div><p class="c-muted" id="aSt" style="font-size:.82rem;margin:6px 2px 0" hidden></p>`}`;
+      ${xs.map(x => `<button type="button" class="it btn" data-a="verX" data-id="${x.ID}">${u.ti(TIPOANX[x['TIPO']] || TIPOANX.Outro)}<div style="min-width:0"><div class="t">${u.esc(x['NOME'] || x['TIPO'])}</div><div class="m">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', tipoArq(x['ARQUIVO'])].filter(Boolean).map(t => `<span>${u.esc(t)}</span>`).join('<span>·</span>')}</div></div><div class="v num">${c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : u.svg('eye')}</div></button>`).join('')}
+      ${semAnexos() ? `<div class="aviso">Não consegui carregar os anexos agora (sem internet?). <button type="button" class="chip mini" data-a="recarregarX" data-id="${j.ID}">${u.svg('refresh-cw')}Tentar de novo</button></div>` : `<div class="addx2">
+        <label class="btn2 grande" for="aArqC">${u.svg('receipt')}<span>Anexar comprovante<small>foto, print ou PDF do Pix</small></span></label><input type="file" id="aArqC" hidden>
+        <label class="btn2 grande" for="aArqD">${u.svg('file-text')}<span>Anexar contrato ou PDF<small>contrato, orçamento, outros</small></span></label><input type="file" id="aArqD" hidden>
+      </div><p class="c-muted" id="aSt" style="font-size:.82rem;margin:8px 2px 0" hidden></p>`}`;
   }
   function recebimentosJob(j) {
     const recs = c.recebimentos(j), prev = c.parcelasPrevistas(j), tot = c.num(j['VALOR TOTAL']);
     return `<h4>${u.svg('hand-coins')} Recebimentos · ${u.brl(c.recebido(j))}${tot ? ` de ${u.brl(tot)}` : ''}</h4>${recs.map(l => { const x = anexoDoLanc(l.id); return linhaL(l) + (x ? `<button type="button" class="vercomp" data-a="verX" data-id="${x.ID}">${u.svg('receipt')}Ver comprovante</button>` : ''); }).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
       ${prev.length ? `<p class="c-muted" style="font-size:.84rem;margin:10px 2px 4px">${u.svg('calendar-clock')} Parcelas a receber (aparecem nas Tarefas, com aviso no celular):</p>${prev.map(linhaL).join('')}` : ''}
       <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, parcela" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.hoje()}" aria-label="Data"></div>
-        ${semAnexos() ? '' : `<label class="btn2 comp" for="rArq">${u.svg('paperclip')}<span id="rArqN">Anexar comprovante (opcional)</span></label><input type="file" id="rArq" accept="image/*,application/pdf" hidden>`}
+        ${semAnexos() ? '' : `<label class="btn2 comp" for="rArq">${u.svg('paperclip')}<span id="rArqN">Anexar comprovante (opcional)</span></label><input type="file" id="rArq" hidden>`}
         <button type="button" class="btn2 pri" data-a="receber" data-id="${j.ID}" data-sub="${SUBJ[j['TIPO DE EVENTO']] || 'Evento'}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div>`;
   }
-  function formJob(j) {
+  function formJob(j, novo) {
     const ed = !!j, tot = j ? c.num(j['VALOR TOTAL']) : 0, rec = j ? c.recebido(j) : 0, falta = j ? c.faltaReceber(j) : null, prox = j ? c.parcelasPrevistas(j)[0] : null;
     const sem = TAB.falta.TRABALHOS || new Set();
-    abrir(`<h3 style="margin:0 0 12px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
+    const et0 = (j && j['ETAPA']) || (novo && novo['ETAPA']) || 'Orçamento';
+    abrir(`<h3 style="margin:0 0 10px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
+      <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${j.ID}"` : ''} data-v="${n}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
       ${ed && tot ? `<div class="jres"><div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span>${u.brl(rec)} de ${u.brl(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.brl(falta)}</b>` : '<b class="c-in">pago</b>'}</div>${prox ? `<small>Próxima parcela: ${u.brl(prox.valor)} em ${u.dm(prox.data)}</small>` : ''}</div>` : ''}
       ${ed ? `<div class="jsec" id="jVid">${videosJob(j)}</div><div class="jsec" id="jAnx">${anexosJob(j)}</div><div class="jsec" id="jRec">${recebimentosJob(j)}</div><div class="jsec"><h4>${u.svg('pencil')} Dados do trabalho</h4></div>` : ''}
       ${campo('Cliente ou casal', `<input class="txt" id="jC" required value="${u.esc(j ? j['CLIENTE'] : '')}" placeholder="Ex.: Ana e Pedro">`)}
-      <div class="grid2">${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : 'Casamento')}</select>`)}${campo('Etapa', `<select class="txt" id="jE">${opts(ETAPAS.map(x => x[0]), j ? j['ETAPA'] || 'Orçamento' : 'Orçamento')}</select>`)}</div>
+      ${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : (novo && novo['TIPO DE EVENTO']) || 'Casamento')}</select>`)}
       <div class="grid2">${campo('Data do evento', `<input class="txt" id="jD" type="date" value="${j ? String(j['DATA DO EVENTO'] || '') : ''}">`)}${campo('Entrega', `<input class="txt" id="jEn" type="date" value="${j ? String(j['ENTREGA'] || '') : ''}">`)}</div>
       <div class="grid2">${campo('Valor total', `<input class="txt num" id="jV" inputmode="decimal" value="${j && j['VALOR TOTAL'] !== '' ? String(c.num(j['VALOR TOTAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}${campo('Local', `<input class="txt" id="jL" value="${u.esc(j ? j['LOCAL'] || '' : '')}">`)}</div>
       <div class="grid2">${campo('Paga por mês', `<input class="txt num" id="jPm" inputmode="decimal" value="${j && c.num(j['PARCELA MENSAL']) ? String(c.num(j['PARCELA MENSAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="se paga parcelado">`)}${campo('Todo dia', `<input class="txt num" id="jPd" inputmode="numeric" value="${j && j['DIA DA PARCELA'] ? parseInt(j['DIA DA PARCELA'], 10) : ''}" placeholder="ex.: 26">`)}</div>
@@ -692,10 +785,22 @@
       () => {
         const nome = val('jC').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
         const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10);
-        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE'), 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
+        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE') || 'Orçamento', 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
         db.garantirFixas(); fechar(); render(false); toast(j ? 'Trabalho atualizado' : 'Trabalho criado');
       }, true);
     if (ed) ligarArquivosJob(j);
+  }
+  /* muda a etapa (pelo arrastar do quadro ou pelos botões da ficha), com "Desfazer" */
+  function moverJob(id, etapa, quieto) {
+    const j = db.achar('TRABALHOS', id); if (!j || j['ETAPA'] === etapa) return;
+    const de = j['ETAPA'] || 'Orçamento';
+    db.salvar('TRABALHOS', { ID: id, 'ETAPA': etapa }); render(false);
+    if (!quieto) toast(`${j['CLIENTE']}: ${etapa}`, () => moverJob(id, de, true));
+  }
+  function etapaNaFicha(b) {
+    document.querySelectorAll('#s2 .etapas [data-a=etapaJ]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    $('jE').value = b.dataset.v;
+    if (b.dataset.id) moverJob(b.dataset.id, b.dataset.v);
   }
   /* troca só um pedaço da ficha (o que você digitou nos outros campos continua lá) */
   function refazJob(id, secoes) {
@@ -705,7 +810,7 @@
     ligarArquivosJob(j); render(false);
   }
   function ligarArquivosJob(j) {
-    const a = $('aArq'); if (a) a.onchange = ev => { const arq = ev.target.files[0]; ev.target.value = ''; if (arq) anexar(j.ID, arq, { 'TIPO': val('aT') }); };
+    [['aArqC', 'Comprovante'], ['aArqD', 'Contrato']].forEach(([k, tipo]) => { const a = $(k); if (a) a.onchange = async ev => { const arq = ev.target.files[0]; ev.target.value = ''; if (!arq) return; const id = await anexar(j.ID, arq, { 'TIPO': tipo }); if (id) verAnexo(id, true); }; });
     const r = $('rArq'); if (r) r.onchange = ev => { const arq = ev.target.files[0]; $('rArqN').textContent = arq ? arq.name : 'Anexar comprovante (opcional)'; };
   }
   function mexerVideos(id, f) {
@@ -717,14 +822,13 @@
     mexerVideos(id, vs => vs.push({ feito: false, nome: n }));
     const i = $('jNv'); if (i) i.focus();
   }
-  /* foto vira JPEG de até ~1600px; PDF vai como está (até 8 MB) */
+  /* foto vira JPEG de até ~1600px (fica leve); PDF e qualquer outro arquivo vão como estão, até 8 MB */
+  const lerCru = (arq, tipo) => arq.size > 8e6 ? Promise.reject(new Error('O arquivo passa de 8 MB')) : new Promise((ok, erro) => { const rd = new FileReader(); rd.onerror = () => erro(new Error('Não consegui ler o arquivo')); rd.onload = () => ok({ dado: String(rd.result).replace(/^data:[^;,]*/, 'data:' + tipo), tipo }); rd.readAsDataURL(arq); });
   function lerArquivo(arq) {
-    if (/^image\//.test(arq.type) && !/pdf/.test(arq.type)) return reduzirFoto(arq, 1600, 900000).then(dado => ({ dado, tipo: 'image/jpeg' }));
-    if (arq.type === 'application/pdf' || /\.pdf$/i.test(arq.name)) {
-      if (arq.size > 8e6) return Promise.reject(new Error('O PDF passa de 8 MB'));
-      return new Promise((ok, erro) => { const rd = new FileReader(); rd.onerror = () => erro(new Error('Não consegui ler o arquivo')); rd.onload = () => ok({ dado: String(rd.result).replace(/^data:[^;,]*/, 'data:application/pdf'), tipo: 'application/pdf' }); rd.readAsDataURL(arq); });
-    }
-    return Promise.reject(new Error('Use uma foto ou um PDF'));
+    const ext = (arq.name.match(/\.([a-z0-9]+)$/i) || [])[1] || '', tipo = arq.type || { pdf: 'application/pdf', heic: 'image/heic', heif: 'image/heif', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[ext.toLowerCase()] || 'application/octet-stream';
+    if (/pdf/.test(tipo)) return lerCru(arq, 'application/pdf');
+    if (/^image\//.test(tipo)) return reduzirFoto(arq, 1600, 900000).then(dado => ({ dado, tipo: 'image/jpeg' })).catch(() => lerCru(arq, tipo)); /* foto que o navegador não abre (HEIC no PC): vai como está */
+    return lerCru(arq, tipo);
   }
   async function anexar(trabalho, arq, extra) {
     const st = $('aSt'), diz = t => { if (st) { st.hidden = false; st.textContent = t; } };
@@ -734,7 +838,7 @@
       diz('Enviando…');
       await N.guardarArquivo(id, dado);
       arquivos[id] = dado;
-      db.salvar('ANEXOS', Object.assign({ ID: id, 'TRABALHO': trabalho, 'NOME': arq.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || extra['TIPO'], 'DATA': u.hoje(), 'ARQUIVO': tipo, 'TAMANHO': dado.length, 'VALOR': '', 'LANÇAMENTO': '' }, extra));
+      db.salvar('ANEXOS', Object.assign({ ID: id, 'TRABALHO': trabalho, 'NOME': arq.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || extra['TIPO'], 'DATA': u.hoje(), 'ARQUIVO': tipo, 'TAMANHO': dado.length, 'VALOR': '', 'LANÇAMENTO': '' }, extra));
       refazJob(trabalho, ['jAnx', 'jRec']); toast(`${extra['TIPO'] || 'Arquivo'} guardado`);
       return id;
     } catch (e) {
@@ -752,30 +856,82 @@
     if (arq) await anexar(id, arq, { 'TIPO': 'Comprovante', 'NOME': `Comprovante ${desc} ${u.dm(data)}`, 'VALOR': u.r2(v), 'DATA': data, 'LANÇAMENTO': lid });
     formJob(db.achar('TRABALHOS', id)); render(false);
   }
-  async function verAnexo(id) {
+  /* ficha do anexo: vê, abre em tela cheia, compartilha/salva e ajusta nome, tipo, valor e de qual recebimento é */
+  const dadoDe = async id => arquivos[id] || (arquivos[id] = await N.arquivo(id));
+  const bytesDe = dado => { const bin = atob(dado.split(',')[1] || ''), b = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; };
+  async function verAnexo(id, novo) {
     const x = db.achar('ANEXOS', id); if (!x) return;
-    const pdf = /pdf/.test(x['ARQUIVO']);
-    abrir(`<h3 style="margin:0 0 4px">${u.esc(x['NOME'] || x['TIPO'])}</h3><p class="c-muted" style="margin:0 0 12px;font-size:.86rem">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : ''].filter(Boolean).map(u.esc).join(' · ')}</p>
-      <div class="xver" id="xVer"><p class="c-muted">Abrindo…</p></div>
-      <div class="acoes"><button type="button" class="btn2" data-a="editJ" data-id="${x['TRABALHO']}">${u.svg('chevron-left')}Voltar</button><button type="button" class="btn2 perigo" data-a="apagarX" data-id="${x.ID}">${u.svg('trash-2')}Excluir</button></div>`, null, true);
-    let dado = arquivos[id];
-    try { if (!dado) dado = arquivos[id] = await N.arquivo(id); } catch (e) { dado = null; }
-    const el = $('xVer'); if (!el) return;
-    if (!dado) { el.innerHTML = '<p class="aviso">Não consegui abrir agora (sem internet?). Tente de novo.</p>'; return; }
-    if (!pdf) { el.innerHTML = `<img src="${dado}" alt="${u.esc(x['NOME'] || 'comprovante')}">`; return; }
-    const bin = atob(dado.split(',')[1] || ''), bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/pdf' }), url = URL.createObjectURL(blob);
-    el.innerHTML = `<div class="pgs" id="xPgs"><p class="c-muted">Desenhando as páginas…</p></div><a class="btn2 pri" href="${url}" target="_blank" rel="noopener">${u.svg('eye')}Abrir o PDF em tela cheia</a>`;
+    const j = db.achar('TRABALHOS', x['TRABALHO']), recs = j ? c.recebimentos(j) : [], pdf = /pdf/.test(x['ARQUIVO']), img = /^image\//.test(x['ARQUIVO']);
+    abrir(`<h3 style="margin:0 0 4px">${u.esc(x['NOME'] || x['TIPO'])}</h3><p class="c-muted" style="margin:0 0 12px;font-size:.86rem">${[j ? j['CLIENTE'] : '', x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', tipoArq(x['ARQUIVO'])].filter(Boolean).map(u.esc).join(' · ')}</p>
+      ${novo ? `<p class="aviso ok-av">${u.svg('circle-check')} Guardado no trabalho. Confira o nome e, se for comprovante, o valor e de qual recebimento é.</p>` : ''}
+      <button type="button" class="xver" id="xVer" data-a="telaX" data-id="${x.ID}" aria-label="Abrir em tela cheia"><p class="c-muted">Abrindo…</p></button>
+      <div class="grid2" style="margin-top:10px"><button type="button" class="btn2" data-a="telaX" data-id="${x.ID}">${u.svg('eye')}Tela cheia</button><button type="button" class="btn2" data-a="shareX" data-id="${x.ID}">${u.svg('upload')}Compartilhar</button></div>
+      <div class="jsec"><h4>${u.svg('pencil')} Sobre o arquivo</h4></div>
+      ${campo('Nome', `<input class="txt" id="xN" value="${u.esc(x['NOME'] || '')}">`)}
+      <div class="grid2">${campo('Tipo', `<select class="txt" id="xT">${opts(Object.keys(TIPOANX), x['TIPO'] || 'Outro')}</select>`)}${campo('Valor (se for comprovante)', `<input class="txt num" id="xV" inputmode="decimal" value="${c.num(x['VALOR']) ? String(c.num(x['VALOR']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}</div>
+      ${recs.length ? campo('É o comprovante de qual recebimento?', `<select class="txt" id="xL">${opts([['', 'Nenhum']].concat(recs.map(l => [l.id, `${u.dm(l.data)} · ${u.brl(l.valor)} · ${l.desc}`])), x['LANÇAMENTO'] || '')}</select>`) : ''}
+      <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarX" data-id="${x.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>
+      <button type="button" class="btn2" data-a="editJ" data-id="${x['TRABALHO']}" style="width:100%;margin-top:10px">${u.svg('chevron-left')}Voltar para ${u.esc(j ? j['CLIENTE'] : 'o trabalho')}</button>`,
+      () => {
+        const v = u.num(val('xV')), lid = val('xL'), l = lid && recs.find(r => r.id === lid);
+        db.salvar('ANEXOS', { ID: id, 'NOME': val('xN').trim() || x['TIPO'], 'TIPO': val('xT'), 'VALOR': v > 0 ? u.r2(v) : l ? l.valor : '', 'LANÇAMENTO': lid || '', 'DATA': l ? l.data : x['DATA'] });
+        toast('Arquivo atualizado'); if (j) formJob(db.achar('TRABALHOS', j.ID)); else fechar(); render(false);
+      }, true);
+    let dado = null;
+    try { dado = await dadoDe(id); } catch (e) { dado = null; }
+    const el = $('xVer'); if (!el || el.closest('#s2') !== $('s2')) return;
+    if (!dado) { el.innerHTML = `<p class="aviso">Não consegui abrir agora (sem internet?). Toque para tentar de novo.</p>`; return; }
+    if (img) { el.innerHTML = `<img src="${dado}" alt="${u.esc(x['NOME'] || 'comprovante')}">`; return; }
+    if (!pdf) { el.innerHTML = `<div class="xarq">${u.svg('file-text')}<span>Este tipo de arquivo não abre aqui. Use “Compartilhar” para abrir em outro app ou salvar.</span></div>`; return; }
     try {
-      const lib = await carregarPdfjs(), doc = await lib.getDocument({ data: bytes }).promise, box = $('xPgs'); if (!box) return;
-      box.innerHTML = '';
-      for (let i = 1; i <= Math.min(doc.numPages, 30); i++) {
-        const pg = await doc.getPage(i), v1 = pg.getViewport({ scale: 1 }), esc = Math.min(2.5, (box.clientWidth || 360) * (devicePixelRatio || 1) / v1.width), vp = pg.getViewport({ scale: esc });
+      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado) }).promise, pg = await doc.getPage(1), v1 = pg.getViewport({ scale: 1 });
+      const vp = pg.getViewport({ scale: Math.min(2, ((el.clientWidth || 340) * (devicePixelRatio || 1)) / v1.width) }), cv = document.createElement('canvas');
+      cv.width = vp.width; cv.height = vp.height; await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+      if (!$('xVer')) return;
+      el.innerHTML = ''; el.appendChild(cv);
+      el.insertAdjacentHTML('beforeend', `<span class="xpag">${doc.numPages > 1 ? `Página 1 de ${doc.numPages} · ` : ''}toque para abrir em tela cheia</span>`);
+    } catch (e) { el.innerHTML = `<div class="xarq">${u.svg('file-text')}<span>PDF · toque em “Tela cheia” ou “Compartilhar” para ver.</span></div>`; }
+  }
+  /* tela cheia: todas as páginas, com zoom (botões ou dois toques) */
+  let visor = null;
+  async function telaCheia(id) {
+    const x = db.achar('ANEXOS', id); if (!x) return;
+    fecharVisor();
+    visor = document.createElement('div'); visor.className = 'visor'; visor.id = 'visor'; visor.dataset.zoom = '1';
+    visor.innerHTML = `<div class="vbar"><button type="button" data-a="fecharVisor" aria-label="Fechar">${u.svg('x')}</button><b>${u.esc(x['NOME'] || x['TIPO'])}</b><button type="button" data-a="zoomV" data-v="-1" aria-label="Diminuir">${u.svg('minus')}</button><button type="button" data-a="zoomV" data-v="1" aria-label="Aumentar">${u.svg('plus')}</button><button type="button" data-a="shareX" data-id="${x.ID}" aria-label="Compartilhar">${u.svg('upload')}</button></div><div class="vpg" id="vPg"><p class="c-muted">Abrindo…</p></div>`;
+    document.body.appendChild(visor); document.body.classList.add('com-visor');
+    const box = $('vPg');
+    box.addEventListener('dblclick', () => zoomVisor(visor.dataset.zoom === '1' ? 1 : -9));
+    let dado; try { dado = await dadoDe(id); } catch (e) { dado = null; }
+    if (!visor || !box.isConnected) return;
+    if (!dado) { box.innerHTML = '<p class="aviso">Não consegui abrir agora (sem internet?).</p>'; return; }
+    if (/^image\//.test(x['ARQUIVO'])) { box.innerHTML = `<img src="${dado}" alt="">`; return; }
+    if (!/pdf/.test(x['ARQUIVO'])) { box.innerHTML = '<p class="aviso">Este tipo de arquivo não abre aqui. Use o botão de compartilhar.</p>'; return; }
+    try {
+      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado) }).promise; box.innerHTML = '';
+      for (let i = 1; i <= Math.min(doc.numPages, 40); i++) {
+        if (!box.isConnected) return;
+        const pg = await doc.getPage(i), v1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: Math.min(3, (innerWidth * (devicePixelRatio || 1) * 1.6) / v1.width) });
         const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height; cv.setAttribute('aria-label', `Página ${i} de ${doc.numPages}`);
         box.appendChild(cv); await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
       }
-    } catch (e) { const box = $('xPgs'); if (box) box.innerHTML = '<p class="c-muted" style="font-size:.86rem">Toque no botão abaixo para ver o PDF.</p>'; }
+    } catch (e) { box.innerHTML = '<p class="aviso">Não consegui desenhar o PDF. Use o botão de compartilhar para abrir em outro app.</p>'; }
+  }
+  function zoomVisor(d) {
+    if (!visor) return;
+    const box = $('vPg'), z0 = +visor.dataset.zoom, z = Math.max(1, Math.min(3, z0 + d * .5)), cx = (box.scrollLeft + box.clientWidth / 2) / z0, cy = (box.scrollTop + box.clientHeight / 2) / z0;
+    visor.dataset.zoom = String(z); box.style.setProperty('--z', z);
+    box.scrollLeft = cx * z - box.clientWidth / 2; box.scrollTop = cy * z - box.clientHeight / 2; /* o zoom mantém o mesmo ponto no meio da tela */
+  }
+  function fecharVisor() { if (visor) { visor.remove(); visor = null; } document.body.classList.remove('com-visor'); }
+  const EXT = { 'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/heic': '.heic', 'image/webp': '.webp' };
+  async function compartilharAnexo(id) {
+    const x = db.achar('ANEXOS', id); if (!x) return;
+    let dado; try { dado = await dadoDe(id); } catch (e) { dado = null; }
+    if (!dado) { toast('Não consegui pegar o arquivo agora (sem internet?)'); return; }
+    const tipo = x['ARQUIVO'] || 'application/octet-stream', nome = String(x['NOME'] || 'arquivo').replace(/[\\/:*?"<>|]+/g, ' ').trim() + (EXT[tipo] || ''), blob = new Blob([bytesDe(dado)], { type: tipo });
+    try { const arq = new File([blob], nome, { type: tipo }); if (navigator.canShare && navigator.canShare({ files: [arq] })) { await navigator.share({ files: [arq], title: nome }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
   /* leitor de PDF (pdf.js), baixado só na primeira vez que abrir um PDF */
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
@@ -789,7 +945,7 @@
   function apagarAnexo(id, botao) {
     if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
     const x = db.achar('ANEXOS', id); db.apagar('ANEXOS', id); delete arquivos[id];
-    toast('Arquivo excluído'); if (x) formJob(db.achar('TRABALHOS', x['TRABALHO'])); render(false);
+    fecharVisor(); toast('Arquivo excluído'); if (x) formJob(db.achar('TRABALHOS', x['TRABALHO'])); render(false);
   }
 
   /* ---------- tarefas ---------- */
@@ -939,10 +1095,17 @@
     editJ: b => formJob(db.achar('TRABALHOS', b.dataset.id)),
     apagarJ: b => apagarSimples('TRABALHOS', b.dataset.id, b, 'Trabalho excluído'),
     receber: b => receber(b.dataset.id, b.dataset.sub),
+    etapaJ: b => etapaNaFicha(b),
+    novoRec: () => formJob(null, { 'ETAPA': 'Recorrente', 'TIPO DE EVENTO': 'Social media' }),
     vidJ: b => mexerVideos(b.dataset.id, vs => { const v = vs[+b.dataset.i]; if (v) v.feito = !v.feito; }),
     tiraVid: b => mexerVideos(b.dataset.id, vs => vs.splice(+b.dataset.i, 1)),
     addVid: b => addVideo(b.dataset.id),
     verX: b => verAnexo(b.dataset.id),
+    telaX: b => telaCheia(b.dataset.id),
+    shareX: b => compartilharAnexo(b.dataset.id),
+    zoomV: b => zoomVisor(+b.dataset.v),
+    fecharVisor: () => fecharVisor(),
+    recarregarX: b => { toast('Tentando de novo…'); db.atualizar().then(() => { refazJob(b.dataset.id, ['jAnx', 'jRec']); toast(semAnexos() ? 'Ainda não deu. Confira a internet.' : 'Pronto!'); }).catch(() => toast('Sem internet agora')); },
     apagarX: b => apagarAnexo(b.dataset.id, b),
     tarefa: b => alternarTarefa(b.dataset.id, b),
     novoT: () => formTarefa(null),

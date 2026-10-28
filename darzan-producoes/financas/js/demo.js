@@ -98,7 +98,7 @@ window.A = window.A || {};
       { 'PARCELA MENSAL': 300, 'DIA DA PARCELA': 10 });
     renda(dia(-1, 10), 'PicPay', 'Bia e Léo - parcela', 300, 'Darzan Produções', 'Casamento');
     renda(dia(-2, 15), 'PicPay', 'Júlia 15 anos - sinal', 1100, 'Darzan Produções', 'Evento');
-    J('Loja Bella Moda', 'Social media', '', '', '8 vídeos por mês', 2700, '', 'Em andamento', 'Contrato de 3 meses');
+    J('Loja Bella Moda', 'Social media', '', '', '8 vídeos por mês', '', '', 'Recorrente', 'Paga R$ 900 todo mês');
     [-2, -1, 0].forEach(k => { if (k < 0 || dHoje >= 10) renda(dia(k, 10), 'PicPay', 'Loja Bella Moda - social media', 900, 'Darzan Produções', 'Social media'); });
     J('Empresa Alfa', 'Corporativo', mais(40), 'Campinas', 'Vídeo institucional', 1800, mais(60), 'Orçamento', 'Esperando resposta do orçamento');
     J('Carla e Diego', 'Casamento', dia(-3, 14), 'Fazenda Recanto, Jaguariúna', 'Filme do casamento', 3800, dia(-2, 14), 'Entregue', '');
