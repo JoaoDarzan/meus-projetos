@@ -350,7 +350,7 @@ window.A = window.A || {};
   c.memoria = () => {
     const m = new Map();
     c.lancs().forEach(l => {
-      if (c.semCategoria(l) || l.grupo === 'Transferência') return;
+      if (c.semCategoria(l) || l.grupo === 'Transferência' || l.grupo === 'Reembolso') return;
       const k = c.chave(l.desc); if (!k) return;
       const x = m.get(k) || { total: 0, op: {} };
       const id = [l.cat, l.sub, l.grupo].join('|');

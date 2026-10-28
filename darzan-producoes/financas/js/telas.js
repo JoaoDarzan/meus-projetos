@@ -15,9 +15,9 @@
   const seg = (nome, atual, ops) => `<div class="seg" role="group">${ops.map(([k, n]) => `<button type="button" data-a="seg" data-s="${nome}" data-v="${k}" aria-pressed="${atual === k}">${n}</button>`).join('')}</div>`;
   const vazio = (icone, txt, botao) => `<div class="vazio">${u.ti(icone, 'lg')}<span>${txt}</span>${botao || ''}</div>`;
   function linhaL(l) {
-    const renda = l.grupo === 'Renda', ic = c.icone(l.cat, l.sub);
+    const renda = l.grupo === 'Renda' || (l.grupo === 'Reembolso' && l.valor > 0), ic = c.icone(l.cat, l.sub);
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
-    return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
+    return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
   function barras(cats) {
     const mx = Math.max(...cats.map(x => x.valor), 1);
@@ -323,9 +323,9 @@
   /* ---------- lançamento ---------- */
   function formLanc(tipo, l) {
     const ed = !!l, hoje = u.hoje();
-    tipo = l ? (l.grupo === 'Renda' ? 'entrada' : l.grupo === 'Guardado' ? 'guardar' : l.grupo === 'Transferência' ? 'transf' : 'saida') : tipo;
-    const catsSaida = c.listaCats().filter(k => !['Renda', 'Guardado', 'Transferência'].includes(c.grupoDe(k)));
-    const catsEntrada = c.listaCats().filter(k => c.grupoDe(k) === 'Renda');
+    tipo = l ? (l.grupo === 'Renda' || (l.grupo === 'Reembolso' && l.valor > 0) ? 'entrada' : l.grupo === 'Guardado' ? 'guardar' : l.grupo === 'Transferência' ? 'transf' : 'saida') : tipo;
+    const catsSaida = c.listaCats().filter(k => !['Renda', 'Guardado', 'Transferência', 'Reembolso'].includes(c.grupoDe(k)));
+    const catsEntrada = c.listaCats().filter(k => c.grupoDe(k) === 'Renda' || c.grupoDe(k) === 'Reembolso');
     const cats = tipo === 'entrada' ? catsEntrada : catsSaida;
     const cat0 = l ? l.cat : tipo === 'entrada' ? 'Darzan Produções' : cats[0];
     const forma0 = l ? l.tipo : 'conta';
@@ -340,7 +340,7 @@
       ${tipo === 'saida' && !ed ? `<div class="grid2" id="linhaBanco">${campo('Banco', `<select class="txt" id="fB">${opts(bancosConta, 'Nubank')}</select>`)}<div id="boxParc" hidden>${campo('Parcelas', `<select class="txt" id="fP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="avisoCartao" hidden></p>` : ''}
       ${tipo === 'guardar' ? campo('Para onde foi', `<select class="txt" id="fX">${opts(c.caixinhas().map(x => [x['CONTA'], `${x['CONTA']} (${x['BANCO']})`]).concat([['', 'Outro lugar']]), l ? (l.obs.match(/Para (.+)/) || [])[1] : '')}</select>`) : ''}
       ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), l ? l.sub : '')}</select>`)}</div>` : ''}
-      ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0)) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${(l ? l.grupo : c.grupoDe(cat0)) !== 'Necessidades' ? 'checked' : ''}><label for="fG2">Desejo</label></div>`) : ''}
+      ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0)) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0)) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? l.obs.replace(/Compra P[\w-]+\s*·?\s*/, '').replace(/^Para .+$/, '') : '')}" placeholder="opcional">`)}
       ${compra ? `<p class="aviso">Esta é a parcela <b>${u.esc(l.parcela)}</b> de uma compra parcelada. Salvar muda só esta parcela.</p>` : ''}
@@ -351,7 +351,7 @@
   function ligarForm(tipo) {
     const fC = $('fC'), fS = $('fS'), fF = $('fF');
     let mexeuNaCategoria = false;
-    if (fC) fC.addEventListener('change', () => { mexeuNaCategoria = true; fS.innerHTML = opts(c.subsDe(fC.value), ''); const g = c.grupoDe(fC.value); const r = document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; });
+    if (fC) fC.addEventListener('change', () => { mexeuNaCategoria = true; fS.innerHTML = opts(c.subsDe(fC.value), ''); const g = c.grupoDe(fC.value); const r = $('fG3') && $('fG3').checked ? null : document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; });
     if (fS) fS.addEventListener('change', () => { mexeuNaCategoria = true; });
     /* novo lançamento: escreveu "gasolina"? o app já põe a categoria que você costuma usar */
     const fD = $('fD'), novo = !!$('fF') || tipo === 'entrada';
@@ -398,12 +398,12 @@
     const desc = val('fD').trim() || ({ saida: 'Gasto', entrada: 'Recebimento', guardar: 'Guardado' }[tipo]);
     const data = val('fDt') || u.hoje(), prev = $('fPrev').checked, obs = val('fO').trim();
     const transf = tipo === 'transf' && l; /* pagamento de fatura e outras transferências: só muda valor, data, banco e anotação */
-    const grupo = transf ? l.grupo : tipo === 'entrada' ? 'Renda' : tipo === 'guardar' ? 'Guardado' : (document.querySelector('input[name=fG]:checked') || {}).value || 'Desejos';
+    const grupo = transf ? l.grupo : tipo === 'entrada' ? (c.grupoDe(val('fC')) === 'Reembolso' ? 'Reembolso' : 'Renda') : tipo === 'guardar' ? 'Guardado' : (document.querySelector('input[name=fG]:checked') || {}).value || 'Desejos';
     const cat = transf ? l.cat : tipo === 'guardar' ? 'Guardado' : val('fC'), sub = transf ? l.sub : tipo === 'guardar' ? (val('fX') ? 'Caixinha' : 'Reserva') : val('fS');
     const status = prev ? 'Previsto' : 'Pago';
     const obsFinal = transf ? l.obs : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], obs].filter(Boolean).join(' · ');
     if (l) {
-      db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': grupo === 'Renda' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
+      db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': transf ? (l.valor < 0 ? -v : v) : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
       fechar(); render(false);
       /* mudou a categoria: oferece mudar também os outros com a mesma descrição */
       const k = c.chave(desc), outros = !transf && (cat !== l.cat || sub !== l.sub) && k ? c.lancs().filter(x => x.id !== l.id && c.chave(x.desc) === k && (x.cat !== cat || x.sub !== sub) && x.grupo === l.grupo) : [];
@@ -417,7 +417,7 @@
       toast(`Compra lançada na fatura de ${u.nomeMes(u.mes(ops[1].registro['DATA'])).toLowerCase()}`);
       return;
     }
-    db.salvar('EXTRATO', { 'DATA': data, 'BANCO': val('fB'), 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'TIPO': 'conta', 'VALOR': grupo === 'Renda' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'PARCELA': '', 'OBS': obsFinal });
+    db.salvar('EXTRATO', { 'DATA': data, 'BANCO': val('fB'), 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'TIPO': 'conta', 'VALOR': tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'PARCELA': '', 'OBS': obsFinal });
     fechar(); render(false);
     if (u.mes(data) !== ui.mes) toast(`Lançado em ${u.nomeMes(u.mes(data)).toLowerCase()}`); else toast('Lançamento salvo');
     if (tipo === 'guardar') confete(innerWidth / 2, 160);

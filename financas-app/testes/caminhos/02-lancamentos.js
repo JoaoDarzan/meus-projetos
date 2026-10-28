@@ -33,6 +33,36 @@ module.exports = { etapa: 'Lançamentos', testes: [
     certo(r && r.grupo === 'Renda' && r.valor === 850 && r.banco === 'PicPay' && r.categoria === 'Darzan Produções', 'renda gravada errada: ' + JSON.stringify(r));
     igual((await resumo(p, m0)).entr, antes + 850, 'entrou do mês');
   }],
+  ['reembolso: o gasto reembolsado e o dinheiro devolvido ficam no extrato mas não contam como gasto nem renda', async (st, abrir) => {
+    st.tabelas.categorias.push({ id: 'G-REEMB', user_id: 'u-joao', categoria: 'Reembolso', subcategoria: 'JPL SOM', grupo: 'Reembolso' });
+    st.tabelas.extrato.push({ id: 'LTESTE-TR', user_id: 'u-joao', data: HOJE, banco: 'PicPay', descricao: 'Transferência de outra conta minha', grupo: 'Transferência', tipo: 'conta', valor: 1500, categoria: 'Transferência', subcategoria: 'Entre minhas contas', status: 'Pago', obs: 'extrato' });
+    const p = await abrir();
+    const antes = await resumo(p, m0);
+    await clica(p, '#view [data-a=novoL][data-t=saida]');
+    await p.fill('#fV', '199'); await p.fill('#fD', 'Teste hotel da viagem');
+    await clica(p, '#s2 label[for=fG3]'); await clica(p, '#s2 .save'); await calmo(p);
+    const g = st.linhas('extrato').find(r => r.descricao === 'Teste hotel da viagem');
+    certo(g && g.grupo === 'Reembolso' && g.valor === -199, 'gasto reembolsado gravado errado: ' + JSON.stringify(g));
+    igual((await resumo(p, m0)).saiu, antes.saiu, 'saiu não muda');
+    certo(/reembolso/i.test(await p.locator(`[data-a=editL][data-id="${g.id}"]`).first().innerText()), 'a linha mostra "reembolso"');
+    await clica(p, `[data-a=editL][data-id="${g.id}"]`);
+    certo(await p.isChecked('#fG3'), 'editar abre com Reembolsado marcado');
+    await p.fill('#fV', '200'); await clica(p, '#s2 .save'); await calmo(p);
+    const g2 = st.linhas('extrato').find(r => r.id === g.id);
+    certo(g2.grupo === 'Reembolso' && g2.valor === -200, 'editar manteve o reembolso: ' + JSON.stringify(g2));
+    await clica(p, '#view [data-a=novoL][data-t=entrada]');
+    await p.fill('#fV', '200'); await p.fill('#fD', 'Teste devolução do hotel');
+    await p.selectOption('#fB', 'PicPay'); await p.selectOption('#fC', 'Reembolso');
+    await clica(p, '#s2 .save'); await calmo(p);
+    const d = st.linhas('extrato').find(r => r.descricao === 'Teste devolução do hotel');
+    certo(d && d.grupo === 'Reembolso' && d.valor === 200, 'dinheiro devolvido gravado errado: ' + JSON.stringify(d));
+    const depois = await resumo(p, m0);
+    igual(depois.entr, antes.entr, 'entrou não muda'); igual(depois.saiu, antes.saiu, 'saiu não muda');
+    // editar uma transferência que entrou não pode virar saída
+    await clica(p, '[data-a=editL][data-id="LTESTE-TR"]');
+    await p.fill('#fV', '1600'); await clica(p, '#s2 .save'); await calmo(p);
+    igual(st.linhas('extrato').find(r => r.id === 'LTESTE-TR').valor, 1600, 'transferência que entrou continua positiva');
+  }],
   ['guardei: vai para a caixinha e o saldo dela sobe', async (st, abrir) => {
     const p = await abrir();
     const cx = await p.evaluate(() => { const x = A.c.caixinhas().find(k => A.c.saldo(k) != null); return x && { nome: x['CONTA'], saldo: A.c.saldo(x) }; });
