@@ -5,6 +5,9 @@ window.A = window.A || {};
   const CONFIG = window.DF_CONFIG || {
     url: 'https://sczpyzcozcaibyzekmau.supabase.co',
     chave: 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14',
+    /* avisos no celular: chave pública do app e onde pedir um aviso de teste */
+    vapid: 'BAnX0hPDbPdvv3yWufNnEvrbzfOK1aXIZ5BSyXL9qSCuxF548EjP9iDG5NsCz-IimHc_xTqJjJod-cOakGoK82o',
+    avisosAgora: 'https://darzanproducoes.netlify.app/.netlify/functions/avisos-agora',
   };
   const CHAVE_SESSAO = 'df-sessao';
   const ler = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };

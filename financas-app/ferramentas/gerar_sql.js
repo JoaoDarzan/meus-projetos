@@ -42,6 +42,41 @@ $$;
 revoke all on function public.manter_ativo() from public;
 grant execute on function public.manter_ativo() to anon, authenticated;
 
+-- avisos: o Netlify (que só sabe o segredo dos avisos) pega o que mandar hoje e marca como enviado.
+-- O segredo fica no Netlify; aqui só a "impressão digital" dele (sha256), que é colocada à parte.
+create table if not exists public.config_servidor (chave text primary key, valor text not null);
+alter table public.config_servidor enable row level security;
+revoke all on public.config_servidor from anon, authenticated;
+create or replace function public.segredo_ok(p_segredo text) returns boolean language sql security definer set search_path = '' as $$
+  select coalesce(encode(sha256(convert_to(coalesce(p_segredo, ''), 'UTF8')), 'hex') = (select valor from public.config_servidor where chave = 'avisos_hash'), false);
+$$;
+revoke all on function public.segredo_ok(text) from public, anon, authenticated;
+create or replace function public.avisos_pendentes(p_segredo text, p_hoje date) returns json language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  return json_build_object(
+    'avisos', (select coalesce(json_agg(a order by a.quando, a.id), '[]'::json) from (select id, user_id, quando, titulo, corpo, tipo from public.avisos where enviado is null and quando <= p_hoje and quando >= p_hoje - 2) a),
+    'aparelhos', (select coalesce(json_agg(x), '[]'::json) from (select id, user_id, endpoint, p256dh, auth from public.aparelhos) x));
+end $$;
+create or replace function public.avisos_enviados(p_segredo text, p_ids text[]) returns int language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  update public.avisos set enviado = to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD HH24:MI') where id = any(p_ids) and enviado is null;
+  get diagnostics n = row_count; return n;
+end $$;
+create or replace function public.aparelho_sumiu(p_segredo text, p_id text) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  delete from public.aparelhos where id = p_id;
+end $$;
+revoke all on function public.avisos_pendentes(text, date) from public;
+revoke all on function public.avisos_enviados(text, text[]) from public;
+revoke all on function public.aparelho_sumiu(text, text) from public;
+grant execute on function public.avisos_pendentes(text, date) to anon;
+grant execute on function public.avisos_enviados(text, text[]) to anon;
+grant execute on function public.aparelho_sumiu(text, text) to anon;
+
 select 'Pronto! Tabelas criadas.' as resultado;
 `);
 fs.writeFileSync(path.join(raiz, 'financas-app/supabase/esquema.sql'), out.join('\n'));

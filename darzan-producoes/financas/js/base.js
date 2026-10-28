@@ -20,6 +20,7 @@ window.A = window.A || {};
   u.dataNoMes = (m, dia) => `${m}-${String(Math.min(Math.max(1, dia), u.diaMax(m))).padStart(2, '0')}`;
   u.dias = (a, b) => { const p = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); }; return Math.round((p(b) - p(a)) / 864e5); };
   u.ateHoje = d => u.dias(u.hoje(), d);
+  u.addDias = (d, n) => { const [y, m, dd] = d.split('-').map(Number), x = new Date(Date.UTC(y, m - 1, dd + n)); return x.toISOString().slice(0, 10); };
   u.nomeMes = m => MESES[+m.slice(5, 7) - 1];
   u.dm = d => d ? `${d.slice(8, 10)}/${CURTO[+d.slice(5, 7) - 1]}${d.slice(0, 4) !== u.hoje().slice(0, 4) ? '/' + d.slice(2, 4) : ''}` : '';
   u.ddmmaa = d => d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '';
@@ -42,6 +43,8 @@ window.A = window.A || {};
   };
   const chave = nome => `df-${nome}-${(N.sessao && N.sessao.user.id) || 'x'}`;
   db.aoSincronizar = f => db.ouvintes.push(f);
+  db.mudou = [];
+  db.aoMudar = f => db.mudou.push(f);
   const avisar = (estado, msg) => db.ouvintes.forEach(f => f(estado, msg));
   db.linhas = aba => db.abas[aba] || (db.abas[aba] = []);
   db.achar = (aba, id) => db.linhas(aba).find(x => x.ID === id);
@@ -82,7 +85,8 @@ window.A = window.A || {};
   };
   /* busca tudo no Supabase; mudanças que ainda estão na fila continuam valendo por cima */
   db.atualizar = async () => {
-    const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela)));
+    /* tabelas opcionais (avisos): se ainda não existem no Supabase, o app abre normal sem elas */
+    const lido = await Promise.all(ABAS.map(aba => N.ler(T[aba].tabela).catch(e => { if (T[aba].opcional && !e.semInternet && e.status !== 401) { db.faltando = (db.faltando || new Set()).add(aba); return []; } throw e; })));
     const abas = {};
     ABAS.forEach((aba, i) => { abas[aba] = lido[i].map(l => TAB.doNuvem(aba, l)); });
     db.abas = abas;
@@ -97,6 +101,7 @@ window.A = window.A || {};
   async function enviar() {
     if (enviando) return;
     enviando = true;
+    let deNovo = false;
     try {
       while (db.fila.length) {
         avisar('salvando');
@@ -108,6 +113,10 @@ window.A = window.A || {};
     } catch (e) {
       if (e.semInternet) { avisar('offline'); clearTimeout(tentarDepois); tentarDepois = setTimeout(enviar, 15000); }
       else if (e.status === 401) { avisar('login'); }
+      else if (db.fila[0].ops.every(o => T[o.aba].opcional)) {
+        /* só avisos (tabela ainda não criada?): tira da fila sem incomodar */
+        console.warn('avisos não salvos:', e.message); db.fila.shift(); guardarFila(); deNovo = true;
+      }
       else {
         /* o Supabase recusou: tira da fila e volta a mostrar o que está lá de verdade */
         db.fila.shift(); guardarFila();
@@ -115,6 +124,7 @@ window.A = window.A || {};
         db.atualizar().then(() => avisar('recarregado')).catch(() => { });
       }
     } finally { enviando = false; }
+    if (deNovo) enviar();
   }
   db.enviar = enviar;
   addEventListener('online', () => enviar());
@@ -152,6 +162,7 @@ window.A = window.A || {};
     db.fila.push({ ops: lista.map(o => o.op === 'salvar' ? { op: 'salvar', aba: o.aba, registro: o.registro, envio: o.envio } : o), em: Date.now() });
     guardarFila(); guardarCopia();
     enviar();
+    db.mudou.forEach(f => f(lista));
     return Promise.resolve();
   };
   db.salvar = (aba, registro) => db.lote([{ op: 'salvar', aba, registro }]);
@@ -370,6 +381,32 @@ window.A = window.A || {};
   };
   c.paraRevisar = k => c.lancs().filter(c.REVISAR[k].f);
   c.totalRevisar = () => { const ids = new Set(); Object.keys(c.REVISAR).forEach(k => c.paraRevisar(k).forEach(l => ids.add(l.id))); return ids.size; };
+
+  /* ---------- avisos no celular: 1 dia antes e no dia ---------- */
+  /* contas para pagar na mão, faturas, tarefas com data e trabalhos (evento e entrega) */
+  c.avisos = () => {
+    const out = [], hoje = u.hoje(), fim = u.addDias(hoje, 60);
+    const add = (chave, data, oQue, corpo, tipo) => {
+      if (!data) return;
+      [[-1, 'Amanhã'], [0, 'Hoje']].forEach(([n, q]) => {
+        const quando = u.addDias(data, n);
+        if (quando < hoje || quando > fim) return;
+        out.push({ ID: `AV-${chave}-${quando}`, 'QUANDO': quando, 'TITULO': `${q}: ${oQue}`, 'CORPO': corpo, 'TIPO': tipo, 'ENVIADO': '' });
+      });
+    };
+    c.tarefas().filter(t => !t.feita).forEach(t => {
+      const [tp, a] = t.id.split(':'), valor = t.valor ? u.brl(t.valor) : '';
+      if (tp === 'f') add(t.id, t.data, `vence a fatura do ${a}`, [valor, t.estimado ? 'vencimento estimado' : '', t.banco && `sai do ${t.banco}`].filter(Boolean).join(' · '), 'fatura');
+      else if (tp === 'l') add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.banco && t.banco !== 'Não informado' ? (t.grupo === 'receber' ? `entra no ${t.banco}` : `sai do ${t.banco}`) : ''].filter(Boolean).join(' · '), t.grupo === 'receber' ? 'receber' : 'conta');
+      else add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.nota].filter(Boolean).join(' · '), 'tarefa');
+    });
+    c.trabalhos().filter(j => j['ETAPA'] !== 'Entregue').forEach(j => {
+      const quem = j['CLIENTE'], ev = j['TIPO DE EVENTO'] || 'evento';
+      add(`J-ev-${j.ID}`, String(j['DATA DO EVENTO'] || ''), `${ev.toLowerCase()} ${quem}`, [j['LOCAL'], j['O QUE FOI FECHADO']].filter(Boolean).join(' · ') || 'Trabalho da Darzan', 'trabalho');
+      add(`J-en-${j.ID}`, String(j['ENTREGA'] || ''), `entregar o trabalho de ${quem}`, j['O QUE FOI FECHADO'] || ev, 'trabalho');
+    });
+    return out;
+  };
 
   /* ---------- jogo ---------- */
   c.NIVEIS = ['Iniciante', 'Organizado', 'Poupador', 'Estrategista', 'Investidor', 'Magnata', 'Lenda'];

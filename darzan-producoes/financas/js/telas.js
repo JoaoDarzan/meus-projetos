@@ -759,6 +759,7 @@
       await db.atualizar();
       if (db.vazio()) { splash.sair(); return telaImportar(); }
       const criou = db.garantirFixas();
+      setTimeout(sincronizarAvisos, 300);
       if (!temCopia) { escolherMes(); render(); splash.sair(); } else render(false);
       if (!criou) db.enviar();
     } catch (e) {
@@ -796,6 +797,8 @@
         <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
+        <h4 class="fl" style="margin:6px 0 0">Avisos no celular</h4>${blocoAvisos()}
+        <h4 class="fl" style="margin:6px 0 0">Aparelho e dados</h4>
         <button type="button" class="btn2" data-a="faceid" id="btFace" hidden>${u.svg('scan-face')}${A.face && A.face.ligado() ? `Desligar o ${A.face.nome}` : `Abrir o app com ${A.face ? A.face.nome : 'Face ID'}`}</button>
         <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
       </div>
@@ -888,6 +891,80 @@
     try { await face.ligar(); toast(`Pronto! O app agora abre com ${face.nome}`); formConta(); }
     catch (e) { toast(e && e.name === 'NotAllowedError' ? `Não ligou (${face.detalhe(e)}). Tente de novo.` : `Não consegui ligar o ${face.nome}: ${face.detalhe(e)}`); }
   };
+
+  /* ================= avisos no celular ================= */
+  /* a agenda acompanha os dados: pagou a conta, o aviso sai; nova fatura, o aviso entra */
+  function sincronizarAvisos() {
+    if (!db.carregado || !N.sessao || (db.faltando && db.faltando.has('AVISOS'))) return;
+    const hoje = u.hoje(), quero = c.avisos(), mapa = new Map(quero.map(a => [a.ID, a])), ops = [];
+    quero.forEach(a => {
+      const x = db.achar('AVISOS', a.ID);
+      if (!x) ops.push({ op: 'salvar', aba: 'AVISOS', registro: a });
+      else if (!x['ENVIADO'] && (x['TITULO'] !== a.TITULO || x['CORPO'] !== a.CORPO)) ops.push({ op: 'salvar', aba: 'AVISOS', registro: { ID: a.ID, 'TITULO': a.TITULO, 'CORPO': a.CORPO } });
+    });
+    db.linhas('AVISOS').forEach(x => {
+      const velho = String(x['QUANDO']) < u.addDias(hoje, x['TIPO'] === 'teste' ? -1 : -30);
+      if ((!x['ENVIADO'] && x['TIPO'] !== 'teste' && !mapa.has(x.ID)) || velho) ops.push({ op: 'apagar', aba: 'AVISOS', id: x.ID });
+    });
+    if (ops.length) db.lote(ops);
+  }
+  let agendaH = 0;
+  db.aoMudar(ops => { if (ops.some(o => o.aba !== 'AVISOS' && o.aba !== 'APARELHOS')) { clearTimeout(agendaH); agendaH = setTimeout(sincronizarAvisos, 1200); } });
+  A.sincronizarAvisos = sincronizarAvisos;
+
+  const avisos = {
+    suporte: () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
+    noIphoneSemIcone: () => /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone && !matchMedia('(display-mode: standalone)').matches,
+    meu: () => { try { return localStorage.getItem('df-aparelho'); } catch (e) { return null; } },
+    ligado: () => !!avisos.meu() && !!db.achar('APARELHOS', avisos.meu()) && (!!window.DF_PUSH_FALSO || (!!window.Notification && Notification.permission === 'granted')),
+    chave: () => { const b = atob(N.config.vapid.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, ch => ch.charCodeAt(0)); },
+    nome: () => /iPhone/.test(navigator.userAgent) ? 'iPhone' : /iPad/.test(navigator.userAgent) ? 'iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'Computador',
+    async inscrever() {
+      if (window.DF_PUSH_FALSO) return window.DF_PUSH_FALSO; /* testes */
+      const reg = await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: avisos.chave() });
+      return sub.toJSON();
+    },
+    async ligar() {
+      /* o iPhone só deixa pedir permissão no toque: isto vem primeiro */
+      const perm = window.DF_PUSH_FALSO ? 'granted' : await Notification.requestPermission();
+      if (perm !== 'granted') throw new Error(perm === 'denied' ? 'os avisos estão bloqueados para o app nos Ajustes do iPhone' : 'você não permitiu os avisos');
+      const j = await avisos.inscrever();
+      const h = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(j.endpoint)))).slice(0, 10).map(b => b.toString(16).padStart(2, '0')).join('');
+      const id = 'D' + h;
+      db.salvar('APARELHOS', { ID: id, 'NOME': avisos.nome(), 'ENDPOINT': j.endpoint, 'P256DH': j.keys.p256dh, 'AUTH': j.keys.auth });
+      try { localStorage.setItem('df-aparelho', id); } catch (e) { /* nada */ }
+      sincronizarAvisos();
+    },
+    async desligar() {
+      const id = avisos.meu();
+      if (id && db.achar('APARELHOS', id)) db.apagar('APARELHOS', id);
+      try { localStorage.removeItem('df-aparelho'); } catch (e) { /* nada */ }
+      if (!window.DF_PUSH_FALSO && avisos.suporte()) { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); }
+    },
+    async teste() {
+      db.salvar('AVISOS', { ID: 'AV-teste-' + Date.now().toString(36), 'QUANDO': u.hoje(), 'TITULO': 'Teste do Darzan Finanças', 'CORPO': 'Se você está vendo isto, os avisos estão funcionando.', 'TIPO': 'teste', 'ENVIADO': '' });
+      for (let i = 0; i < 40 && db.pendentes(); i++) await new Promise(r => setTimeout(r, 250));
+      if (db.pendentes()) throw new Error('sem internet agora');
+      const r = await fetch(N.config.avisosAgora + '?so=teste', { method: 'POST' });
+      const x = await r.json().catch(() => ({}));
+      if (!r.ok || x.erro) throw new Error(x.erro || 'o servidor dos avisos não respondeu');
+      return x;
+    },
+  };
+  A.avisos = avisos;
+  function blocoAvisos() {
+    if (!avisos.suporte() && !window.DF_PUSH_FALSO) return `<div class="aviso">${u.svg('bell')} ${avisos.noIphoneSemIcone() ? 'Para receber avisos no iPhone, abra o app pelo <b>ícone da tela de início</b> (Safari → Compartilhar → Adicionar à Tela de Início) e volte aqui.' : 'Este navegador não recebe avisos.'}</div>`;
+    if (avisos.ligado()) return `<div class="aviso ok-av">${u.svg('bell-ring')} Avisos ligados neste aparelho: faturas, contas para pagar e trabalhos, 1 dia antes e no dia, às 9h.</div>
+      <button type="button" class="btn2" data-a="avisoTeste">${u.svg('bell')}Mandar um aviso de teste</button>
+      <button type="button" class="btn2" data-a="avisoDesligar">${u.svg('bell')}Desligar os avisos neste aparelho</button>`;
+    return `<button type="button" class="btn2 pri" data-a="avisoLigar">${u.svg('bell-ring')}Ligar avisos neste aparelho</button>`;
+  }
+  Object.assign(ACOES, {
+    avisoLigar: async b => { b.disabled = true; try { await avisos.ligar(); toast('Avisos ligados!'); formConta(); } catch (e) { b.disabled = false; toast('Não deu para ligar os avisos: ' + e.message); } },
+    avisoDesligar: async () => { await avisos.desligar(); toast('Avisos desligados neste aparelho'); formConta(); },
+    avisoTeste: async b => { b.disabled = true; b.innerHTML = u.svg('bell') + 'Mandando…'; try { const x = await avisos.teste(); toast(x.enviados ? 'Aviso mandado! Deve chegar em alguns segundos.' : 'O aviso não saiu: ' + (x.motivo || 'nenhum aparelho recebeu')); } catch (e) { toast('O aviso não saiu: ' + e.message); } finally { b.disabled = false; b.innerHTML = u.svg('bell') + 'Mandar um aviso de teste'; } },
+  });
 
   async function iniciar() {
     if (!N.sessao) return mostrarLogin();

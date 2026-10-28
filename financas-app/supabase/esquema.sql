@@ -319,6 +319,56 @@ grant select, insert, update, delete on public.categorias to authenticated;
 drop trigger if exists marcar_atualizado on public.categorias;
 create trigger marcar_atualizado before update on public.categorias for each row execute function public.marcar_atualizado();
 
+-- AVISOS
+create table if not exists public.avisos (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  quando date,
+  titulo text,
+  corpo text,
+  tipo text,
+  enviado text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.avisos add column if not exists quando date;
+alter table public.avisos add column if not exists titulo text;
+alter table public.avisos add column if not exists corpo text;
+alter table public.avisos add column if not exists tipo text;
+alter table public.avisos add column if not exists enviado text;
+create index if not exists avisos_user_id on public.avisos (user_id);
+alter table public.avisos enable row level security;
+drop policy if exists "so o dono" on public.avisos;
+create policy "so o dono" on public.avisos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+revoke all on public.avisos from anon;
+grant select, insert, update, delete on public.avisos to authenticated;
+drop trigger if exists marcar_atualizado on public.avisos;
+create trigger marcar_atualizado before update on public.avisos for each row execute function public.marcar_atualizado();
+
+-- APARELHOS
+create table if not exists public.aparelhos (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  nome text,
+  endpoint text,
+  p256dh text,
+  auth text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.aparelhos add column if not exists nome text;
+alter table public.aparelhos add column if not exists endpoint text;
+alter table public.aparelhos add column if not exists p256dh text;
+alter table public.aparelhos add column if not exists auth text;
+create index if not exists aparelhos_user_id on public.aparelhos (user_id);
+alter table public.aparelhos enable row level security;
+drop policy if exists "so o dono" on public.aparelhos;
+create policy "so o dono" on public.aparelhos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+revoke all on public.aparelhos from anon;
+grant select, insert, update, delete on public.aparelhos to authenticated;
+drop trigger if exists marcar_atualizado on public.aparelhos;
+create trigger marcar_atualizado before update on public.aparelhos for each row execute function public.marcar_atualizado();
+
 -- sinal de vida: o lembrete automático chama isto a cada poucos dias para o projeto não "dormir"
 create table if not exists public.sinal_de_vida (id int primary key default 1, em timestamptz not null default now());
 alter table public.sinal_de_vida enable row level security;
@@ -328,5 +378,40 @@ create or replace function public.manter_ativo() returns timestamptz language sq
 $$;
 revoke all on function public.manter_ativo() from public;
 grant execute on function public.manter_ativo() to anon, authenticated;
+
+-- avisos: o Netlify (que só sabe o segredo dos avisos) pega o que mandar hoje e marca como enviado.
+-- O segredo fica no Netlify; aqui só a "impressão digital" dele (sha256), que é colocada à parte.
+create table if not exists public.config_servidor (chave text primary key, valor text not null);
+alter table public.config_servidor enable row level security;
+revoke all on public.config_servidor from anon, authenticated;
+create or replace function public.segredo_ok(p_segredo text) returns boolean language sql security definer set search_path = '' as $$
+  select coalesce(encode(sha256(convert_to(coalesce(p_segredo, ''), 'UTF8')), 'hex') = (select valor from public.config_servidor where chave = 'avisos_hash'), false);
+$$;
+revoke all on function public.segredo_ok(text) from public, anon, authenticated;
+create or replace function public.avisos_pendentes(p_segredo text, p_hoje date) returns json language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  return json_build_object(
+    'avisos', (select coalesce(json_agg(a order by a.quando, a.id), '[]'::json) from (select id, user_id, quando, titulo, corpo, tipo from public.avisos where enviado is null and quando <= p_hoje and quando >= p_hoje - 2) a),
+    'aparelhos', (select coalesce(json_agg(x), '[]'::json) from (select id, user_id, endpoint, p256dh, auth from public.aparelhos) x));
+end $$;
+create or replace function public.avisos_enviados(p_segredo text, p_ids text[]) returns int language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  update public.avisos set enviado = to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD HH24:MI') where id = any(p_ids) and enviado is null;
+  get diagnostics n = row_count; return n;
+end $$;
+create or replace function public.aparelho_sumiu(p_segredo text, p_id text) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.segredo_ok(p_segredo) then raise exception 'segredo dos avisos errado'; end if;
+  delete from public.aparelhos where id = p_id;
+end $$;
+revoke all on function public.avisos_pendentes(text, date) from public;
+revoke all on function public.avisos_enviados(text, text[]) from public;
+revoke all on function public.aparelho_sumiu(text, text) from public;
+grant execute on function public.avisos_pendentes(text, date) to anon;
+grant execute on function public.avisos_enviados(text, text[]) to anon;
+grant execute on function public.aparelho_sumiu(text, text) to anon;
 
 select 'Pronto! Tabelas criadas.' as resultado;

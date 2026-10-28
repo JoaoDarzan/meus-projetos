@@ -40,3 +40,25 @@ do $$ begin
 end $$;
 reset role;
 select 'todas as regras de segurança funcionam' as resultado;
+
+-- avisos: só com o segredo certo (o teste usa o segredo "segredo-de-teste")
+insert into public.config_servidor values ('avisos_hash', encode(sha256(convert_to('segredo-de-teste', 'UTF8')), 'hex')) on conflict (chave) do update set valor = excluded.valor;
+set role authenticated;
+set request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+insert into public.avisos (id, quando, titulo, corpo) values ('AV1', '2026-10-27', 'Hoje: pagar luz', 'R$ 140,00'), ('AV2', '2026-10-29', 'Depois', 'x');
+insert into public.aparelhos (id, endpoint, p256dh, auth) values ('D1', 'https://push.exemplo/1', 'p', 'a');
+reset role;
+set role anon;
+select pg_temp.espera_erro('select * from public.avisos', 'sem login leu os avisos');
+select pg_temp.espera_erro('select * from public.config_servidor', 'sem login leu o segredo');
+select pg_temp.espera_erro($q$select public.avisos_pendentes('errado', '2026-10-27')$q$, 'segredo errado leu os avisos');
+select pg_temp.espera_erro($q$select public.segredo_ok('segredo-de-teste')$q$, 'qualquer um pode testar segredos');
+do $$ declare j json; begin
+  j := public.avisos_pendentes('segredo-de-teste', '2026-10-27');
+  if json_array_length(j->'avisos') <> 1 or j->'avisos'->0->>'id' <> 'AV1' then raise exception 'FALHOU: avisos do dia: %', j; end if;
+  if json_array_length(j->'aparelhos') <> 1 then raise exception 'FALHOU: aparelhos'; end if;
+  if public.avisos_enviados('segredo-de-teste', array['AV1']) <> 1 then raise exception 'FALHOU: marcar enviado'; end if;
+  if json_array_length(public.avisos_pendentes('segredo-de-teste', '2026-10-27')->'avisos') <> 0 then raise exception 'FALHOU: mandou 2 vezes'; end if;
+end $$;
+reset role;
+select 'avisos só com o segredo certo' as resultado;

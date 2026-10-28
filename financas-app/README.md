@@ -14,6 +14,12 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
   a cada 3 dias) e, de reserva, Netlify (`netlify/functions/manter-supabase-acordado.mjs`, todo dia).
 
+- **Avisos no celular** (Web Push): o app monta a agenda (tabela `avisos`: faturas, contas para pagar na mão, tarefas e
+  trabalhos, 1 dia antes e no dia). Todo dia às 9h a função `netlify/functions/avisos.mjs` manda os do dia para os aparelhos
+  (tabela `aparelhos`). Ela só tem o segredo dos avisos (variável `AVISOS_SEGREDO` no Netlify), que abre apenas a agenda e os
+  aparelhos (funções `avisos_pendentes`, `avisos_enviados`, `aparelho_sumiu` do `esquema.sql`), nada das finanças.
+  A mensagem vai trancada para o aparelho (RFC 8291) e assinada (VAPID), em `netlify/lib/push.mjs`.
+
 ## Pastas
 | Onde | O que tem |
 |---|---|

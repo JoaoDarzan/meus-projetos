@@ -4,6 +4,7 @@
 
 # lembrete diário que mantém o Supabase do app de finanças acordado
 [functions]
+  node_bundler = "esbuild"
   directory = "netlify/functions"
 
 # o app sempre busca a versão nova dos arquivos (o próprio app guarda a cópia para usar sem internet)

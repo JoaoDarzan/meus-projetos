@@ -8,12 +8,13 @@ const T = globalThis.TABELAS;
 const SITE = path.resolve(__dirname, '../../darzan-producoes');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
 
+const SEGREDO_TESTE = 'segredo-de-teste';
 function criar(op = {}) {
   const usuarios = op.usuarios || [{ id: 'u-joao', email: 'joao@teste.com', senha: 'senha-certa' }, { id: 'u-outro', email: 'outro@teste.com', senha: 'outra' }];
   const tabelas = Object.fromEntries(Object.values(T).map(t => [t.tabela, []]));
   const colunas = Object.fromEntries(Object.values(T).map(t => [t.tabela, Object.fromEntries([['id', 'text'], ['user_id', 'uuid'], ...t.colunas.map(c => [c[1], c[2]])])]));
   const tokens = {}; /* token → {user, vence} */
-  const st = { tabelas, tokens, pedidos: [], fora: false, falharProximo: 0, duracaoToken: op.duracaoToken || 3600, sinal: null };
+  const st = { pushes: [], pushStatus: {}, tabelas, tokens, pedidos: [], fora: false, falharProximo: 0, duracaoToken: op.duracaoToken || 3600, sinal: null };
   let seq = 0;
   const novoToken = u => { const a = `acc-${u.id}-${++seq}`, r = `ref-${u.id}-${seq}`; tokens[a] = { u, vence: Date.now() / 1000 + st.duracaoToken }; tokens['R' + r] = { u }; return { access_token: a, refresh_token: r, expires_in: st.duracaoToken, expires_at: Math.floor(Date.now() / 1000 + st.duracaoToken), token_type: 'bearer', user: { id: u.id, email: u.email } }; };
   const json = (res, status, corpo) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(corpo === undefined ? '' : JSON.stringify(corpo)); };
@@ -34,10 +35,23 @@ function criar(op = {}) {
   const servidor = http.createServer((req, res) => {
     const u = url.parse(req.url, true), p = u.pathname;
     if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS' }); return res.end(); }
-    let corpo = '';
-    req.on('data', d => corpo += d);
+    const partes = [];
+    req.on('data', d => partes.push(d));
     req.on('end', () => {
+      const bruto = Buffer.concat(partes), corpo = bruto.toString('utf8');
       /* arquivos do site */
+      /* serviço de avisos de mentira (faz o papel da Apple/Google): guarda o que chegou */
+      if (p.startsWith('/__push/')) {
+        const id = p.slice(8), status = st.pushStatus[id] || 201;
+        st.pushes.push({ id, headers: req.headers, corpo: bruto, status });
+        res.writeHead(status); return res.end();
+      }
+      /* o mesmo que a função avisos-agora do Netlify faz, apontando para este Supabase */
+      if (p === '/__avisos-agora') {
+        if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': '*' }); return res.end(); }
+        return import('../../netlify/lib/avisos.mjs').then(m => m.enviarAvisos({ soTeste: u.query.so === 'teste', segredo: SEGREDO_TESTE, publica: null, hoje: st.hoje || undefined, supabase: { url: `http://127.0.0.1:${servidor.address().port}`, chave: 'chave-de-teste' } }))
+          .then(r => json(res, r.erro ? 500 : 200, r), e => json(res, 500, { erro: e.message }));
+      }
       if (!p.startsWith('/auth/') && !p.startsWith('/rest/')) {
         const arq = path.join(SITE, decodeURIComponent(p.endsWith('/') ? p + 'index.html' : p));
         if (!arq.startsWith(SITE) || !fs.existsSync(arq) || fs.statSync(arq).isDirectory()) { res.writeHead(404); return res.end('não achei'); }
@@ -64,6 +78,17 @@ function criar(op = {}) {
       }
       if (p === '/auth/v1/logout') return json(res, 204);
       if (p === '/rest/v1/rpc/manter_ativo') { st.sinal = new Date().toISOString(); return json(res, 200, st.sinal); }
+      /* funções dos avisos (como no esquema.sql): só com o segredo certo */
+      if (p.startsWith('/rest/v1/rpc/aviso') || p === '/rest/v1/rpc/aparelho_sumiu') {
+        if (!dados || dados.p_segredo !== SEGREDO_TESTE) return json(res, 400, { message: 'segredo dos avisos errado' });
+        const fn = p.slice(13);
+        if (fn === 'avisos_pendentes') {
+          const ate = dados.p_hoje, de = new Date(Date.parse(ate + 'T12:00:00Z') - 2 * 864e5).toISOString().slice(0, 10);
+          return json(res, 200, { avisos: tabelas.avisos.filter(a => !a.enviado && a.quando <= ate && a.quando >= de).map(({ id, user_id, quando, titulo, corpo, tipo }) => ({ id, user_id, quando, titulo, corpo, tipo })), aparelhos: tabelas.aparelhos.map(({ id, user_id, endpoint, p256dh, auth }) => ({ id, user_id, endpoint, p256dh, auth })) });
+        }
+        if (fn === 'avisos_enviados') { let n = 0; tabelas.avisos.forEach(a => { if (dados.p_ids.includes(a.id) && !a.enviado) { a.enviado = '2026-10-27 09:07'; n++; } }); return json(res, 200, n); }
+        if (fn === 'aparelho_sumiu') { tabelas.aparelhos = tabelas.aparelhos.filter(a => a.id !== dados.p_id); return json(res, 200, null); }
+      }
 
       const m = p.match(/^\/rest\/v1\/(\w+)$/);
       if (!m || !tabelas[m[1]]) return json(res, 404, { message: 'tabela não existe' });

@@ -33,6 +33,12 @@
       ['PRAZO', 'prazo', 'date'], ['OBS', 'obs', 'text']] },
     CATEGORIAS: { tabela: 'categorias', prefixo: 'G', colunas: [
       ['CATEGORIA', 'categoria', 'text'], ['SUB-CATEGORIA', 'subcategoria', 'text'], ['GRUPO', 'grupo', 'text']] },
+    /* agenda de avisos que o app monta; o Netlify manda para o celular no dia (e marca ENVIADO) */
+    AVISOS: { tabela: 'avisos', prefixo: 'V', opcional: true, colunas: [
+      ['QUANDO', 'quando', 'date'], ['TITULO', 'titulo', 'text'], ['CORPO', 'corpo', 'text'], ['TIPO', 'tipo', 'text'], ['ENVIADO', 'enviado', 'text']] },
+    /* aparelhos que recebem avisos (o "endereço" de cada celular) */
+    APARELHOS: { tabela: 'aparelhos', prefixo: 'D', opcional: true, colunas: [
+      ['NOME', 'nome', 'text'], ['ENDPOINT', 'endpoint', 'text'], ['P256DH', 'p256dh', 'text'], ['AUTH', 'auth', 'text']] },
   };
   /* registro do app ({'DESCRIÇÃO': ...}) ⇄ linha do Supabase ({descricao: ...}) */
   const vazio = v => v === '' || v === null || v === undefined;
