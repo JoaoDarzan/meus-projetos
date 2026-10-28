@@ -1,0 +1,29 @@
+# Publica o site (e o app em /financas) no GitHub Pages, sem o selo "Powered by Netlify".
+# Endereço: https://joaodarzan.github.io/meus-projetos/  ·  app: https://joaodarzan.github.io/meus-projetos/financas/
+# Precisa ligar uma vez: Settings → Pages → Source: GitHub Actions.
+name: Publicar no GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths: ['darzan-producoes/**', '.github/workflows/publicar-github-pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicado.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: darzan-producoes }
+      - id: publicado
+        uses: actions/deploy-pages@v4
