@@ -673,3 +673,5 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
 @media (min-width:1000px){.rv-barra{bottom:20px}}
 .aviso.ok-av{color:var(--fg);border-color:rgba(95,224,161,.35);background:rgba(95,224,161,.08);margin:0}
 .aviso svg{width:15px;height:15px;vertical-align:-3px}
+#trava{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#trava .lg-card{user-select:none;-webkit-user-select:none}

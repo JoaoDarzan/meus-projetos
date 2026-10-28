@@ -927,38 +927,49 @@
     detalhe: e => e ? `${e.name || 'Erro'}: ${e.message || e}` : '',
   };
   A.face = face;
-  let travado = false, saiuEm = 0;
+  /* como tela de bloqueio: só pede o rosto quando você fica 15 minutos fora do app.
+     Um toque em qualquer lugar da tela já chama o Face ID (o iPhone exige um toque antes). */
+  const PRAZO = 15 * 60 * 1000, CHAVE_USO = 'df-ultimo-uso';
+  const usou = () => { try { localStorage.setItem(CHAVE_USO, String(Date.now())); } catch (e) { /* nada */ } };
+  const ultimoUso = () => { try { return +localStorage.getItem(CHAVE_USO) || 0; } catch (e) { return 0; } };
+  face.precisa = () => face.ligado() && Date.now() - ultimoUso() > PRAZO;
+  let travado = false, destravando = false, abrindo = null;
   function mostrarTrava() {
     travado = true;
     $('trFoto').innerHTML = foto(); $('trErro').hidden = true;
-    $('trMsg').textContent = `Use o ${face.nome} para abrir`; $('trBtnTxt').textContent = `Abrir com ${face.nome}`;
+    $('trMsg').textContent = 'Toque na tela para abrir'; $('trBtnTxt').textContent = `Abrir com ${face.nome}`;
     fechar(); $('trava').hidden = false; $('trava').classList.remove('out'); splash.sair();
   }
-  /* ao abrir, tenta sozinho; se o aparelho exigir um toque antes, fica o botão (sem mensagem de erro) */
-  async function destravar(porToque) {
-    const er = $('trErro'); er.hidden = true;
+  async function destravar() {
+    if (destravando) return; /* um pedido de cada vez: tocar de novo não atrapalha o que já está aberto */
+    destravando = true;
+    const er = $('trErro'); er.hidden = true; $('trBtnTxt').textContent = 'Olhe para o celular…';
     try {
       await face.conferir();
-      travado = false;
-      const T = $('trava'); T.classList.add('out'); setTimeout(() => T.hidden = true, 450);
-      if (!db.carregado) await abrirApp(); else render(false);
+      travado = false; usou();
+      const T = $('trava'); T.classList.add('out'); setTimeout(() => T.hidden = true, 300);
+      if (abrindo) await abrindo; else if (!db.carregado) await abrirApp(); else render(false);
     } catch (e) {
-      if (porToque !== true) return;
-      if (e && e.name === 'AbortError') return;
-      er.innerHTML = `${e && e.name === 'NotAllowedError' ? 'Não deu certo. Toque no botão para tentar de novo.' : `O ${face.nome} não funcionou aqui. Entre com a senha.`}<br><small style="opacity:.7">${u.esc(face.detalhe(e))}</small>`;
-      er.hidden = false;
-    }
+      if (!(e && e.name === 'AbortError')) {
+        er.innerHTML = `${e && e.name === 'NotAllowedError' ? 'Não reconheceu. Toque de novo para tentar.' : `O ${face.nome} não funcionou aqui. Entre com a senha.`}<br><small style="opacity:.7">${u.esc(face.detalhe(e))}</small>`;
+        er.hidden = false;
+      }
+    } finally { destravando = false; if (travado) $('trBtnTxt').textContent = `Abrir com ${face.nome}`; }
   }
-  $('trBtn').addEventListener('click', () => destravar(true));
+  /* a tela inteira é o botão (menos o "Entrar com a senha") */
+  $('trava').addEventListener('click', e => { if (!e.target.closest('#trSenha')) destravar(); });
   $('trSenha').addEventListener('click', () => { face.desligar(); N.sair(); db.abas = {}; db.carregado = false; $('trava').hidden = true; travado = false; mostrarLogin('Entre com a senha. Depois dá para ligar o Face ID de novo em “Sua conta”.'); });
-  /* voltou para o app depois de um tempo: pede o Face ID de novo */
+  /* enquanto está usando, vai marcando; saiu e voltou depois de 15 minutos, pede o rosto */
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { saiuEm = Date.now(); return; }
-    if (!travado && saiuEm && face.ligado() && N.sessao && Date.now() - saiuEm > 2 * 60 * 1000) { mostrarTrava(); destravar(); }
+    if (document.hidden) { if (!travado) usou(); return; }
+    if (!travado && N.sessao && face.precisa()) mostrarTrava();
   });
+  addEventListener('pagehide', () => { if (!travado) usou(); });
+  setInterval(() => { if (!document.hidden && !travado) usou(); }, 30000);
+  A.trava = { usou, ultimoUso };
   ACOES.faceid = async b => {
     if (face.ligado()) { face.desligar(); toast(`${face.nome} desligado neste aparelho`); return formConta(); }
-    try { await face.ligar(); toast(`Pronto! O app agora abre com ${face.nome}`); formConta(); }
+    try { await face.ligar(); usou(); toast(`Pronto! Quando você ficar 15 minutos fora, o app pede o ${face.nome}`); formConta(); }
     catch (e) { toast(e && e.name === 'NotAllowedError' ? `Não ligou (${face.detalhe(e)}). Tente de novo.` : `Não consegui ligar o ${face.nome}: ${face.detalhe(e)}`); }
   };
 
@@ -1035,7 +1046,13 @@
 
   async function iniciar() {
     if (!N.sessao) return mostrarLogin();
-    if (face.ligado()) { mostrarTrava(); return destravar(); }
+    if (face.precisa()) {
+      /* já vai carregando os dados por trás da tela de bloqueio: destravou, está tudo pronto */
+      mostrarTrava();
+      abrindo = abrirApp().finally(() => { abrindo = null; });
+      return;
+    }
+    usou();
     await abrirApp();
   }
   A.iniciar = iniciar;
