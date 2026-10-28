@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=13">
+<link rel="stylesheet" href="css/estilo.css?v=14">
 </head>
 <body>
 <div class="splash" id="splash" role="status">
@@ -34,7 +34,7 @@
     <form class="lg-card" id="lgForm" autocomplete="on">
       <div class="lg-head"><div class="ringw" id="lgFoto"></div><h1>Darzan Finanças</h1><p>Entre com o seu e-mail e senha</p></div>
       <p class="aviso" id="lgAviso" hidden></p>
-      <div class="lg-f" style="margin-top:18px"><span class="lg-ic" data-i="mail"></span><input id="lgEmail" type="email" autocomplete="username" inputmode="email" placeholder="E-mail" aria-label="E-mail" required></div>
+      <div class="lg-f" style="margin-top:18px"><span class="lg-ic" data-i="mail"></span><input id="lgEmail" type="text" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="E-mail" aria-label="E-mail" required></div>
       <div class="lg-f"><span class="lg-ic" data-i="lock"></span><input id="lgSenha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha" required><button type="button" class="eye" id="lgOlho" aria-label="Mostrar a senha"></button></div>
       <p class="erro-lg" id="lgErro" role="alert" hidden></p>
       <button class="lg-btn pri" type="submit" id="lgBtn">Entrar</button>
@@ -72,11 +72,12 @@
 <div class="sync" id="sync" hidden></div>
 
 <script>window.FOTO_JOAO = '../img/perfil-joao-darzan.jpg';</script>
-<script src="js/icones.js?v=13"></script>
-<script src="js/tabelas.js?v=13"></script>
-<script src="js/nuvem.js?v=13"></script>
-<script src="js/base.js?v=13"></script>
-<script src="js/telas.js?v=13"></script>
+<script src="js/icones.js?v=14"></script>
+<script src="js/tabelas.js?v=14"></script>
+<script src="js/nuvem.js?v=14"></script>
+<script src="js/base.js?v=14"></script>
+<script src="js/demo.js?v=14"></script>
+<script src="js/telas.js?v=14"></script>
 <script>
   document.querySelectorAll('[data-i]').forEach(el => { el.outerHTML = A.u.svg(el.dataset.i); });
   document.getElementById('lgOlho').innerHTML = A.u.svg('eye');

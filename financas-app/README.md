@@ -24,6 +24,9 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   corrige os dados direto (`ferramentas/claude.py`, funções `claude_ler` e `claude_gravar` do `esquema.sql`).
   O Supabase guarda só o sha256 da chave (tabela `acesso_claude`); a chave abre apenas os dados do João, nunca vai
   para o GitHub, e trocar ou desligar no app corta o acesso na hora.
+- **Demonstração** (login `teste`, senha `123456`): para mostrar o app a alguém. Os dados são inventados por
+  `darzan-producoes/financas/js/demo.js` em volta do dia de hoje e ficam só no aparelho; nesse modo o `nuvem.js` nunca
+  chama o Supabase. Sair apaga a demonstração; avisos e Acesso do Claude ficam escondidos.
 - **Planilha de backup** (Google Planilhas "Darzan Finanças — Backup", no Drive do João): o `backup/Backup.gs` (Apps Script
   da própria planilha) lê tudo pelo `claude_ler` a cada hora e reescreve as abas Resumo, Bancos e uma aba por tabela.
   Só lê; mudar a planilha não muda o app. A chave fica nas Propriedades do script, nunca na planilha.

@@ -797,6 +797,7 @@
     erro: (msg, botao) => { const sp = $('splash'); sp.hidden = false; sp.classList.remove('out'); sp.querySelector('.spin').hidden = true; sp.querySelector('p').innerHTML = `<span class="erro">${u.esc(msg)}</span><br><button class="btn2" type="button" data-a="recomecar" style="margin-top:14px">${botao || 'Tentar de novo'}</button>`; },
   };
   function mostrarLogin(aviso) {
+    document.body.classList.remove('demo');
     const L = $('login');
     $('lgAviso').textContent = aviso || ''; $('lgAviso').hidden = !aviso; $('lgErro').hidden = true;
     $('lgFoto').innerHTML = foto();
@@ -822,6 +823,7 @@
     if (!c.doMes(ui.mes).length) { const ms = c.mesesPassados(); if (ms.length) ui.mes = ms[ms.length - 1]; }
   }
   async function abrirApp() {
+    document.body.classList.toggle('demo', N.ehDemo());
     const temCopia = db.abrirCopia();
     if (temCopia) { escolherMes(); render(); splash.sair(); }
     try {
@@ -860,21 +862,22 @@
   }
   /* sua conta: cópia de segurança, dados no Supabase, sair */
   function formConta() {
-    const ref = (N.config.url.match(/https:\/\/([^.]+)\./) || [])[1];
+    const demo = N.ehDemo(), ref = !demo && (N.config.url.match(/https:\/\/([^.]+)\./) || [])[1];
     abrir(`<h3 style="margin:0 0 4px">Sua conta</h3><p class="c-muted" style="margin:0 0 16px">${u.esc((N.sessao && N.sessao.user.email) || '')}</p>
+      ${demo ? '<p class="aviso" id="avisoDemo" style="margin:0 0 14px">Modo demonstração: os dados são inventados e ficam só neste aparelho. Pode mexer à vontade; ao sair, tudo volta ao começo.</p>' : ''}
       <div style="display:grid;gap:10px">
         <button type="button" class="btn2" data-a="correcoes">${u.svg('upload')}Trazer correções de um arquivo</button>
         <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
-        <h4 class="fl" style="margin:6px 0 0">Avisos no celular</h4>${blocoAvisos()}
-        <h4 class="fl" style="margin:6px 0 0">Acesso do Claude</h4><div id="blClaude" style="display:grid;gap:10px"><p class="c-muted" style="margin:0;font-size:.86rem">Carregando…</p></div>
+        ${demo ? '' : `<h4 class="fl" style="margin:6px 0 0">Avisos no celular</h4>${blocoAvisos()}
+        <h4 class="fl" style="margin:6px 0 0">Acesso do Claude</h4><div id="blClaude" style="display:grid;gap:10px"><p class="c-muted" style="margin:0;font-size:.86rem">Carregando…</p></div>`}
         <h4 class="fl" style="margin:6px 0 0">Aparelho e dados</h4>
         <button type="button" class="btn2" data-a="faceid" id="btFace" hidden>${u.svg('scan-face')}${A.face && A.face.ligado() ? `Desligar o ${A.face.nome}` : `Abrir o app com ${A.face ? A.face.nome : 'Face ID'}`}</button>
         <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
       </div>
-      <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
-      blocoClaude();
+      <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${demo ? 'Demonstração: nada vai para o Supabase.' : db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
+    if (!demo) blocoClaude();
     A.face.disponivel().then(ok => { const b = $('btFace'); if (!b) return; b.hidden = false; if (!ok && !A.face.ligado()) { b.disabled = true; b.innerHTML = `${u.svg('scan-face')}Este aparelho não liberou o ${A.face.nome} para o app`; } });
   }
 
@@ -982,7 +985,7 @@
   /* ================= avisos no celular ================= */
   /* a agenda acompanha os dados: pagou a conta, o aviso sai; nova fatura, o aviso entra */
   function sincronizarAvisos() {
-    if (!db.carregado || !N.sessao || (db.faltando && db.faltando.has('AVISOS'))) return;
+    if (!db.carregado || !N.sessao || N.ehDemo() || (db.faltando && db.faltando.has('AVISOS'))) return;
     const hoje = u.hoje(), quero = c.avisos(), mapa = new Map(quero.map(a => [a.ID, a])), ops = [];
     quero.forEach(a => {
       const x = db.achar('AVISOS', a.ID);

@@ -49,6 +49,8 @@ const testes = Object.keys(APARELHOS).map(ap => [`${ap} (${APARELHOS[ap].w}x${AP
       if (depois) (0, eval)(depois);
     }, [acao, dados, depois || null, antes || null]);
     await p.waitForTimeout(150);
+    /* mede com o formulário parado (depois da animação de subir) */
+    await p.waitForFunction(() => document.getElementById('s2').getAnimations({ subtree: true }).every(x => x.playState !== 'running' || x.effect.getTiming().iterations === Infinity));
     if (await p.evaluate(() => document.getElementById('scrim2').hidden)) { ruins.push(`${nome}: o formulário não abriu`); continue; }
     anota(`formulário ${nome}`, await problemasDeLayout(p));
     await p.screenshot({ path: path.join(CAPTURAS, `${ap}-form-${nome}.png`) });

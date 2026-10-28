@@ -33,8 +33,38 @@ window.A = window.A || {};
     gravar(CHAVE_SESSAO, n.sessao);
   };
 
+  /* ---------- demonstração: login "teste", dados inventados só neste aparelho, nunca no Supabase ---------- */
+  const CHAVE_DEMO = 'df-demo-banco';
+  n.ehDemo = () => !!(n.sessao && n.sessao.demo);
+  const demo = {
+    banco() {
+      let b = ler(CHAVE_DEMO);
+      if (!b) {
+        const hoje = A.u.hoje(), dados = A.demo.dados(hoje);
+        b = {};
+        Object.entries(dados.abas).forEach(([aba, regs]) => { b[TABELAS[aba].tabela] = regs.map(r => Object.assign(TAB.paraNuvem(aba, r), { user_id: 'demo' })); });
+        gravar(CHAVE_DEMO, b);
+      }
+      return b;
+    },
+    ler: tabela => (demo.banco()[tabela] || []).slice().sort((x, y) => (x.id < y.id ? -1 : 1)),
+    gravar(tabela, linhas) {
+      const b = demo.banco(), t = b[tabela] = b[tabela] || [];
+      linhas.forEach(l => { const i = t.findIndex(x => x.id === l.id); if (i >= 0) t[i] = Object.assign({}, t[i], l); else t.push(Object.assign({ user_id: 'demo' }, l)); });
+      if (!gravar(CHAVE_DEMO, b)) throw new ErroNuvem('O celular está sem espaço para a demonstração', 507);
+    },
+    apagar(tabela, ids) { const b = demo.banco(); b[tabela] = (b[tabela] || []).filter(x => !ids.includes(x.id)); gravar(CHAVE_DEMO, b); },
+  };
+
   /* ---------- login ---------- */
   n.entrar = async (email, senha) => {
+    if (A.demo && email.trim().toLowerCase() === A.demo.usuario) {
+      if (senha !== A.demo.senha) throw new ErroNuvem('E-mail ou senha errados.', 400);
+      gravar(CHAVE_DEMO, null); /* cada entrada começa com os dados de demonstração novinhos */
+      n.sessao = { demo: true, access_token: 'demo', refresh_token: 'demo', expires_at: 4102444800, user: { id: 'demo', email: 'teste (demonstração)' } };
+      gravar(CHAVE_SESSAO, n.sessao);
+      return n.sessao;
+    }
     try {
       const { corpo } = await chamar('/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: CONFIG.chave, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), password: senha }) });
       guardarSessao(corpo);
@@ -47,7 +77,7 @@ window.A = window.A || {};
     }
   };
   let renovando = null;
-  n.renovar = () => renovando || (renovando = (async () => {
+  n.renovar = () => n.ehDemo() ? Promise.resolve() : renovando || (renovando = (async () => {
     try {
       const { corpo } = await chamar('/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: CONFIG.chave, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: n.sessao.refresh_token }) });
       guardarSessao(corpo);
@@ -58,6 +88,7 @@ window.A = window.A || {};
   })());
   n.sair = async () => {
     const s = n.sessao; guardarSessao(null);
+    if (s && s.demo) { gravar(CHAVE_DEMO, null); return; }
     if (s) chamar('/auth/v1/logout', { method: 'POST', headers: { apikey: CONFIG.chave, Authorization: 'Bearer ' + s.access_token } }).catch(() => { });
   };
   async function token() {
@@ -68,6 +99,7 @@ window.A = window.A || {};
 
   /* ---------- tabelas ---------- */
   async function rest(metodo, caminho, corpo, prefer) {
+    if (n.ehDemo()) throw new ErroNuvem('A demonstração não usa o Supabase', 400);
     const faz = async () => chamar('/rest/v1/' + caminho, { method: metodo, headers: Object.assign({ apikey: CONFIG.chave, Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, prefer ? { Prefer: prefer } : {}), body: corpo === undefined ? undefined : JSON.stringify(corpo) });
     try { return (await faz()).corpo; } catch (e) {
       if (e.status !== 401) throw e;
@@ -77,6 +109,7 @@ window.A = window.A || {};
   }
   const POR_VEZ = 1000;
   n.ler = async tabela => {
+    if (n.ehDemo()) return demo.ler(tabela);
     const out = [];
     for (let de = 0; ; de += POR_VEZ) {
       const parte = await rest('GET', `${tabela}?select=*&order=id&limit=${POR_VEZ}&offset=${de}`);
@@ -86,11 +119,13 @@ window.A = window.A || {};
   };
   /* grava (cria ou atualiza) várias linhas; cada linha manda só as colunas que mudaram */
   n.gravar = async (tabela, linhas) => {
+    if (n.ehDemo()) return demo.gravar(tabela, linhas);
     const grupos = {};
     linhas.forEach(l => { const k = Object.keys(l).sort().join(','); (grupos[k] = grupos[k] || []).push(l); });
     for (const g of Object.values(grupos)) for (let i = 0; i < g.length; i += 500) await rest('POST', `${tabela}?on_conflict=id`, g.slice(i, i + 500), 'resolution=merge-duplicates,return=minimal');
   };
   n.apagar = async (tabela, ids) => {
+    if (n.ehDemo()) return demo.apagar(tabela, ids);
     for (let i = 0; i < ids.length; i += 100) await rest('DELETE', `${tabela}?id=in.(${ids.slice(i, i + 100).map(x => '"' + encodeURIComponent(String(x).replace(/"/g, '')) + '"').join(',')})`, undefined, 'return=minimal');
   };
 })(window.A);
