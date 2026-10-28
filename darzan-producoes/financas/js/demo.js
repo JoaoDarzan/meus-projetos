@@ -28,7 +28,8 @@ window.A = window.A || {};
     /* cartões: compra entra na fatura do mês (até o fechamento) ou na do mês seguinte */
     const CART = { 'Nubank': [7, 14, 'PicPay'], 'Mercado Pago': [16, 23, 'PicPay'], 'Inter': [25, 5, 'Inter'] };
     Object.entries(CART).forEach(([nome, [fecha, vence, paga]], i) => abas.CARTOES.push({ ID: 'KD' + (i + 1), 'CARTÃO': nome, 'LIMITE': [6000, 4000, 5000][i], 'FECHA DIA': fecha, 'VENCE DIA': vence, 'PAGA PELA CONTA': `${paga} · Conta`, 'OBS': '' }));
-    const faturaDe = (data, nome) => +data.slice(8, 10) <= CART[nome][0] ? u.mes(data) : u.addMes(u.mes(data), 1);
+    /* a fatura tem o nome do mês em que vence (como no app: base.js, c.faturaDe) */
+    const faturaDe = (data, nome) => { const [fecha, vence] = CART[nome], fechou = +data.slice(8, 10) <= fecha ? u.mes(data) : u.addMes(u.mes(data), 1); return vence > fecha ? fechou : u.addMes(fechou, 1); };
     let p = 0;
     const compra = (data, cartao, valor, parcelas, desc, cat, sub, grupo = 'Desejos', equip) => {
       const fm = faturaDe(data, cartao), d = +data.slice(8, 10), pid = 'PD' + String(++p).padStart(3, '0'), parc = u.r2(valor / parcelas);
@@ -91,10 +92,10 @@ window.A = window.A || {};
     gasto(dia(-1, 16), 'PicPay', 'Hotel da viagem do evento', 220, 'Trabalho', 'Negócio').GRUPO = 'Reembolso';
     L(dia(-1, 19), 'PicPay', 'Reembolso da viagem (produtora)', 'Reembolso', 220, 'Reembolso', 'JPL SOM');
     /* faturas que já venceram: pagas pela conta do cartão */
-    Object.entries(CART).forEach(([nome, [fecha, vence, paga]]) => {
+    Object.entries(CART).forEach(([nome, [, vence, paga]]) => {
       const meses = [...new Set(abas.EXTRATO.filter(l => l['TIPO'] === 'cartão' && l['BANCO'] === nome).map(l => u.mes(l['DATA'])))].sort();
       meses.forEach(fm => {
-        const venc = u.dataNoMes(vence > fecha ? fm : u.addMes(fm, 1), vence);
+        const venc = u.dataNoMes(fm, vence);
         if (venc >= hoje) return;
         const v = -u.sum(abas.EXTRATO.filter(l => l['TIPO'] === 'cartão' && l['BANCO'] === nome && u.mes(l['DATA']) === fm && l['GRUPO'] !== 'Reembolso'), l => l['VALOR']);
         L(venc, paga, `Pagamento fatura ${nome} (${u.nomeMes(fm).toLowerCase()})`, 'Transferência', -v, 'Transferência', 'Pagamento de fatura', { 'OBS': `Fatura ${nome} ${fm}` });

@@ -2,7 +2,7 @@
    Em cada um confere: nada passa da tela, campos no lugar, letra que não faz o iPhone dar zoom,
    nada embaixo do relógio, último item não fica escondido atrás do menu. Tira foto de tudo. */
 const { APARELHOS, CAPTURAS, problemasDeLayout, path } = require('../ajuda');
-const TELAS = [['inicio'], ['trabalhos'], ['tarefas'], ['equip'], ['fin', 'extrato'], ['fin', 'revisar'], ['fin', 'bancos'], ['fin', 'cartoes'], ['fin', 'metas'], ['fin', 'relatorios']];
+const TELAS = [['inicio'], ['trabalhos'], ['tarefas'], ['equip'], ['fin', 'extrato'], ['fin', 'revisar'], ['fin', 'bancos'], ['fin', 'cartoes'], ['fin', 'fixas'], ['fin', 'metas'], ['fin', 'relatorios']];
 /* cada formulário: como abrir (o mesmo botão que o João toca) */
 const FORMULARIOS = {
   'gastei': ['novoL', { t: 'saida' }],
@@ -22,6 +22,8 @@ const FORMULARIOS = {
   'nova-caixinha': ['novaCx', { v: `'Nubank'` }],
   'cartao': ['editK', { v: `A.c.cartoes()[0]['CARTÃO']` }],
   'meta': ['novoM', {}],
+  'conta-fixa': ['novoF', {}],
+  'editar-conta-fixa': ['editF', { id: `A.db.linhas('FIXAS')[0].ID` }],
   'sua-conta': ['conta', {}],
   'mudar-varios': ['rvMudar', {}, null, `A.c.lancs().slice(0, 3).forEach(l => A.ui.rvsel.add(l.id));`],
 };

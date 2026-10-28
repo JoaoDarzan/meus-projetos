@@ -2,7 +2,7 @@
 const { HOJE, entrar, calmo, clica, certo, conferirLayout } = require('../ajuda');
 const m0 = HOJE.slice(0, 7);
 const noSupabase = st => st.pedidos.filter(x => /^\/(auth|rest)\//.test(x.caminho));
-const TELAS = [['inicio'], ['trabalhos'], ['tarefas'], ['equip'], ['fin', 'extrato'], ['fin', 'revisar'], ['fin', 'bancos'], ['fin', 'cartoes'], ['fin', 'metas'], ['fin', 'relatorios']];
+const TELAS = [['inicio'], ['trabalhos'], ['tarefas'], ['equip'], ['fin', 'extrato'], ['fin', 'revisar'], ['fin', 'bancos'], ['fin', 'cartoes'], ['fin', 'fixas'], ['fin', 'metas'], ['fin', 'relatorios']];
 
 module.exports = { etapa: 'Demonstração', testes: [
   ['entrar com teste/123456: app cheio de dados inventados, tudo funciona e nada vai para o Supabase', async (st, abrir) => {

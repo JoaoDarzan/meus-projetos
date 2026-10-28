@@ -136,8 +136,8 @@
 
   /* ================= FINANÇAS ================= */
   R.fin = () => {
-    const s = seg('fseg', ui.fseg, [['extrato', 'Extrato'], ['revisar', 'Revisar'], ['bancos', 'Bancos'], ['cartoes', 'Cartões'], ['metas', 'Metas'], ['relatorios', 'Relatórios']]);
-    return bar('Finanças', null, !['bancos', 'metas', 'revisar'].includes(ui.fseg)) + `<div class="fin">${s}</div>` + (FIN[ui.fseg] || FIN.extrato)();
+    const s = seg('fseg', ui.fseg, [['extrato', 'Extrato'], ['revisar', 'Revisar'], ['bancos', 'Bancos'], ['cartoes', 'Cartões'], ['fixas', 'Contas fixas'], ['metas', 'Metas'], ['relatorios', 'Relatórios']]);
+    return bar('Finanças', null, !['bancos', 'metas', 'revisar', 'fixas'].includes(ui.fseg)) + `<div class="fin">${s}</div>` + (FIN[ui.fseg] || FIN.extrato)();
   };
   const FIN = {};
   FIN.extrato = () => {
@@ -244,6 +244,44 @@
     $('mC').addEventListener('change', () => { $('mS').innerHTML = $('mC').value ? opts(c.subsDe($('mC').value), '') : '<option value="">—</option>'; });
   }
 
+  /* contas fixas: o que sai todo mês (assinaturas, seguro…), quanto dá por mês e por ano, e se já saiu neste mês */
+  const COMO = { 'cartão': 'no cartão', 'débito': 'débito automático', 'conta': 'pagar na mão', 'anual': 'paga 1 vez por ano', 'parcelado': 'parcelado no cartão' };
+  FIN.fixas = () => {
+    const m0 = u.mes(u.hoje()), fs = c.fixas().sort((a, b) => (c.fixaAtiva(b) - c.fixaAtiva(a)) || (c.fixaMensal(b) - c.fixaMensal(a)));
+    const on = fs.filter(c.fixaAtiva), mes = c.totalFixas();
+    const linha = f => {
+      const t = c.fixaTipo(f), l = c.fixaNoMes(f, m0), ativa = c.fixaAtiva(f), dia = parseInt(f['DIA'], 10);
+      const estado = !ativa ? '<span class="prev">desligada</span>' : t === 'anual' ? '' : l ? (c.paga(l) || l.tipo === 'cartão' ? '<span class="okc">saiu este mês ✓</span>' : '<span class="prev">previsto</span>') : '';
+      const meta = [COMO[t], f['BANCO'] && f['BANCO'] !== 'Não informado' ? f['BANCO'] : '', dia ? 'dia ' + dia : ''].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
+      return `<button type="button" class="it btn${ativa ? '' : ' off'}" data-a="editF" data-id="${u.esc(f.ID)}">${u.ti(c.icone(f['CATEGORIA'], f['SUB-CATEGORIA']))}<div style="min-width:0"><div class="t">${u.esc(f['DESCRIÇÃO'])}</div><div class="m">${meta}${estado}</div>${f['OBS'] ? `<div class="m">${u.esc(f['OBS'])}</div>` : ''}</div><div class="v num">${u.brl(c.fixaMensal(f))}<small>${t === 'anual' ? `/mês · ${u.brl(Math.abs(c.num(f['VALOR'])))} no ano` : '/mês'}</small></div></button>`;
+    };
+    return `<section class="sec"><div class="kpis"><div class="kpi"><span>Por mês</span><b class="num c-out">${u.brl(mes)}</b></div><div class="kpi"><span>Por ano</span><b class="num">${u.brl(mes * 12)}</b></div></div></section>
+      <section class="sec"><div class="sec-h"><h2>${u.svg('calendar-clock')}Contas fixas · ${on.length}</h2><button class="chip" type="button" data-a="novoF">${u.svg('plus')} Nova conta fixa</button></div>
+      <div class="panel" style="padding:4px 10px 10px">${fs.map(linha).join('') || vazio(['calendar-clock', '#9cc6ff', '#2a62e0'], 'Nenhuma conta fixa ainda.')}</div>
+      <p class="aviso">O que é "no cartão", "débito automático" ou "pagar na mão" entra sozinho como lançamento todo mês. "Paga 1 vez por ano" conta dividido por 12 aqui, e "parcelado no cartão" já vem das parcelas da fatura.</p></section>`;
+  };
+  function formFixa(f) {
+    const cats = c.listaCats().filter(k => !['Renda', 'Guardado', 'Transferência', 'Reembolso'].includes(c.grupoDe(k))), cat0 = f ? f['CATEGORIA'] : 'Assinaturas';
+    const tipos = [['cartão', 'No cartão de crédito'], ['débito automático', 'Débito automático'], ['conta', 'Pagar na mão (Pix/boleto)'], ['anual', 'Paga 1 vez por ano'], ['parcelado', 'Parcelado no cartão']];
+    const onde = c.BANCOS.filter(b => b !== 'Não informado'), t0 = f ? (c.fixaTipo(f) === 'débito' ? 'débito automático' : c.fixaTipo(f)) : 'cartão';
+    abrir(`<h3 style="margin:0 0 12px">${f ? 'Editar conta fixa' : 'Nova conta fixa'}</h3>
+      ${campo('O que é', `<input class="txt" id="xD" required value="${u.esc(f ? f['DESCRIÇÃO'] : '')}" placeholder="Ex.: Netflix, seguro do carro">`)}
+      <div class="grid2">${campo(t0 === 'anual' ? 'Valor no ano' : 'Valor', `<input class="txt num" id="xV" inputmode="decimal" value="${f ? String(Math.abs(c.num(f['VALOR']))).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}${campo('Dia que cobra', `<input class="txt num" id="xDia" inputmode="numeric" value="${u.esc(f ? f['DIA'] || '' : '')}" placeholder="ex.: 15">`)}</div>
+      <div class="grid2">${campo('Como paga', `<select class="txt" id="xT">${opts(tipos, t0)}</select>`)}${campo('Banco ou cartão', `<select class="txt" id="xB">${opts(onde, f ? f['BANCO'] : 'Inter')}</select>`)}</div>
+      <div class="grid2">${campo('Categoria', `<select class="txt" id="xC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="xS">${opts(c.subsDe(cat0), f ? f['SUB-CATEGORIA'] : '')}</select>`)}</div>
+      <div class="checkline"><input type="checkbox" id="xA" ${!f || c.fixaAtiva(f) ? 'checked' : ''}><label for="xA">Ativa (ainda pago)</label></div>
+      ${campo('Anotação', `<input class="txt" id="xO" value="${u.esc(f ? f['OBS'] || '' : '')}" placeholder="opcional, ex.: promoção até nov/2027">`)}
+      ${f ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarF" data-id="${u.esc(f.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar conta fixa</button>'}`,
+      () => {
+        const d = val('xD').trim(), v = u.num(val('xV')); if (!d) return false;
+        if (!(v > 0)) { toast('Digite o valor, por exemplo 19,90'); return false; }
+        const cat = val('xC');
+        db.salvar('FIXAS', Object.assign(f ? { ID: f.ID } : {}, { 'DESCRIÇÃO': d, 'VALOR': v, 'DIA': parseInt(val('xDia'), 10) || '', 'BANCO': val('xB'), 'TIPO': val('xT'), 'GRUPO': c.grupoDe(cat) === 'Necessidades' ? 'Necessidades' : 'Desejos', 'CATEGORIA': cat, 'SUB-CATEGORIA': val('xS'), 'ATIVA': $('xA').checked ? 'Sim' : 'Não', 'OBS': val('xO').trim() }));
+        db.garantirFixas(); fechar(); render(false); toast('Conta fixa salva');
+      });
+    $('xC').addEventListener('change', () => { $('xS').innerHTML = opts(c.subsDe(val('xC')), ''); });
+    $('xT').addEventListener('change', () => { const l = $('xV').closest('.campo').querySelector('label'); l.textContent = val('xT') === 'anual' ? 'Valor no ano' : 'Valor'; });
+  }
   FIN.metas = () => {
     const gs = db.linhas('METAS').filter(g => g['META']);
     const tem = g => { const cx = c.caixinhas().find(x => u.sem(x['CONTA']).indexOf(u.sem(g['ONDE ESTÁ'])) >= 0 && g['ONDE ESTÁ']); return cx ? (c.saldo(cx) || 0) : c.num(g['JÁ GUARDADO']); };
@@ -766,6 +804,9 @@
     novaCx: b => formCaixinha(b.dataset.v),
     editK: b => formCartao(b.dataset.v),
     novoM: () => formMeta(null),
+    novoF: () => formFixa(null),
+    editF: b => formFixa(db.achar('FIXAS', b.dataset.id)),
+    apagarF: b => apagarSimples('FIXAS', b.dataset.id, b, 'Conta fixa excluída'),
     editM: b => formMeta(db.achar('METAS', b.dataset.id)),
     apagarM: b => apagarSimples('METAS', b.dataset.id, b, 'Meta excluída'),
     fechar: () => fechar(),

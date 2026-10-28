@@ -171,7 +171,7 @@ window.A = window.A || {};
   /* contas fixas viram lançamentos "previstos" no mês atual e no próximo; o ID fixo evita repetir em dois aparelhos */
   db.garantirFixas = () => {
     const ops = [], ext = db.linhas('EXTRATO'), m0 = u.mes(u.hoje());
-    db.linhas('FIXAS').filter(f => String(f['ATIVA']).toLowerCase() !== 'não' && f['DESCRIÇÃO'] && f['VALOR']).forEach(f => {
+    db.linhas('FIXAS').filter(f => String(f['ATIVA']).toLowerCase() !== 'não' && f['DESCRIÇÃO'] && f['VALOR'] && !/anual|parcel/i.test(f['TIPO'])).forEach(f => {
       [m0, u.addMes(m0, 1)].forEach(m => {
         const nome = String(f['DESCRIÇÃO']).trim().toLowerCase(), id = `LFX-${f.ID}-${m}`;
         if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === m && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
@@ -255,15 +255,22 @@ window.A = window.A || {};
   c.cartoes = () => db.linhas('CARTOES').filter(k => k['CARTÃO']);
   c.cartao = nome => c.cartoes().find(k => k['CARTÃO'] === nome);
   c.ehCartao = banco => c.cartoes().some(k => k['CARTÃO'] === banco);
-  /* compra feita até o fechamento cai na fatura do mês; depois, na do mês seguinte */
-  c.faturaDe = (data, nome) => { const k = c.cartao(nome); const fecha = k ? parseInt(k['FECHA DIA'], 10) || 31 : 31; return +data.slice(8, 10) <= fecha ? u.mes(data) : u.addMes(u.mes(data), 1); };
-  c.vence = (nome, m) => {
-    const k = c.cartao(nome) || {}, fecha = parseInt(k['FECHA DIA'], 10) || 1;
+  /* a fatura tem o nome do mês em que VENCE (igual aos apps dos bancos: a "fatura de julho" vence em julho).
+     Compra feita até o fechamento entra na fatura que fecha naquele mês; depois, na seguinte. Se o vencimento
+     cai depois do fechamento no mesmo mês (Inter: fecha 18, vence 25), é a fatura daquele mês; se cai antes
+     (Nubank: fecha 31, vence 7), ela vence no mês seguinte. */
+  c.diasCartao = k => {
+    const fecha = parseInt(k['FECHA DIA'], 10) || 31;
     let dia = parseInt(k['VENCE DIA'], 10), estimado = false;
     if (!dia) { dia = Math.min(fecha + 7, 28); estimado = true; }
-    const mm = dia > fecha ? m : u.addMes(m, 1);
-    return { data: u.dataNoMes(mm, dia), estimado };
+    return { fecha, dia, estimado };
   };
+  c.faturaDe = (data, nome) => {
+    const k = c.cartao(nome); if (!k) return u.mes(data);
+    const { fecha, dia } = c.diasCartao(k), fechou = +data.slice(8, 10) <= fecha ? u.mes(data) : u.addMes(u.mes(data), 1);
+    return dia > fecha ? fechou : u.addMes(fechou, 1);
+  };
+  c.vence = (nome, m) => { const { dia, estimado } = c.diasCartao(c.cartao(nome) || {}); return { data: u.dataNoMes(m, dia), estimado }; };
   c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l));
   c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m)));
   c.pagFatura = (nome, m) => c.lancs().find(l => l.obs.indexOf(`Fatura ${nome} ${m}`) === 0);
@@ -277,6 +284,16 @@ window.A = window.A || {};
     const sai = dois.find(x => x.valor < 0), entra = dois.find(x => x.valor > 0);
     return sai && entra ? { sai, entra } : null;
   };
+
+  /* ---------- contas fixas ---------- */
+  /* TIPO: "cartão", "débito automático", "conta" (pagar na mão) viram lançamento todo mês;
+     "anual" (paga uma vez por ano, conta 1/12 por mês) e "parcelado" (as parcelas já estão no cartão) não */
+  c.fixas = () => db.linhas('FIXAS').filter(f => f['DESCRIÇÃO']);
+  c.fixaAtiva = f => String(f['ATIVA']).toLowerCase() !== 'não';
+  c.fixaTipo = f => { const t = String(f['TIPO'] || ''); return /anual/i.test(t) ? 'anual' : /parcel/i.test(t) ? 'parcelado' : /cart/i.test(t) ? 'cartão' : /d[eé]bito/i.test(t) ? 'débito' : 'conta'; };
+  c.fixaMensal = f => u.r2(Math.abs(c.num(f['VALOR'])) / (c.fixaTipo(f) === 'anual' ? 12 : 1));
+  c.fixaNoMes = (f, m) => { const nome = u.sem(f['DESCRIÇÃO']).trim(); return c.lancs().find(l => l.id === `LFX-${f.ID}-${m}` || (u.mes(l.data) === m && u.sem(l.desc).trim() === nome)) || null; };
+  c.totalFixas = () => u.r2(u.sum(c.fixas().filter(c.fixaAtiva), c.fixaMensal));
 
   /* ---------- bancos ---------- */
   c.contas = () => db.linhas('CONTAS').filter(x => x['BANCO']);

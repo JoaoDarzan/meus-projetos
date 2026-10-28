@@ -678,3 +678,7 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
 .dica-g{font-size:.8rem;color:var(--muted);margin:-2px 0 12px;line-height:1.35}
 /* modo demonstração: etiqueta "DEMO" no título de cada tela */
 body.demo .bar h1::after,body.demo .hello .hi b::after{content:'DEMO';display:inline-block;margin-left:8px;padding:3px 8px;border-radius:999px;font-size:.62rem;font-weight:800;letter-spacing:.08em;vertical-align:middle;background:#ffd36b;color:#3a2500}
+/* contas fixas */
+.it .v small{display:block;font-size:.68rem;font-weight:600;color:var(--muted)}
+.it.off{opacity:.55}
+.it .okc{font-size:.66rem;font-weight:800;color:var(--in);background:rgba(95,224,161,.12);border-radius:6px;padding:0 6px}
