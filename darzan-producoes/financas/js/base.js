@@ -292,15 +292,16 @@ window.A = window.A || {};
   c.clt = () => {
     const meses = {}, n = (t, re) => { const x = (String(t).match(re) || [])[1]; return x ? c.num(x.replace(/\./g, '').replace(',', '.')) : null; };
     c.lancs().filter(l => l.grupo === 'Renda' && l.cat === 'Salário CLT').forEach(l => {
-      const m = u.mes(l.data), x = meses[m] || (meses[m] = { m, sal: 0, he: 0, ben: 0, bon: 0, liq: 0, horas: 0, bruto: null, inss: null, fgts: null, base: null, comp: null, data: l.data });
+      const m = u.mes(l.data), x = meses[m] || (meses[m] = { m, sal: 0, he: 0, ben: 0, bon: 0, com: 0, liq: 0, horas: 0, bruto: null, inss: null, fgts: null, base: null, comp: null, data: l.data });
       x[CLT_PARTE[l.sub] || 'sal'] += l.valor; x.liq += l.valor;
+      if (l.sub === 'Comissão') x.com += l.valor; /* comissão fora do holerite: conta junto da bonificação, mas aparece com o nome dela */
       if (l.sub === 'Horas extras') x.horas += n(l.desc, /(\d+)\s*h\b/i) || 0;
       if (/holerite de [a-zç]+\/\d{4}/i.test(l.obs)) {
         x.bruto = n(l.obs, /bruto R\$\s*([\d.,]+)/i); x.inss = n(l.obs, /INSS R\$\s*([\d.,]+)/i); x.fgts = n(l.obs, /FGTS R\$\s*([\d.,]+)/i); x.base = n(l.obs, /sal[aá]rio base R\$\s*([\d.,]+)/i);
         x.comp = (l.obs.match(/holerite de ([a-zç]+\/\d{4})/i) || [])[1] || null;
       }
     });
-    return Object.values(meses).sort((a, b) => a.m < b.m ? -1 : 1).map(x => (['sal', 'he', 'ben', 'bon', 'liq'].forEach(k => { x[k] = u.r2(x[k]); }), x));
+    return Object.values(meses).sort((a, b) => a.m < b.m ? -1 : 1).map(x => (['sal', 'he', 'ben', 'bon', 'com', 'liq'].forEach(k => { x[k] = u.r2(x[k]); }), x));
   };
 
   /* ---------- contas fixas ---------- */
