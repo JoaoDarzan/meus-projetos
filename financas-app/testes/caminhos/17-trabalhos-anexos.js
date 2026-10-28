@@ -80,8 +80,13 @@ module.exports = { etapa: 'Trabalhos: vídeos, anexos e parcelas', testes: [
     /* outro cliente: falta só R$ 100 → uma parcela de 100 e mais nenhuma */
     st.tabelas.trabalhos.push(JOB('JT5', { cliente: 'Quase Pago', valor_total: 300, parcela_mensal: 200, dia_da_parcela: 5 }));
     st.tabelas.extrato.push({ id: 'LT-P2', user_id: 'u-joao', data: addMes(m0, -1) + '-05', banco: 'PicPay', descricao: 'quase pago - entrada', grupo: 'Renda', tipo: 'conta', valor: 200, categoria: 'Darzan Produções', subcategoria: 'Casamento', status: 'Pago', parcela: '', obs: 'Trabalho JT5' });
+    /* casamento no mês que vem (dia 10): parcela normal neste mês e o saldo até 7 dias antes do evento */
+    st.tabelas.trabalhos.push(JOB('JT6', { cliente: 'Casa Logo', valor_total: 1000, parcela_mensal: 200, dia_da_parcela: 26, data_do_evento: addMes(m0, 1) + '-10' }));
+    st.tabelas.extrato.push({ id: 'LT-P3', user_id: 'u-joao', data: addMes(m0, -1) + '-26', banco: 'PicPay', descricao: 'entrada', grupo: 'Renda', tipo: 'conta', valor: 200, categoria: 'Darzan Produções', subcategoria: 'Casamento', status: 'Pago', parcela: '', obs: 'Trabalho JT6' });
     const p = await abrir();
     await calmo(p);
+    const ev = st.linhas('extrato').filter(l => /^LJP-JT6-/.test(l.id)).sort((a, b) => a.id < b.id ? -1 : 1).map(l => [l.data, l.valor]);
+    certo(JSON.stringify(ev) === JSON.stringify([[m0 + '-26', 200], [addMes(m0, 1) + '-03', 600]]), 'saldo até a semana do evento: ' + JSON.stringify(ev));
     const ult = st.linhas('extrato').filter(l => /^LJP-JT5-/.test(l.id));
     certo(ult.length === 1 && ult[0].valor === 100, 'falta R$ 100: só uma parcela de R$ 100: ' + JSON.stringify(ult.map(l => [l.id, l.valor])));
     const prev = st.linhas('extrato').filter(l => /^LJP-JT4-/.test(l.id)).sort((a, b) => a.id < b.id ? -1 : 1);

@@ -199,12 +199,15 @@ window.A = window.A || {};
       const mensal = A.c.num(j['PARCELA MENSAL']), total = A.c.num(j['VALOR TOTAL']);
       if (!(mensal > 0) || !(total > 0)) return;
       const recs = A.c.recebimentos(j), dia = parseInt(j['DIA DA PARCELA'], 10) || 1;
+      /* o que faltar é pago até a semana do evento: no mês do evento a parcela é o saldo, até 7 dias antes */
+      const ev = /^\d{4}-\d{2}-\d{2}$/.test(String(j['DATA DO EVENTO'])) ? u.addDias(String(j['DATA DO EVENTO']), -7) : null;
       let resta = u.r2(total - u.sum(recs) - u.sum(A.c.parcelasPrevistas(j)));
       [m0, u.addMes(m0, 1)].forEach(m => {
         const id = `LJP-${j.ID}-${m}`;
         if (resta < 0.01 || db.achar('EXTRATO', id) || recs.some(l => u.mes(l.data) === m)) return;
-        const v = u.r2(Math.min(mensal, resta)); resta = u.r2(resta - v);
-        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(m, dia), 'BANCO': (recs[recs.length - 1] || {}).banco || 'PicPay', 'DESCRIÇÃO': `${j['CLIENTE']} - parcela`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': v, 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': SUBJ[j['TIPO DE EVENTO']] || 'Evento', 'STATUS': 'Previsto', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · parcela mensal` } });
+        const saldo = ev && m >= u.mes(ev), data = saldo ? (m === u.mes(ev) && u.dataNoMes(m, dia) < ev ? u.dataNoMes(m, dia) : ev) : u.dataNoMes(m, dia);
+        const v = saldo ? resta : u.r2(Math.min(mensal, resta)); resta = u.r2(resta - v);
+        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': data, 'BANCO': (recs[recs.length - 1] || {}).banco || 'PicPay', 'DESCRIÇÃO': `${j['CLIENTE']} - ${saldo ? 'restante (até a semana do evento)' : 'parcela'}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': v, 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': SUBJ[j['TIPO DE EVENTO']] || 'Evento', 'STATUS': 'Previsto', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · parcela mensal` } });
       });
     });
     return ops;
