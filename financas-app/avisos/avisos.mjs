@@ -27,7 +27,8 @@ export async function enviarAvisos({ soTeste = false, segredo = process.env.AVIS
     return t ? JSON.parse(t) : null;
   };
   const { avisos, aparelhos } = await rpc('avisos_pendentes', { p_segredo: segredo, p_hoje: hoje });
-  const lista = avisos.filter(a => soTeste ? a.tipo === 'teste' : true);
+  /* só os do próprio dia (um "Amanhã: ..." que ficou para trás já não vale); o de teste vale sempre */
+  const lista = avisos.filter(a => a.tipo === 'teste' || (!soTeste && a.quando === hoje));
   const res = { hoje, avisos: lista.length, enviados: 0, aparelhos: 0, sumiram: 0, falhas: [] };
   if (!lista.length) { res.motivo = 'nenhum aviso para hoje'; return res; }
   const porDono = {};

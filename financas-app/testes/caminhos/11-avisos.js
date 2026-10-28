@@ -61,7 +61,7 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     await p.waitForFunction(() => /até 30 minutos/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
     /* o GitHub roda o envio (antes das 9h, só os de teste) */
     const { enviarAvisos } = await import('../../avisos/avisos.mjs'), { oQueMandar } = await import('../../avisos/enviar.mjs');
-    certo(oQueMandar(new Date('2026-10-27T10:00:00Z')).soTeste && !oQueMandar(new Date('2026-10-27T12:30:00Z')).soTeste, 'regra das 9h');
+    certo(oQueMandar(new Date('2026-10-27T10:00:00Z'), false).soTeste && !oQueMandar(new Date('2026-10-27T12:30:00Z'), false).soTeste && oQueMandar(new Date('2026-10-27T12:30:00Z'), true).soTeste, 'regra das 9h');
     const r = await enviarAvisos({ soTeste: true, segredo: 'segredo-de-teste', publica: null, hoje: HOJE, supabase: { url: `http://127.0.0.1:${st.porta}`, chave: 'chave-de-teste' } });
     certo(r.enviados === 1, 'envio do teste: ' + JSON.stringify(r));
     certo(st.pushes.length === 1, `chegaram ${st.pushes.length} avisos`);
@@ -82,6 +82,7 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     await p.evaluate(v => A.db.lote([{ op: 'salvar', aba: 'APARELHOS', registro: { ID: 'DVELHO', 'NOME': 'iPhone antigo', 'ENDPOINT': v.endpoint, 'P256DH': v.keys.p256dh, 'AUTH': v.keys.auth } }]), velho.sub);
     await preparar(p, [{ 'DESCRIÇÃO': 'Teste aluguel', 'DATA': HOJE, 'STATUS': 'Previsto', 'VALOR': -1200 }, { 'DESCRIÇÃO': 'Teste academia', 'DATA': HOJE, 'STATUS': 'Previsto', 'VALOR': -110 }]);
     await p.evaluate(() => A.sincronizarAvisos()); await calmo(p);
+    st.tabelas.avisos.push({ id: 'AV-velho', user_id: 'u-joao', quando: new Date(Date.parse(HOJE + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10), titulo: 'Amanhã: coisa de ontem', corpo: '', tipo: 'conta', enviado: null });
     const deHoje = st.linhas('avisos').filter(a => a.quando === HOJE && !a.enviado).length;
     certo(deHoje >= 2, 'poucos avisos para hoje: ' + deHoje);
     st.pushStatus.velho = 410; /* esse celular não existe mais */
@@ -93,6 +94,7 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     certo(meus.length === 1, `o celular recebeu ${meus.length} mensagens (devia ser 1 com tudo junto)`);
     const msg = await lerAviso(meus[0], cel);
     certo(new RegExp(`Você tem ${deHoje} avisos`).test(msg.titulo) && /aluguel/.test(msg.corpo) && /academia/.test(msg.corpo), 'mensagem: ' + JSON.stringify(msg));
+    certo(!/coisa de ontem/.test(msg.corpo), 'mandou um aviso de ontem');
     certo(!st.linhas('aparelhos').some(a => a.id === 'DVELHO'), 'o aparelho que sumiu continuou na lista');
     const de2 = await enviarAvisos(conf);
     certo(de2.enviados === 0 && st.pushes.filter(x => x.id === 'cel1').length === 1, 'mandou de novo: ' + JSON.stringify(de2));

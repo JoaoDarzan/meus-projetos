@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '7,37 * * * *'
   workflow_dispatch:
+    inputs:
+      so_teste:
+        description: 'Mandar só os avisos de teste (sim/não)'
+        default: 'sim'
 permissions:
   contents: read
 concurrency:
@@ -23,4 +27,5 @@ jobs:
       - name: Manda os avisos da hora
         env:
           AVISOS_SEGREDO: ${{ secrets.AVISOS_SEGREDO }}
+          SO_TESTE: ${{ github.event.inputs.so_teste }}
         run: node financas-app/avisos/enviar.mjs

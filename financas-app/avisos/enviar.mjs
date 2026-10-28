@@ -2,7 +2,7 @@
    Antes das 9h (horário de Brasília) só manda os avisos de teste; das 9h em diante, todos os do dia que faltam. */
 import { enviarAvisos, horaEmSP } from './avisos.mjs';
 
-export function oQueMandar(agora = new Date()) { return { soTeste: horaEmSP(agora) < 9 }; }
+export function oQueMandar(agora = new Date(), soTeste = process.env.SO_TESTE === 'sim') { return { soTeste: soTeste || horaEmSP(agora) < 9 }; }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (!process.env.AVISOS_SEGREDO) {
