@@ -868,12 +868,14 @@
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
         <h4 class="fl" style="margin:6px 0 0">Avisos no celular</h4>${blocoAvisos()}
+        <h4 class="fl" style="margin:6px 0 0">Acesso do Claude</h4><div id="blClaude" style="display:grid;gap:10px"><p class="c-muted" style="margin:0;font-size:.86rem">Carregando…</p></div>
         <h4 class="fl" style="margin:6px 0 0">Aparelho e dados</h4>
         <button type="button" class="btn2" data-a="faceid" id="btFace" hidden>${u.svg('scan-face')}${A.face && A.face.ligado() ? `Desligar o ${A.face.nome}` : `Abrir o app com ${A.face ? A.face.nome : 'Face ID'}`}</button>
         <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
       </div>
       <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
-      A.face.disponivel().then(ok => { const b = $('btFace'); if (!b) return; b.hidden = false; if (!ok && !A.face.ligado()) { b.disabled = true; b.innerHTML = `${u.svg('scan-face')}Este aparelho não liberou o ${A.face.nome} para o app`; } });
+      blocoClaude();
+    A.face.disponivel().then(ok => { const b = $('btFace'); if (!b) return; b.hidden = false; if (!ok && !A.face.ligado()) { b.disabled = true; b.innerHTML = `${u.svg('scan-face')}Este aparelho não liberou o ${A.face.nome} para o app`; } });
   }
 
   function baixarCopia() {
@@ -965,6 +967,10 @@
     if (!travado && N.sessao && face.precisa()) mostrarTrava();
   });
   addEventListener('pagehide', () => { if (!travado) usou(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || travado || !db.carregado || !N.sessao || Date.now() - (db.quando || 0) < 60000) return;
+    db.atualizar().then(() => render(false)).catch(() => { });
+  });
   setInterval(() => { if (!document.hidden && !travado) usou(); }, 30000);
   A.trava = { usou, ultimoUso };
   ACOES.faceid = async b => {
@@ -1031,6 +1037,44 @@
     },
   };
   A.avisos = avisos;
+  /* ================= acesso do Claude ================= */
+  /* uma chave que o João cria aqui e manda para o Claude no chat: com ela o Claude lê e corrige os dados direto.
+     No Supabase fica só a impressão digital (sha256) da chave; trocar ou desligar aqui corta o acesso na hora. */
+  const claude = {
+    chaveLocal: () => { try { return localStorage.getItem('df-chave-claude') || ''; } catch (e) { return ''; } },
+    async estado() { const r = await N.ler('acesso_claude'); return r[0] || null; },
+    async criar() {
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const chave = 'dfc_' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chave)))).map(b => b.toString(16).padStart(2, '0')).join('');
+      await N.gravar('acesso_claude', [{ id: N.sessao.user.id, hash }]);
+      try { localStorage.setItem('df-chave-claude', chave); } catch (e) { /* nada */ }
+      return chave;
+    },
+    async desligar() { await N.apagar('acesso_claude', [N.sessao.user.id]); try { localStorage.removeItem('df-chave-claude'); } catch (e) { /* nada */ } },
+  };
+  A.claude = claude;
+  async function blocoClaude() {
+    const el = $('blClaude'); if (!el) return;
+    let est;
+    try { est = await claude.estado(); } catch (e) { el.innerHTML = `<div class="aviso">${e.semInternet ? 'Sem internet agora: o acesso do Claude aparece aqui quando a conexão voltar.' : 'O acesso do Claude ainda não está instalado no Supabase (falta rodar o SQL novo).'}</div>`; return; }
+    const chave = claude.chaveLocal();
+    el.innerHTML = est ? `<div class="aviso ok-av">${u.svg('sparkles')} Acesso ligado${est.ultimo_uso ? ` · o Claude usou em ${new Date(est.ultimo_uso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ' · o Claude ainda não usou'}.</div>
+        ${chave ? `<input class="txt" id="clChave" readonly value="${u.esc(chave)}" aria-label="Chave do Claude"><button type="button" class="btn2 pri" data-a="claudeCopiar">${u.svg('file-text')}Copiar a chave</button>` : ''}
+        <button type="button" class="btn2" data-a="claudeCriar">${u.svg('refresh-ccw')}Trocar a chave</button>
+        <button type="button" class="btn2 perigo" data-a="claudeDesligar">${u.svg('x')}Desligar o acesso do Claude</button>`
+      : `<p class="c-muted" style="margin:0;font-size:.86rem">Com uma chave, o Claude lê e corrige seus dados direto, sem você precisar trazer arquivos. Você troca ou desliga quando quiser.</p>
+        <button type="button" class="btn2 pri" data-a="claudeCriar">${u.svg('sparkles')}Criar a chave para o Claude</button>`;
+  }
+  Object.assign(ACOES, {
+    claudeCriar: async b => { b.disabled = true; try { await claude.criar(); await blocoClaude(); toast('Chave criada: toque em Copiar e mande para o Claude no chat'); } catch (e) { b.disabled = false; toast('Não deu para criar a chave: ' + e.message); } },
+    claudeCopiar: () => { const i = $('clChave'), ok = () => toast('Chave copiada: cole no chat do Claude'); try { navigator.clipboard.writeText(i.value).then(ok, () => { i.select(); toast('Selecionei a chave: copie e cole no chat'); }); } catch (e) { i.select(); } },
+    claudeDesligar: async b => {
+      if (b.dataset.certeza !== '1') { b.dataset.certeza = '1'; b.innerHTML = u.svg('x') + 'Toque de novo para desligar'; return; }
+      try { await claude.desligar(); await blocoClaude(); toast('Acesso do Claude desligado'); } catch (e) { toast('Não deu para desligar: ' + e.message); }
+    },
+  });
+
   function blocoAvisos() {
     if (!avisos.suporte() && !window.DF_PUSH_FALSO) return `<div class="aviso">${u.svg('bell')} ${avisos.noIphoneSemIcone() ? 'Para receber avisos no iPhone, abra o app pelo <b>ícone da tela de início</b> (Safari → Compartilhar → Adicionar à Tela de Início) e volte aqui.' : 'Este navegador não recebe avisos.'}</div>`;
     if (avisos.ligado()) return `<div class="aviso ok-av">${u.svg('bell-ring')} Avisos ligados neste aparelho: faturas, contas para pagar e trabalhos, 1 dia antes e no dia, às 9h.</div>

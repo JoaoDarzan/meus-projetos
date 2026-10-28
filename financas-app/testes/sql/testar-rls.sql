@@ -62,3 +62,44 @@ do $$ declare j json; begin
 end $$;
 reset role;
 select 'avisos só com o segredo certo' as resultado;
+
+-- Acesso do Claude: só com a chave certa, só os dados do dono da chave
+set role authenticated;
+set request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+insert into public.acesso_claude (id, hash) values ('aaaaaaaa-0000-0000-0000-000000000001', encode(sha256(convert_to('chave-do-joao', 'UTF8')), 'hex'));
+insert into public.extrato (id, descricao, valor, banco) values ('C1', 'do joao', -10, 'Nubank');
+set request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
+insert into public.extrato (id, descricao, valor) values ('C2', 'do outro', -99);
+select 'outro não vê a chave do joão:', count(*) = 0 from public.acesso_claude;
+reset role;
+set role anon;
+select pg_temp.espera_erro('select * from public.acesso_claude', 'sem login leu a chave');
+select pg_temp.espera_erro($q$select public.claude_ler('chute', 'extrato')$q$, 'chave errada leu os dados');
+select pg_temp.espera_erro($q$select public.claude_dono('chave-do-joao')$q$, 'qualquer um pode chamar claude_dono');
+select pg_temp.espera_erro($q$select public.claude_ler('chave-do-joao', 'aparelhos')$q$, 'leu tabela não permitida');
+select pg_temp.espera_erro($q$select public.claude_ler('chave-do-joao', 'acesso_claude')$q$, 'leu a tabela das chaves');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"salvar","linha":{"id":"C1","senha":"x"}}]')$q$, 'gravou coluna que não existe');
+do $$ declare j json; begin
+  j := public.claude_ler('chave-do-joao', 'extrato');
+  if not (j::text like '%"C1"%') or j::text like '%"C2"%' or j::text like '%do outro%' then raise exception 'FALHOU: Claude leu errado: %', j; end if;
+  -- corrige só a categoria; cria uma linha nova (mesmo mandando outro user_id); tenta mexer e apagar a linha de outra pessoa
+  perform public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"salvar","linha":{"id":"C1","categoria":"Transporte"}},
+    {"tabela":"extrato","op":"salvar","linha":{"id":"C3","descricao":"nova","valor":5,"user_id":"bbbbbbbb-0000-0000-0000-000000000002"}},
+    {"tabela":"extrato","op":"salvar","linha":{"id":"C4","descricao":"vai sumir","valor":1}},
+    {"tabela":"extrato","op":"salvar","linha":{"id":"C2","valor":0}},{"tabela":"extrato","op":"apagar","linha":{"id":"C2"}}]');
+  perform public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"apagar","linha":{"id":"C4"}}]');
+end $$;
+reset role;
+do $$ begin
+  if (select categoria from public.extrato where id = 'C1') <> 'Transporte' or (select descricao from public.extrato where id = 'C1') <> 'do joao' or (select valor from public.extrato where id = 'C1') <> -10 then raise exception 'FALHOU: correção parcial'; end if;
+  if (select user_id from public.extrato where id = 'C3') <> 'aaaaaaaa-0000-0000-0000-000000000001' then raise exception 'FALHOU: linha nova foi para outra pessoa'; end if;
+  if (select valor from public.extrato where id = 'C2') <> -99 then raise exception 'FALHOU: mexeu na linha de outra pessoa'; end if;
+  if exists (select 1 from public.extrato where id = 'C4') then raise exception 'FALHOU: não apagou'; end if;
+  if (select ultimo_uso from public.acesso_claude) is null then raise exception 'FALHOU: não marcou o último uso'; end if;
+end $$;
+-- desligou o acesso: a chave para de funcionar
+delete from public.acesso_claude;
+set role anon;
+select pg_temp.espera_erro($q$select public.claude_ler('chave-do-joao', 'extrato')$q$, 'chave desligada ainda funciona');
+reset role;
+select 'acesso do Claude só com a chave certa e só nos dados do dono' as resultado;

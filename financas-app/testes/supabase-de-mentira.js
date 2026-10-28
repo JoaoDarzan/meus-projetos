@@ -13,6 +13,8 @@ function criar(op = {}) {
   const usuarios = op.usuarios || [{ id: 'u-joao', email: 'joao@teste.com', senha: 'senha-certa' }, { id: 'u-outro', email: 'outro@teste.com', senha: 'outra' }];
   const tabelas = Object.fromEntries(Object.values(T).map(t => [t.tabela, []]));
   const colunas = Object.fromEntries(Object.values(T).map(t => [t.tabela, Object.fromEntries([['id', 'text'], ['user_id', 'uuid'], ...t.colunas.map(c => [c[1], c[2]])])]));
+  /* acesso do Claude (tabela fora do app: só a impressão digital da chave) */
+  tabelas.acesso_claude = []; colunas.acesso_claude = { id: 'text', user_id: 'uuid', hash: 'text', ultimo_uso: 'text', criado_em: 'text' };
   const tokens = {}; /* token → {user, vence} */
   const st = { pushes: [], pushStatus: {}, tabelas, tokens, pedidos: [], fora: false, falharProximo: 0, duracaoToken: op.duracaoToken || 3600, sinal: null };
   let seq = 0;
@@ -72,6 +74,26 @@ function criar(op = {}) {
       }
       if (p === '/auth/v1/logout') return json(res, 204);
       if (p === '/rest/v1/rpc/manter_ativo') { st.sinal = new Date().toISOString(); return json(res, 200, st.sinal); }
+      /* acesso do Claude (como no esquema.sql): a chave abre só os dados do dono */
+      if (p === '/rest/v1/rpc/claude_ler' || p === '/rest/v1/rpc/claude_gravar') {
+        const h = require('crypto').createHash('sha256').update(String(dados && dados.p_chave || '')).digest('hex');
+        const ac = tabelas.acesso_claude.find(x => x.hash === h);
+        if (!ac) return json(res, 400, { message: 'chave do Claude errada ou desligada' });
+        ac.ultimo_uso = new Date().toISOString();
+        const ok = t => Object.values(T).some(x => x.tabela === t) && t !== 'aparelhos';
+        if (p.endsWith('claude_ler')) { if (!ok(dados.p_tabela)) return json(res, 400, { message: 'tabela não permitida' }); return json(res, 200, tabelas[dados.p_tabela].filter(l => l.user_id === ac.user_id)); }
+        let n = 0;
+        for (const o of dados.p_ops) {
+          if (!ok(o.tabela)) return json(res, 400, { message: 'tabela não permitida' });
+          const lista = tabelas[o.tabela], l = Object.assign({}, o.linha); delete l.user_id;
+          const atual = lista.find(x => x.id === l.id);
+          if (o.op === 'apagar') { if (atual && atual.user_id === ac.user_id) { lista.splice(lista.indexOf(atual), 1); n++; } continue; }
+          const erro = confere(o.tabela, l); if (erro) return json(res, 400, { message: erro });
+          if (atual) { if (atual.user_id === ac.user_id) { Object.assign(atual, l); n++; } }
+          else { lista.push(Object.assign(Object.fromEntries(Object.entries(colunas[o.tabela]).map(([k, t]) => [k, t === 'boolean' ? false : null])), l, { user_id: ac.user_id })); n++; }
+        }
+        return json(res, 200, { ok: true, linhas: n });
+      }
       /* funções dos avisos (como no esquema.sql): só com o segredo certo */
       if (p.startsWith('/rest/v1/rpc/aviso') || p === '/rest/v1/rpc/aparelho_sumiu') {
         if (!dados || dados.p_segredo !== SEGREDO_TESTE) return json(res, 400, { message: 'segredo dos avisos errado' });

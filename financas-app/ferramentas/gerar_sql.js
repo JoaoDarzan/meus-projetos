@@ -77,7 +77,77 @@ grant execute on function public.avisos_pendentes(text, date) to anon;
 grant execute on function public.avisos_enviados(text, text[]) to anon;
 grant execute on function public.aparelho_sumiu(text, text) to anon;
 
+-- Acesso do Claude: o João cria uma chave no app (Sua conta → Acesso do Claude). Aqui fica só a impressão digital
+-- dela (sha256). Com a chave, o Claude lê e corrige os dados do João direto; o João troca ou desliga quando quiser.
+create table if not exists public.acesso_claude (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  hash text not null,
+  ultimo_uso timestamptz,
+  criado_em timestamptz not null default now()
+);
+alter table public.acesso_claude enable row level security;
+drop policy if exists "so o dono" on public.acesso_claude;
+create policy "so o dono" on public.acesso_claude for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+revoke all on public.acesso_claude from anon;
+grant select, insert, update, delete on public.acesso_claude to authenticated;
+
+create or replace function public.claude_dono(p_chave text) returns uuid language plpgsql security definer set search_path = '' as $$
+declare u uuid;
+begin
+  select user_id into u from public.acesso_claude where hash = encode(sha256(convert_to(coalesce(p_chave, ''), 'UTF8')), 'hex');
+  if u is null then raise exception 'chave do Claude errada ou desligada'; end if;
+  update public.acesso_claude set ultimo_uso = now() where user_id = u;
+  return u;
+end $$;
+revoke all on function public.claude_dono(text) from public, anon, authenticated;
+
+create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable as $$
+  select p_tabela = any (array[%TABELAS%]);
+$$;
+
+-- ler uma tabela inteira do dono da chave
+create or replace function public.claude_ler(p_chave text, p_tabela text) returns json language plpgsql security definer set search_path = '' as $$
+declare u uuid := public.claude_dono(p_chave); r json;
+begin
+  if not public.claude_tabela_ok(p_tabela) then raise exception 'tabela não permitida: %', p_tabela; end if;
+  execute format('select coalesce(json_agg(t order by t.id), ''[]''::json) from (select * from public.%I where user_id = $1) t', p_tabela) into r using u;
+  return r;
+end $$;
+
+-- gravar ou apagar linhas do dono da chave: [{"tabela": "extrato", "op": "salvar"|"apagar", "linha": {"id": ..., colunas...}}]
+-- "salvar" só mexe nas colunas que vierem; linha nova é criada para o dono; linha de outra pessoa nunca é tocada
+create or replace function public.claude_gravar(p_chave text, p_ops jsonb) returns json language plpgsql security definer set search_path = '' as $$
+declare u uuid := public.claude_dono(p_chave); o jsonb; t text; l jsonb; cols text[]; c text; n int; feitos int := 0;
+begin
+  for o in select * from jsonb_array_elements(p_ops) loop
+    t := o->>'tabela'; l := o->'linha';
+    if not public.claude_tabela_ok(t) then raise exception 'tabela não permitida: %', t; end if;
+    if coalesce(l->>'id', '') = '' then raise exception 'linha sem id na tabela %', t; end if;
+    if o->>'op' = 'apagar' then
+      execute format('delete from public.%I where id = $1 and user_id = $2', t) using l->>'id', u;
+    elsif o->>'op' = 'salvar' then
+      select array_agg(k) into cols from jsonb_object_keys(l) k where k not in ('user_id', 'criado_em', 'atualizado_em');
+      foreach c in array cols loop
+        if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = t and column_name = c) then raise exception 'coluna % não existe em %', c, t; end if;
+      end loop;
+      execute format('insert into public.%I (user_id, %s) select $1, %s from jsonb_populate_record(null::public.%I, $2) on conflict (id) do %s',
+        t, (select string_agg(format('%I', x), ', ') from unnest(cols) x), (select string_agg(format('%I', x), ', ') from unnest(cols) x), t,
+        coalesce('update set ' || (select string_agg(format('%I = excluded.%I', x, x), ', ') from unnest(cols) x where x <> 'id') || format(' where public.%I.user_id = $1', t), 'nothing'))
+        using u, l;
+    else raise exception 'op desconhecida: %', o->>'op';
+    end if;
+    get diagnostics n = row_count; feitos := feitos + n;
+  end loop;
+  return json_build_object('ok', true, 'linhas', feitos);
+end $$;
+revoke all on function public.claude_ler(text, text) from public;
+revoke all on function public.claude_gravar(text, jsonb) from public;
+grant execute on function public.claude_ler(text, text) to anon, authenticated;
+grant execute on function public.claude_gravar(text, jsonb) to anon, authenticated;
+
 select 'Pronto! Tabelas criadas.' as resultado;
 `);
-fs.writeFileSync(path.join(raiz, 'financas-app/supabase/esquema.sql'), out.join('\n'));
+const permitidas = Object.values(T).map(t => t.tabela).filter(t => t !== 'aparelhos').map(t => `'${t}'`).join(', ');
+fs.writeFileSync(path.join(raiz, 'financas-app/supabase/esquema.sql'), out.join('\n').replace('%TABELAS%', permitidas));
 console.log('ok', Object.keys(T).length, 'tabelas');

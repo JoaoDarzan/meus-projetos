@@ -20,6 +20,10 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   Ele só tem o segredo dos avisos (segredo `AVISOS_SEGREDO` do GitHub), que abre apenas a agenda e os
   aparelhos (funções `avisos_pendentes`, `avisos_enviados`, `aparelho_sumiu` do `esquema.sql`), nada das finanças.
   A mensagem vai trancada para o aparelho (RFC 8291) e assinada (VAPID), em `avisos/push.mjs`.
+- **Acesso do Claude**: o João cria uma chave no app (Sua conta → Acesso do Claude) e passa para o Claude, que lê e
+  corrige os dados direto (`ferramentas/claude.py`, funções `claude_ler` e `claude_gravar` do `esquema.sql`).
+  O Supabase guarda só o sha256 da chave (tabela `acesso_claude`); a chave abre apenas os dados do João, nunca vai
+  para o GitHub, e trocar ou desligar no app corta o acesso na hora.
 
 ## Pastas
 | Onde | O que tem |
@@ -30,6 +34,7 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
 | `darzan-producoes/financas/js/telas.js` | as telas e formulários |
 | `supabase/esquema.sql` | cria as tabelas e as regras de segurança (gerado por `ferramentas/gerar_sql.js`) |
 | `testes/` | testes automáticos (rodam no GitHub a cada mudança) |
+| `ferramentas/claude.py` | o Claude lê e corrige os dados com a chave do Acesso do Claude |
 | `ferramentas/gerar_importacao.py` | transforma a Planilha 2.0 no arquivo que o app importa |
 | `apps-script/` | scripts que montaram a Planilha 2.0 (histórico; a planilha virou backup) |
 
