@@ -6,7 +6,7 @@
   --bg:#050a18; --glass:rgba(255,255,255,.055); --glass-2:rgba(255,255,255,.09); --stroke:rgba(255,255,255,.11);
   --fg:#f3f6ff; --muted:#9eabcd; --faint:#66739a;
   --blue:#4c7dff; --blue-hi:#8fb0ff; --in:#5fe0a1; --out:#ff8f8f; --warn:#ffc86b; --xp:#ffd36b;
-  --s-clt:#4f8dff; --s-dz:#b8842f; --s-jpl:#b062c6; --s-out:#66739a;
+  --s-clt:#4f8dff; --clt-sal:#3987e5; --clt-ben:#d95926; --clt-bon:#199e70; --s-dz:#b8842f; --s-jpl:#b062c6; --s-out:#66739a;
   --hero:linear-gradient(165deg,#6b95ff 0%,#3563ea 42%,#1c3aa6 78%,#13286f 100%);
   --nu:linear-gradient(135deg,#c3b0ff 0%,#8466f0 48%,#4b2fb4 100%);
   --mp:linear-gradient(135deg,#b8e2ff 0%,#5aa0f2 48%,#2a5fcf 100%);
@@ -682,3 +682,7 @@ body.demo .bar h1::after,body.demo .hello .hi b::after{content:'DEMO';display:in
 .it .v small{display:block;font-size:.68rem;font-weight:600;color:var(--muted)}
 .it.off{opacity:.55}
 .it .okc{font-size:.66rem;font-weight:800;color:var(--in);background:rgba(95,224,161,.12);border-radius:6px;padding:0 6px}
+/* meu trabalho: destaques */
+.dest{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;font-size:.88rem;line-height:1.4;color:var(--muted)}
+.dest svg{width:20px;height:20px;color:#8fb0ff}
+.dest b{color:var(--fg)}

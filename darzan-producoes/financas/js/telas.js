@@ -290,7 +290,7 @@
       <p class="aviso">Se em “Onde está” você escrever o nome de uma caixinha (ex.: “Caixinha Reserva”), o app usa o saldo dela como “já guardado”.</p></section>`;
   };
   FIN.relatorios = () => {
-    const s = seg('rseg', ui.rseg, [['mes', 'Mês'], ['ano', 'Ano'], ['darzan', 'Darzan'], ['jpl', 'JPL SOM']]);
+    const s = seg('rseg', ui.rseg, [['mes', 'Mês'], ['ano', 'Ano'], ['darzan', 'Darzan'], ['jpl', 'JPL SOM'], ['clt', 'Meu trabalho']]);
     return `<div class="sec">${s}</div>` + (REL[ui.rseg] || REL.mes)();
   };
   const REL = {};
@@ -318,11 +318,34 @@
       <section class="sec"><div class="sec-h"><h2>Mês a mês</h2></div><div class="panel"><div class="chart" id="chFonte" data-fonte="${nome}"></div></div></section>
       <section class="sec"><div class="sec-h"><h2>Entradas do mês</h2></div><div class="panel" style="padding:6px 10px">${doMes.map(linhaL).join('') || vazio(c.icone(nome), 'Nada neste mês.')}</div></section>`;
   };
+  /* meu trabalho (CLT): quanto entrou de cada holerite, o que mudou e o que a empresa guardou de FGTS */
+  const CLT_COR = [['sal', 'Salário e horas extras', '--clt-sal'], ['ben', 'Vale-transporte e refeição', '--clt-ben'], ['bon', 'Bonificação', '--clt-bon']];
+  REL.clt = () => {
+    const ps = c.clt(); if (!ps.length) return vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
+    const ult = ps[ps.length - 1], tot = u.sum(ps, p => p.liq), fgts = u.sum(ps, p => p.fgts || 0), inss = u.sum(ps, p => p.inss || 0);
+    const nomeComp = p => p.comp ? u.cap(p.comp.replace('/', ' de ')) : 'pago em ' + u.nomeMes(p.m).toLowerCase();
+    const dest = [];
+    const bases = ps.filter(p => p.base);
+    for (let i = 1; i < bases.length; i++) if (bases[i].base > bases[i - 1].base) dest.push(['trending-up', `<b>Aumento de salário</b> em ${nomeComp(bases[i]).toLowerCase()}: de ${u.k0(bases[i - 1].base)} para ${u.k0(bases[i].base)} (+${u.pct(bases[i].base / bases[i - 1].base - 1)}).`]);
+    const bons = ps.filter(p => p.bon > 0), hb = bons.filter(p => p.comp); /* a comparação só usa bônus de holerite */
+    if (bons.length) dest.push(['award', `<b>Bonificação</b> em ${bons.length} ${bons.length > 1 ? 'meses' : 'mês'}: ${u.k0(u.sum(bons, p => p.bon))} no total${hb.length > 1 ? `, de ${u.k0(hb[0].bon)} para ${u.k0(hb[hb.length - 1].bon)} nos holerites (${hb[hb.length - 1].bon >= hb[0].bon ? '+' : ''}${u.pct(hb[hb.length - 1].bon / hb[0].bon - 1)})` : ''}.`]);
+    const hes = ps.filter(p => p.he > 0);
+    if (hes.length) dest.push(['clock', `<b>Horas extras</b>: ${u.sum(hes, p => p.horas)} h em ${hes.length} ${hes.length > 1 ? 'meses' : 'mês'}, ${u.k0(u.sum(hes, p => p.he))} a mais no salário.`]);
+    if (fgts) dest.push(['piggy-bank', `<b>FGTS</b>: a empresa já guardou ${u.k0(fgts)} para você (não entra na conta, fica no FGTS).`]);
+    if (inss) dest.push(['receipt', `<b>INSS</b> descontado: ${u.k0(inss)} no total (conta para a sua aposentadoria).`]);
+    const lista = ps.slice().reverse().map(p => `<div class="it"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.bon ? 'bônus ' + u.k0(p.bon) : '', p.horas ? p.horas + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>recebido ${u.dm(p.data)}</small></div></div>`).join('');
+    return `<section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
+      <section class="sec"><div class="kpis"><div class="kpi"><span>Recebido no ano</span><b class="num">${u.brl(tot)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.brl(tot / ps.length)}</b></div>${fgts ? `<div class="kpi"><span>FGTS guardado</span><b class="num">${u.brl(fgts)}</b></div>` : ''}${ult.base ? `<div class="kpi"><span>Salário base</span><b class="num">${u.brl(ult.base)}</b></div>` : ''}</div></section>
+      <section class="sec"><div class="sec-h"><h2>O que entrou de cada salário</h2></div><div class="panel"><div class="lgd">${CLT_COR.map(([, n, v]) => `<span><i style="background:var(${v})"></i>${n}</span>`).join('')}</div><div class="chart" id="chClt"></div></div></section>
+      ${dest.length ? `<section class="sec"><div class="sec-h"><h2>${u.svg('sparkles')}Destaques</h2></div><div class="panel" style="display:grid;gap:12px">${dest.map(([i, t]) => `<div class="dest">${u.svg(i)}<span>${t}</span></div>`).join('')}</div></section>` : ''}
+      <section class="sec"><div class="sec-h"><h2>Holerites</h2></div><div class="panel" style="padding:4px 10px 10px">${lista}</div></section>`;
+  };
   REL.darzan = relFonte('Darzan Produções');
   REL.jpl = relFonte('JPL SOM');
   DEPOIS.fin = () => {
     if (ui.fseg === 'revisar') DEPOIS.revisar();
     if (ui.fseg === 'relatorios' && ui.rseg === 'ano') { const ms = c.mesesPassados().concat(c.doMes(u.mes(u.hoje())).length ? [u.mes(u.hoje())] : []); colunas('chAno', ms.map(m => { const r = c.resumo(m); return { l: u.CURTO[+m.slice(5) - 1], parts: Object.entries(c.FONTES).map(([k, v]) => ({ k, v: r.fonte[k], c: v })), line: { k: 'Saiu', v: r.saiu } }; })); }
+    if ($('chClt')) colunas('chClt', c.clt().map(p => ({ l: u.CURTO[+p.m.slice(5) - 1], parts: CLT_COR.map(([k, n, v]) => ({ k: n, v: k === 'sal' ? p.sal + p.he : p[k], c: v })) })));
     const el = $('chFonte'); if (el) { const nome = el.dataset.fonte, ms = c.mesesPassados().concat([u.mes(u.hoje())]); colunas('chFonte', ms.map(m => ({ l: u.CURTO[+m.slice(5) - 1], parts: [{ k: nome, v: c.resumo(m).fonte[nome], c: c.FONTES[nome] }] }))); }
     const b = $('busca'); if (b) b.addEventListener('input', () => { ui.q = b.value; const pos = b.selectionStart; render(false); const n = $('busca'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
   };
