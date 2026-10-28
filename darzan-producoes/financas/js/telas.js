@@ -695,10 +695,13 @@
         <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
+        <button type="button" class="btn2" data-a="faceid" id="btFace" hidden>${u.svg('scan-face')}${A.face && A.face.ligado() ? `Desligar o ${A.face.nome}` : `Abrir o app com ${A.face ? A.face.nome : 'Face ID'}`}</button>
         <button type="button" class="btn2 perigo" data-a="sair">${u.svg('log-out')}Sair deste aparelho</button>
       </div>
       <p class="c-muted" style="font-size:.8rem;margin:16px 0 0">${db.pendentes() ? `${db.pendentes()} mudança(s) esperando internet para salvar.` : 'Tudo salvo no Supabase.'}</p>`, null);
+      A.face.disponivel().then(ok => { const b = $('btFace'); if (b) b.hidden = !ok; });
   }
+
   function baixarCopia() {
     const blob = new Blob([JSON.stringify(db.copia(), null, 1)], { type: 'application/json' }), a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `darzan-dados-${u.hoje()}.json`; document.body.appendChild(a); a.click();
@@ -716,8 +719,71 @@
   });
   N.aoSair = () => mostrarLogin('Sua sessão terminou. Entre de novo.');
 
+  /* ================= Face ID (trava do aparelho) ================= */
+  /* Usa a biometria do próprio aparelho (WebAuthn). Fica só neste aparelho: o login continua salvo
+     e o app só mostra os valores depois do Face ID. Se falhar, dá para entrar com a senha. */
+  const face = {
+    nome: /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'Face ID' : 'biometria do aparelho',
+    chave: () => 'df-faceid-' + ((N.sessao && N.sessao.user.id) || 'x'),
+    ligado: () => { try { return !!localStorage.getItem(face.chave()); } catch (e) { return false; } },
+    disponivel: async () => { try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; } },
+    b64: buf => btoa(String.fromCharCode(...new Uint8Array(buf))),
+    bytes: b64 => Uint8Array.from(atob(b64), ch => ch.charCodeAt(0)),
+    desafio: () => crypto.getRandomValues(new Uint8Array(32)),
+    async ligar() {
+      const s = N.sessao;
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge: face.desafio(), rp: { name: 'Darzan Finanças' },
+        user: { id: new TextEncoder().encode(s.user.id), name: s.user.email, displayName: s.user.email },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' }, timeout: 60000,
+      } });
+      localStorage.setItem(face.chave(), face.b64(cred.rawId));
+    },
+    desligar: () => { try { localStorage.removeItem(face.chave()); } catch (e) { /* nada */ } },
+    async conferir() {
+      const id = localStorage.getItem(face.chave());
+      await navigator.credentials.get({ publicKey: { challenge: face.desafio(), allowCredentials: [{ type: 'public-key', id: face.bytes(id) }], userVerification: 'required', timeout: 60000 } });
+    },
+  };
+  A.face = face;
+  let travado = false, saiuEm = 0;
+  function mostrarTrava() {
+    travado = true;
+    $('trFoto').innerHTML = foto(); $('trErro').hidden = true;
+    $('trMsg').textContent = `Use o ${face.nome} para abrir`; $('trBtnTxt').textContent = `Abrir com ${face.nome}`;
+    fechar(); $('trava').hidden = false; $('trava').classList.remove('out'); splash.sair();
+  }
+  /* ao abrir, tenta sozinho; se o aparelho exigir um toque antes, fica o botão (sem mensagem de erro) */
+  async function destravar(porToque) {
+    const er = $('trErro'); er.hidden = true;
+    try {
+      await face.conferir();
+      travado = false;
+      const T = $('trava'); T.classList.add('out'); setTimeout(() => T.hidden = true, 450);
+      if (!db.carregado) await abrirApp(); else render(false);
+    } catch (e) {
+      if (porToque !== true) return;
+      er.textContent = e && e.name === 'NotAllowedError' ? `Não deu certo. Toque no botão para tentar de novo.` : `O ${face.nome} não funcionou aqui. Entre com a senha.`;
+      er.hidden = false;
+    }
+  }
+  $('trBtn').addEventListener('click', () => destravar(true));
+  $('trSenha').addEventListener('click', () => { face.desligar(); N.sair(); db.abas = {}; db.carregado = false; $('trava').hidden = true; travado = false; mostrarLogin('Entre com a senha. Depois dá para ligar o Face ID de novo em “Sua conta”.'); });
+  /* voltou para o app depois de um tempo: pede o Face ID de novo */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { saiuEm = Date.now(); return; }
+    if (!travado && saiuEm && face.ligado() && N.sessao && Date.now() - saiuEm > 2 * 60 * 1000) { mostrarTrava(); destravar(); }
+  });
+  ACOES.faceid = async b => {
+    if (face.ligado()) { face.desligar(); toast(`${face.nome} desligado neste aparelho`); return formConta(); }
+    try { await face.ligar(); toast(`Pronto! O app agora abre com ${face.nome}`); formConta(); }
+    catch (e) { toast(e && e.name === 'NotAllowedError' ? 'Cancelado.' : `Não consegui ligar o ${face.nome}: ${e.message}`); }
+  };
+
   async function iniciar() {
     if (!N.sessao) return mostrarLogin();
+    if (face.ligado()) { mostrarTrava(); return destravar(); }
     await abrirApp();
   }
   A.iniciar = iniciar;

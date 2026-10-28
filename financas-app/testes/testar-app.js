@@ -11,7 +11,7 @@ fs.mkdirSync(CAPTURAS, { recursive: true });
 let falhas = 0, total = 0;
 
 const brl = t => +String(t).replace(/[^\d,−-]/g, '').replace(',', '.').replace('−', '-');
-async function abrir(b, st, { larg = 390, logar = true } = {}) {
+async function abrir(b, st, { larg = 390, logar = true, host = '127.0.0.1' } = {}) {
   const ctx = await b.newContext({ viewport: { width: larg, height: 844 }, timezoneId: 'America/Sao_Paulo', locale: 'pt-BR' });
   await ctx.addInitScript(([hoje, porta]) => {
     window.DF_CONFIG = { url: 'http://127.0.0.1:' + porta, chave: 'chave-de-teste' };
@@ -24,7 +24,7 @@ async function abrir(b, st, { larg = 390, logar = true } = {}) {
   p.on('pageerror', e => p.erros.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) p.erros.push(m.text()); });
   await p.route('**/fonts.*/**', r => r.abort());
-  await p.goto(`http://127.0.0.1:${st.porta}/financas/`);
+  await p.goto(`http://${host}:${st.porta}/financas/`);
   if (logar) await entrar(p);
   return p;
 }
@@ -319,6 +319,31 @@ async function teste(nome, fn, { semear = true, duracaoToken } = {}) {
     await p.fill('#lgEmail', 'outro@teste.com'); await p.fill('#lgSenha', 'outra'); await p.click('#lgBtn');
     await p.waitForSelector('#impArq', { state: 'attached' });
     certo(await p.evaluate(() => A.db.linhas('EXTRATO').length === 0), 'viu dados de outro');
+  });
+
+  await teste('Face ID: liga, abre o app com o rosto e, se falhar, entra com a senha', async (st, abrir) => {
+    const p = await abrir({ host: 'localhost' }); /* biometria exige um nome de site, não número */
+    const cdp = await p.context().newCDPSession(p);
+    await cdp.send('WebAuthn.enable');
+    const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+    await clica(p, '#view [data-a=conta]');
+    await p.waitForSelector('#btFace:not([hidden])');
+    await clica(p, '#btFace');
+    await p.waitForFunction(() => /abre com/.test(document.getElementById('toast').textContent));
+    await p.reload();
+    await p.waitForFunction(() => document.getElementById('trava').hidden && document.querySelector('#view .hero'), null, { timeout: 15000 });
+    /* rosto não reconhecido: fica travado e oferece a senha */
+    await cdp.send('WebAuthn.setUserVerified', { authenticatorId, isUserVerified: false });
+    await p.reload();
+    await p.waitForSelector('#trava:not([hidden])');
+    await clica(p, '#trBtn');
+    await p.waitForSelector('#trErro:not([hidden])');
+    certo(await p.evaluate(() => !document.getElementById('trava').hidden), 'abriu sem reconhecer o rosto');
+    await clica(p, '#trSenha');
+    await p.waitForSelector('#login:not([hidden])');
+    await entrar(p);
+    certo(await p.evaluate(() => !A.face.ligado()), 'Face ID continuou ligado depois de entrar com a senha');
+    p.erros = [];
   });
 
   await teste('sair do aparelho volta para o login e não deixa a sessão salva', async (st, abrir) => {

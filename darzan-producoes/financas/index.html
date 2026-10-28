@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=2">
+<link rel="stylesheet" href="css/estilo.css?v=3">
 </head>
 <body>
 <div class="splash" id="splash" role="status">
@@ -43,6 +43,18 @@
   </div>
 </div>
 
+<div class="login" id="trava" hidden>
+  <span class="blob b1"></span><span class="blob b2"></span>
+  <div class="lg-wrap">
+    <div class="lg-card" style="text-align:center">
+      <div class="lg-head"><div class="ringw" id="trFoto"></div><h1>Darzan Finanças</h1><p id="trMsg">Use o Face ID para abrir</p></div>
+      <button class="lg-btn pri" type="button" id="trBtn" style="margin-top:20px"><span data-i="scan-face"></span><span id="trBtnTxt">Abrir com Face ID</span></button>
+      <p class="erro-lg" id="trErro" role="alert" hidden></p>
+      <button class="lg-btn" type="button" id="trSenha" style="margin-top:10px">Entrar com a senha</button>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="app">
   <aside class="side" aria-label="Menu">
     <div class="sbrand" id="sbrand"></div>
@@ -60,11 +72,11 @@
 <div class="sync" id="sync" hidden></div>
 
 <script>window.FOTO_JOAO = '../img/perfil-joao-darzan.jpg';</script>
-<script src="js/icones.js?v=2"></script>
-<script src="js/tabelas.js?v=2"></script>
-<script src="js/nuvem.js?v=2"></script>
-<script src="js/base.js?v=2"></script>
-<script src="js/telas.js?v=2"></script>
+<script src="js/icones.js?v=3"></script>
+<script src="js/tabelas.js?v=3"></script>
+<script src="js/nuvem.js?v=3"></script>
+<script src="js/base.js?v=3"></script>
+<script src="js/telas.js?v=3"></script>
 <script>
   document.querySelectorAll('[data-i]').forEach(el => { el.outerHTML = A.u.svg(el.dataset.i); });
   document.getElementById('lgOlho').innerHTML = A.u.svg('eye');
