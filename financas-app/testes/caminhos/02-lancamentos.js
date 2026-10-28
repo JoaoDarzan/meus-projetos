@@ -62,6 +62,13 @@ module.exports = { etapa: 'Lançamentos', testes: [
     await clica(p, '[data-a=editL][data-id="LTESTE-TR"]');
     await p.fill('#fV', '1600'); await clica(p, '#s2 .save'); await calmo(p);
     igual(st.linhas('extrato').find(r => r.id === 'LTESTE-TR').valor, 1600, 'transferência que entrou continua positiva');
+    // estorno no cartão (gasto com valor positivo): editar não vira gasto
+    st.tabelas.extrato.push({ id: 'LTESTE-EST', user_id: 'u-joao', data: HOJE, banco: 'Nubank', descricao: 'Estorno de compra', grupo: 'Desejos', tipo: 'cartão', valor: 80, categoria: '', subcategoria: '', status: 'Pago', obs: '' });
+    await p.evaluate(() => A.db.atualizar().then(() => A.render(false)));
+    await clica(p, '[data-a=editL][data-id="LTESTE-EST"]');
+    await p.selectOption('#fC', 'Compras'); await clica(p, '#s2 .save'); await calmo(p);
+    const est = st.linhas('extrato').find(r => r.id === 'LTESTE-EST');
+    certo(est.valor === 80 && est.categoria === 'Compras', 'estorno continua positivo depois de editar: ' + JSON.stringify(est));
   }],
   ['guardei: vai para a caixinha e o saldo dela sobe', async (st, abrir) => {
     const p = await abrir();

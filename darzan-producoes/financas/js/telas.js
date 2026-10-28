@@ -403,7 +403,7 @@
     const status = prev ? 'Previsto' : 'Pago';
     const obsFinal = transf ? l.obs : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], obs].filter(Boolean).join(' · ');
     if (l) {
-      db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': transf ? (l.valor < 0 ? -v : v) : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
+      db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': (transf || tipo === 'saida') && l.valor > 0 ? v : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
       fechar(); render(false);
       /* mudou a categoria: oferece mudar também os outros com a mesma descrição */
       const k = c.chave(desc), outros = !transf && (cat !== l.cat || sub !== l.sub) && k ? c.lancs().filter(x => x.id !== l.id && c.chave(x.desc) === k && (x.cat !== cat || x.sub !== sub) && x.grupo === l.grupo) : [];
