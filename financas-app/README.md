@@ -3,7 +3,7 @@
 App pessoal de finanças do João Darzan: contas, cartões, trabalhos da Darzan Produções e da JPL SOM,
 equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de início) e no computador.
 
-**No ar em:** https://darzanproducoes.netlify.app/financas/ (com login; só o João entra)
+**No ar em:** https://joaodarzan.github.io/meus-projetos/financas/ (GitHub Pages, sem selo) e https://darzanproducoes.netlify.app/financas/ (com login; só o João entra)
 
 ## Como funciona
 - **App** (`darzan-producoes/financas/`): páginas simples (HTML, CSS e JS, sem biblioteca de fora), publicadas pelo
