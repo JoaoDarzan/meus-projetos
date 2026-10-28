@@ -1,0 +1,26 @@
+# Avisos no celular do app de finanças: a cada 30 minutos manda os avisos que chegaram a hora (faturas, contas, trabalhos).
+# Precisa do segredo AVISOS_SEGREDO (Settings → Secrets and variables → Actions). Código em financas-app/avisos/.
+name: Avisos no celular
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: avisos
+  cancel-in-progress: false
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: financas-app/avisos
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Manda os avisos da hora
+        env:
+          AVISOS_SEGREDO: ${{ secrets.AVISOS_SEGREDO }}
+        run: node financas-app/avisos/enviar.mjs

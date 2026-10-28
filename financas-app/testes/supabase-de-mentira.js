@@ -46,12 +46,6 @@ function criar(op = {}) {
         st.pushes.push({ id, headers: req.headers, corpo: bruto, status });
         res.writeHead(status); return res.end();
       }
-      /* o mesmo que a função avisos-agora do Netlify faz, apontando para este Supabase */
-      if (p === '/__avisos-agora') {
-        if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': '*' }); return res.end(); }
-        return import('../../netlify/lib/avisos.mjs').then(m => m.enviarAvisos({ soTeste: u.query.so === 'teste', segredo: SEGREDO_TESTE, publica: null, hoje: st.hoje || undefined, supabase: { url: `http://127.0.0.1:${servidor.address().port}`, chave: 'chave-de-teste' } }))
-          .then(r => json(res, r.erro ? 500 : 200, r), e => json(res, 500, { erro: e.message }));
-      }
       if (!p.startsWith('/auth/') && !p.startsWith('/rest/')) {
         const arq = path.join(SITE, decodeURIComponent(p.endsWith('/') ? p + 'index.html' : p));
         if (!arq.startsWith(SITE) || !fs.existsSync(arq) || fs.statSync(arq).isDirectory()) { res.writeHead(404); return res.end('não achei'); }

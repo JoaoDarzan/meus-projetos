@@ -1,5 +1,6 @@
 /* Pega no Supabase os avisos de hoje e manda para os aparelhos do João.
-   Só precisa do segredo dos avisos (variável AVISOS_SEGREDO no Netlify): com ele dá para ler só a agenda
+   Roda no GitHub a cada 30 minutos (.github/workflows/avisos.yml, script enviar.mjs).
+   Só precisa do segredo dos avisos (segredo AVISOS_SEGREDO do GitHub): com ele dá para ler só a agenda
    de avisos e os aparelhos (funções do esquema.sql), nada das finanças. */
 import { chavesDoSegredo, mandar } from './push.mjs';
 
@@ -7,6 +8,7 @@ export const SUPABASE = { url: 'https://sczpyzcozcaibyzekmau.supabase.co', chave
 export const PUBLICA = 'BAnX0hPDbPdvv3yWufNnEvrbzfOK1aXIZ5BSyXL9qSCuxF548EjP9iDG5NsCz-IimHc_xTqJjJod-cOakGoK82o';
 export const APP = 'https://joaodarzan.github.io/meus-projetos/financas/';
 export const hojeEmSP = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d);
+export const horaEmSP = (d = new Date()) => +new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hourCycle: 'h23' }).format(d);
 
 /* junta os avisos do dia numa mensagem só (se for mais de um) */
 export function mensagem(lista) {
@@ -15,9 +17,9 @@ export function mensagem(lista) {
 }
 
 export async function enviarAvisos({ soTeste = false, segredo = process.env.AVISOS_SEGREDO, supabase = SUPABASE, publica = PUBLICA, hoje = hojeEmSP(), enviar = mandar } = {}) {
-  if (!segredo) return { erro: 'falta a variável AVISOS_SEGREDO no Netlify' };
+  if (!segredo) return { erro: 'falta o segredo AVISOS_SEGREDO no GitHub' };
   const chaves = chavesDoSegredo(segredo);
-  if (publica && chaves.publica !== publica) return { erro: 'o AVISOS_SEGREDO do Netlify não combina com o app' };
+  if (publica && chaves.publica !== publica) return { erro: 'o AVISOS_SEGREDO não combina com o app' };
   const rpc = async (fn, corpo) => {
     const r = await fetch(`${supabase.url}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: supabase.chave, 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
     const t = await r.text();

@@ -9,7 +9,7 @@ function celular(st, nome = 'cel1') {
   const auth = crypto.randomBytes(16).toString('base64url');
   return { privada: ua.getPrivateKey().toString('base64url'), sub: { endpoint: `http://127.0.0.1:${st.porta}/__push/${nome}`, keys: { p256dh: ua.getPublicKey().toString('base64url'), auth } } };
 }
-const lerAviso = async (push, cel) => { const { destrancar } = await import('../../../netlify/lib/push.mjs'); return JSON.parse(destrancar(push.corpo, cel.privada, cel.sub.keys.auth)); };
+const lerAviso = async (push, cel) => { const { destrancar } = await import('../../avisos/push.mjs'); return JSON.parse(destrancar(push.corpo, cel.privada, cel.sub.keys.auth)); };
 const avisosDe = (st, txt) => st.linhas('avisos').filter(a => (a.titulo + ' ' + a.corpo).toLowerCase().includes(txt));
 
 module.exports = { etapa: 'Avisos no celular', testes: [
@@ -58,7 +58,12 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     certo(ap.length === 1 && ap[0].endpoint === cel.sub.endpoint && ap[0].p256dh === cel.sub.keys.p256dh, 'aparelho não ficou salvo');
     await p.waitForSelector('#s2 [data-a=avisoTeste]');
     await clica(p, '#s2 [data-a=avisoTeste]');
-    await p.waitForFunction(() => /Aviso mandado/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+    await p.waitForFunction(() => /até 30 minutos/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+    /* o GitHub roda o envio (antes das 9h, só os de teste) */
+    const { enviarAvisos } = await import('../../avisos/avisos.mjs'), { oQueMandar } = await import('../../avisos/enviar.mjs');
+    certo(oQueMandar(new Date('2026-10-27T10:00:00Z')).soTeste && !oQueMandar(new Date('2026-10-27T12:30:00Z')).soTeste, 'regra das 9h');
+    const r = await enviarAvisos({ soTeste: true, segredo: 'segredo-de-teste', publica: null, hoje: HOJE, supabase: { url: `http://127.0.0.1:${st.porta}`, chave: 'chave-de-teste' } });
+    certo(r.enviados === 1, 'envio do teste: ' + JSON.stringify(r));
     certo(st.pushes.length === 1, `chegaram ${st.pushes.length} avisos`);
     const pu = st.pushes[0];
     certo(pu.headers['content-encoding'] === 'aes128gcm' && /^vapid t=.+, k=/.test(pu.headers.authorization) && pu.headers.ttl, 'cabeçalhos do aviso: ' + JSON.stringify(pu.headers));
@@ -80,7 +85,7 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     const deHoje = st.linhas('avisos').filter(a => a.quando === HOJE && !a.enviado).length;
     certo(deHoje >= 2, 'poucos avisos para hoje: ' + deHoje);
     st.pushStatus.velho = 410; /* esse celular não existe mais */
-    const { enviarAvisos } = await import('../../../netlify/lib/avisos.mjs');
+    const { enviarAvisos } = await import('../../avisos/avisos.mjs');
     const conf = { segredo: 'segredo-de-teste', publica: null, hoje: HOJE, supabase: { url: `http://127.0.0.1:${st.porta}`, chave: 'chave-de-teste' } };
     const r = await enviarAvisos(conf);
     certo(r.enviados === deHoje, 'resultado: ' + JSON.stringify(r));

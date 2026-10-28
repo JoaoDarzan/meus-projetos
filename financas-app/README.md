@@ -15,10 +15,11 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   a cada 3 dias) e, de reserva, Netlify (`netlify/functions/manter-supabase-acordado.mjs`, todo dia).
 
 - **Avisos no celular** (Web Push): o app monta a agenda (tabela `avisos`: faturas, contas para pagar na mão, tarefas e
-  trabalhos, 1 dia antes e no dia). Todo dia às 9h a função `netlify/functions/avisos.mjs` manda os do dia para os aparelhos
-  (tabela `aparelhos`). Ela só tem o segredo dos avisos (variável `AVISOS_SEGREDO` no Netlify), que abre apenas a agenda e os
+  trabalhos, 1 dia antes e no dia). A cada 30 minutos o GitHub (`.github/workflows/avisos.yml` → `avisos/enviar.mjs`) manda os
+  que chegaram a hora (a partir das 9h; o de teste a qualquer hora) para os aparelhos (tabela `aparelhos`).
+  Ele só tem o segredo dos avisos (segredo `AVISOS_SEGREDO` do GitHub), que abre apenas a agenda e os
   aparelhos (funções `avisos_pendentes`, `avisos_enviados`, `aparelho_sumiu` do `esquema.sql`), nada das finanças.
-  A mensagem vai trancada para o aparelho (RFC 8291) e assinada (VAPID), em `netlify/lib/push.mjs`.
+  A mensagem vai trancada para o aparelho (RFC 8291) e assinada (VAPID), em `avisos/push.mjs`.
 
 ## Pastas
 | Onde | O que tem |
