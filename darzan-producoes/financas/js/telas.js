@@ -561,6 +561,7 @@
     const v = $('view');
     v.innerHTML = (R[ui.view] || R.inicio)();
     if (DEPOIS[ui.view]) DEPOIS[ui.view]();
+    corDoTopo();
     if (anim) animar(document); else v.querySelectorAll('.rg').forEach(k => k.style.strokeDashoffset = k.dataset.off);
   }
   A.render = render;
@@ -607,7 +608,8 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
   document.addEventListener('pointermove', e => { const k = e.target.closest && e.target.closest('.tilt'); if (!k || RM || e.pointerType !== 'mouse') return; const r = k.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; k.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 8}deg) translateY(-3px)`; });
   document.addEventListener('pointerout', e => { const k = e.target.closest && e.target.closest('.tilt'); if (k && !k.contains(e.relatedTarget)) k.style.transform = ''; });
-  addEventListener('scroll', () => { const t = $('tip'); if (t) t.hidden = true; }, { passive: true });
+  const corDoTopo = () => document.body.classList.toggle('topo-azul', ui.view === 'inicio' && scrollY < 40 && !!document.querySelector('#view .hero'));
+  addEventListener('scroll', () => { const t = $('tip'); if (t) t.hidden = true; corDoTopo(); }, { passive: true });
   $('scrim2').addEventListener('click', e => { if (e.target.id === 'scrim2') fechar(); });
 
   /* ================= sincronia ================= */

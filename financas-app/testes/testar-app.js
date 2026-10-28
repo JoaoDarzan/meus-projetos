@@ -354,6 +354,40 @@ async function teste(nome, fn, { semear = true, duracaoToken } = {}) {
     certo(await p.evaluate(() => !localStorage.getItem('df-sessao')), 'sessão ficou salva');
   });
 
+  await teste('iPhone na tela de início: nada fica embaixo do relógio e da bateria', async (st, abrir) => {
+    const p = await abrir({ larg: 393 });
+    /* o iPhone com Dynamic Island deixa 59px em cima e 34px embaixo para o sistema */
+    await p.addStyleTag({ content: ':root{--sa-t:59px!important;--sa-b:34px!important}' });
+    const debaixo = () => p.evaluate(() => {
+      const ruins = [];
+      const w = document.createTreeWalker(document.querySelector('#view'), NodeFilter.SHOW_TEXT);
+      for (let n; (n = w.nextNode());) {
+        if (!n.textContent.trim()) continue;
+        const r = document.createRange(); r.selectNodeContents(n);
+        const q = r.getBoundingClientRect();
+        if (q.height && q.bottom > 0 && q.top < 59) ruins.push(n.textContent.trim().slice(0, 30) + ' @' + Math.round(q.top));
+      }
+      return ruins;
+    });
+    for (const v of ['inicio', 'trabalhos', 'tarefas', 'equip', 'fin']) {
+      await ir(p, v); await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(150);
+      const r = await debaixo();
+      certo(!r.length, `tela ${v}: texto embaixo do relógio: ${r.slice(0, 3).join(' | ')}`);
+      await p.screenshot({ path: path.join(CAPTURAS, `iphone-${v}.png`) });
+    }
+    /* rolando a lista, o título fica parado e cobre a área do relógio */
+    await p.evaluate(() => scrollTo(0, 800)); await p.waitForTimeout(150);
+    const barra = await p.evaluate(() => { const b = document.querySelector('#view .bar'); const r = b.getBoundingClientRect(); return { top: r.top, fundo: getComputedStyle(b).backgroundImage }; });
+    certo(barra.top <= 0 && barra.fundo !== 'none', 'título não cobre o relógio ao rolar: ' + JSON.stringify(barra));
+    /* formulário aberto também respeita o topo */
+    await ir(p, 'inicio');
+    await clica(p, '#view [data-a=novoL][data-t=saida]');
+    const topo = await p.evaluate(() => document.getElementById('s2').getBoundingClientRect().top);
+    certo(topo >= 59, 'formulário embaixo do relógio: ' + topo);
+    const tab = await p.evaluate(() => innerHeight - document.getElementById('tabbar').getBoundingClientRect().bottom);
+    certo(tab >= 34, 'menu de baixo em cima da barrinha do iPhone: ' + tab);
+  });
+
   await teste('computador (1400px): menu lateral e nada passando da tela', async (st, abrir) => {
     const p = await abrir({ larg: 1400 });
     for (const v of ['inicio', 'trabalhos', 'tarefas', 'equip', 'fin']) {
