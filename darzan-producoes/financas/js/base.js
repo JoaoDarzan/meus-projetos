@@ -7,6 +7,8 @@ window.A = window.A || {};
   u.oculto = () => !!(A.ui && A.ui.oculto);
   u.brl = (v, cents = true) => { v = +v || 0; if (u.oculto()) return 'R$ ••••'; return (v < 0 ? '−' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 }); };
   u.k0 = v => u.brl(v, false);
+  /* valor sem esconder: para mensagem ao cliente e avisos no celular (o "esconder valores" vale só para a tela) */
+  u.reais = v => (v < 0 ? '−' : '') + 'R$ ' + Math.abs(+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   u.big = v => { if (u.oculto()) return 'R$ ••••••'; const [a, b] = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `${v < 0 ? '−' : ''}R$ ${a}<span class="cents">,${b}</span>`; };
   u.pct = v => Math.round((v || 0) * 100) + '%';
   u.r2 = v => Math.round((+v || 0) * 100) / 100;
@@ -190,10 +192,11 @@ window.A = window.A || {};
     const ops = [], ext = db.linhas('EXTRATO'), m0 = u.mes(u.hoje());
     db.linhas('FIXAS').filter(f => String(f['ATIVA']).toLowerCase() !== 'não' && f['DESCRIÇÃO'] && f['VALOR'] && !/anual|parcel/i.test(f['TIPO'])).forEach(f => {
       [m0, u.addMes(m0, 1)].forEach(m => {
-        const nome = String(f['DESCRIÇÃO']).trim().toLowerCase(), id = `LFX-${f.ID}-${m}`;
-        if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === m && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
-        const tipo = /cart/i.test(f['TIPO']) ? 'cartão' : 'conta';
-        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(m, parseInt(f['DIA'], 10) || 1), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': tipo === 'cartão' ? 'Pago' : 'Previsto', 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
+        const nome = String(f['DESCRIÇÃO']).trim().toLowerCase(), id = `LFX-${f.ID}-${m}`, tipo = /cart/i.test(f['TIPO']) ? 'cartão' : 'conta', dia = parseInt(f['DIA'], 10) || 1;
+        /* no cartão, o lançamento fica no mês da fatura em que a cobrança cai */
+        const mf = tipo === 'cartão' && A.c.cartao(f['BANCO']) ? A.c.faturaDe(u.dataNoMes(m, dia), f['BANCO']) : m;
+        if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === mf && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
+        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(mf, dia), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': tipo === 'cartão' ? 'Pago' : 'Previsto', 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
       });
     });
     ops.push(...parcelasDosTrabalhos(m0));
@@ -209,15 +212,15 @@ window.A = window.A || {};
     const ops = [];
     A.c.trabalhos().forEach(j => {
       const mensal = A.c.num(j['PARCELA MENSAL']), total = A.c.num(j['VALOR TOTAL']);
-      if (!(mensal > 0) || !(total > 0)) return;
+      if (!(mensal > 0) || !(total > 0) || (j['ETAPA'] || 'Orçamento') === 'Orçamento' || j['ETAPA'] === 'Recorrente') return; /* orçamento ainda não cobra */
       const recs = A.c.recebimentos(j), dia = parseInt(j['DIA DA PARCELA'], 10) || 1;
       /* o que faltar é pago até a semana do evento: no mês do evento a parcela é o saldo, até 7 dias antes */
       const ev = /^\d{4}-\d{2}-\d{2}$/.test(String(j['DATA DO EVENTO'])) ? u.addDias(String(j['DATA DO EVENTO']), -7) : null;
       let resta = u.r2(total - u.sum(recs) - u.sum(A.c.parcelasPrevistas(j)));
       [m0, u.addMes(m0, 1)].forEach(m => {
         const id = `LJP-${j.ID}-${m}`;
-        if (resta < 0.01 || db.achar('EXTRATO', id) || recs.some(l => u.mes(l.data) === m)) return;
-        const saldo = ev && m >= u.mes(ev), data = saldo ? (m === u.mes(ev) && u.dataNoMes(m, dia) < ev ? u.dataNoMes(m, dia) : ev) : u.dataNoMes(m, dia);
+        if (resta < 0.01 || db.achar('EXTRATO', id) || recs.some(l => !/^LJP-/.test(l.id) && u.mes(l.data) === m)) return;
+        const saldo = ev && m >= u.mes(ev), data = !saldo ? u.dataNoMes(m, dia) : m === u.mes(ev) ? (u.dataNoMes(m, dia) < ev ? u.dataNoMes(m, dia) : ev) : u.dataNoMes(m, dia); /* evento já passou: cobra no dia normal do mês, não numa data antiga */
         const v = saldo ? resta : u.r2(Math.min(mensal, resta)); resta = u.r2(resta - v);
         ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': data, 'BANCO': (recs[recs.length - 1] || {}).banco || 'PicPay', 'DESCRIÇÃO': `${j['CLIENTE']} - ${saldo ? 'restante (até a semana do evento)' : 'parcela'}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': v, 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': SUBJ[j['TIPO DE EVENTO']] || 'Evento', 'STATUS': 'Previsto', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · parcela mensal` } });
       });
@@ -253,7 +256,7 @@ window.A = window.A || {};
   c.grupoDe = cat => (c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
   c.BANCOS = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Banco Pan', 'Não informado'];
   c.CORBANCO = Object.assign(Object.create(null), { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Banco Pan': ['#9be7ff', '#0a8fc7'], 'Não informado': ['#b5bfd6', '#5c6886'] });
-  c.GRAD = { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' };
+  c.GRAD = Object.assign(Object.create(null), { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' });
   const ICAT = {
     'Alimentação': ['shopping-cart', '#4ee0a0', '#05905c'], 'Alimentação fora': ['utensils', '#ff8aa0', '#d61c4e'], 'Transporte': ['car', '#6cc8ff', '#1f5fe0'],
     'Casa': ['house', '#5ff0d6', '#0b8a78'], 'Saúde e beleza': ['pill', '#7cf0a8', '#15a352'], 'Trabalho': ['camera', '#8fb6ff', '#2148d6'],
@@ -268,7 +271,7 @@ window.A = window.A || {};
 
   /* lançamento do EXTRATO em forma fácil */
   c.l = r => ({ id: r.ID, data: String(r['DATA'] || ''), banco: r['BANCO'] || '', desc: String(r['DESCRIÇÃO'] || ''), grupo: r['GRUPO'] || '', tipo: /cart/i.test(r['TIPO']) ? 'cartão' : 'conta', valor: c.num(r['VALOR']), cat: r['CATEGORIA'] || '', sub: r['SUB-CATEGORIA'] || '', status: r['STATUS'] || 'Pago', parcela: r['PARCELA'] || '', obs: String(r['OBS'] || ''), r });
-  c.lancs = () => c.L().filter(r => r['DATA']).map(c.l);
+  c.lancs = () => c.L().filter(r => r['DATA'] && r['STATUS'] !== 'Cancelado').map(c.l); /* cancelado: some de tudo, mas fica guardado para a conta fixa/parcela não voltar sozinha */
   c.doMes = m => c.lancs().filter(l => u.mes(l.data) === m);
   c.ehGasto = l => l.grupo === 'Necessidades' || l.grupo === 'Desejos';
 
@@ -282,7 +285,8 @@ window.A = window.A || {};
     gastos.forEach(l => { const k = l.cat || 'Outros'; const x = cats[k] || (cats[k] = { cat: k, valor: 0, n: 0, subs: {} }); x.valor -= l.valor; x.n++; x.subs[l.sub || '—'] = (x.subs[l.sub || '—'] || 0) - l.valor; });
     const entr = u.r2(u.sum(ent)), saiu = u.r2(-u.sum(gastos)), guardou = u.r2(-u.sum(guard));
     const nec = u.r2(-u.sum(gastos.filter(l => l.grupo === 'Necessidades')));
-    return { m, L, ent, aReceber: u.r2(u.sum(aRec)), aRec, gastos, guard, fonte, cats: Object.values(cats).map(x => (x.valor = u.r2(x.valor), x)).sort((a, b) => b.valor - a.valor), entr, saiu, guardou, sobra: u.r2(entr - saiu - guardou), nec, des: u.r2(saiu - nec), cartao: u.r2(-u.sum(gastos.filter(l => l.tipo === 'cartão'))), futuro: m > u.mes(u.hoje()) };
+    const prevSobra = u.r2(u.sum(ent) + u.sum(aRec) + u.sum(gastos) + u.sum(guard)); /* previsão do mês: conta também o que está para receber */
+    return { m, L, ent, aReceber: u.r2(u.sum(aRec)), aRec, prevSobra, gastos, guard, fonte, cats: Object.values(cats).map(x => (x.valor = u.r2(x.valor), x)).sort((a, b) => b.valor - a.valor), entr, saiu, guardou, sobra: u.r2(entr - saiu - guardou), nec, des: u.r2(saiu - nec), cartao: u.r2(-u.sum(gastos.filter(l => l.tipo === 'cartão'))), futuro: m > u.mes(u.hoje()) };
   };
   c.meses = () => {
     const ms = [...new Set(c.lancs().map(l => u.mes(l.data)))].sort();
@@ -335,7 +339,7 @@ window.A = window.A || {};
   const CLT_PARTE = { 'Salário': 'sal', 'Horas extras': 'he', 'Vale-transporte': 'ben', 'Vale-refeição': 'ben', 'Benefícios': 'ben', 'Bonificação': 'bon', 'Comissão': 'bon' };
   c.clt = () => {
     const meses = {}, n = (t, re) => { const x = (String(t).match(re) || [])[1]; return x ? c.num(x.replace(/\./g, '').replace(',', '.')) : null; };
-    c.lancs().filter(l => l.grupo === 'Renda' && l.cat === 'Salário CLT').forEach(l => {
+    c.lancs().filter(l => l.grupo === 'Renda' && l.cat === 'Salário CLT' && l.status !== 'Previsto').forEach(l => {
       const m = u.mes(l.data), x = meses[m] || (meses[m] = { m, sal: 0, he: 0, ben: 0, bon: 0, com: 0, liq: 0, horas: 0, bruto: null, inss: null, fgts: null, base: null, comp: null, data: l.data });
       x[CLT_PARTE[l.sub] || 'sal'] += l.valor; x.liq += l.valor;
       if (l.sub === 'Comissão') x.com += l.valor; /* comissão fora do holerite: conta junto da bonificação, mas aparece com o nome dela */
@@ -365,7 +369,7 @@ window.A = window.A || {};
     const base = cx['DATA DA CONFERÊNCIA'], ehConta = String(cx['CONTA']).toLowerCase() === 'conta';
     if (cx['SALDO CONFERIDO'] === '' || cx['SALDO CONFERIDO'] == null || !base) return [];
     const nomeCx = u.sem(cx['CONTA']);
-    return c.lancs().filter(l => l.data > base && c.paga(l) && (ehConta ? (l.tipo === 'conta' && l.banco === cx['BANCO']) : (l.grupo === 'Guardado' && u.sem(l.obs).indexOf('para ' + nomeCx) >= 0)));
+    return c.lancs().filter(l => l.data > base && c.paga(l) && (ehConta ? (l.tipo === 'conta' && l.banco === cx['BANCO']) : (l.grupo === 'Guardado' && u.sem(l.obs).split(' · ').some(p => p.trim() === 'para ' + nomeCx))));
   };
   c.saldo = cx => {
     if (cx['SALDO CONFERIDO'] === '' || cx['SALDO CONFERIDO'] == null) return null;
@@ -421,7 +425,19 @@ window.A = window.A || {};
   /* o que entrou do trabalho: lançamentos ligados a ele ("Trabalho J012" na anotação) ou com o nome do cliente na descrição.
      Parcela ainda prevista não conta como recebida */
   c.doTrabalho = (j, l) => new RegExp('Trabalho ' + j.ID + '(?![\\w-])').test(l.obs);
-  c.recebimentos = j => { const n = u.sem(j['CLIENTE']); return c.lancs().filter(l => l.grupo === 'Renda' && l.status !== 'Previsto' && (c.doTrabalho(j, l) || (n && u.sem(l.desc).indexOf(n) >= 0))); };
+  c.nomeCliente = j => u.sem(String(j['CLIENTE'] || '').replace(/\(.*?\)/g, ' ')).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const temNome = (desc, n) => n && (' ' + u.sem(desc).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ') + ' ').indexOf(' ' + n + ' ') >= 0;
+  /* uma entrada sem ligação conta para o cliente cujo nome aparece nela; se dois servem ("Ana" e "Ana e Pedro"), fica com o nome mais completo */
+  const donoPeloNome = (l, js) => { let melhor = null; js.forEach(x => { const n = c.nomeCliente(x); if (temNome(l.desc, n) && (!melhor || n.length > c.nomeCliente(melhor).length)) melhor = x; }); return melhor; };
+  c.recebimentos = j => {
+    const js = c.trabalhos(), n = c.nomeCliente(j);
+    return c.lancs().filter(l => {
+      if (l.grupo !== 'Renda' || l.status === 'Previsto') return false;
+      if (/Trabalho J/.test(l.obs)) return c.doTrabalho(j, l); /* ligada a um trabalho: só conta nele */
+      const d = temNome(l.desc, n) && donoPeloNome(l, js);
+      return !!d && c.nomeCliente(d) === n;
+    });
+  };
   c.parcelasPrevistas = j => c.lancs().filter(l => l.grupo === 'Renda' && l.status === 'Previsto' && c.doTrabalho(j, l));
   /* vídeos a entregar: uma linha cada, "[x] teaser" quando está pronto */
   c.entregas = j => String(j['ENTREGAS'] || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^\[([ xX])\]\s*(.*)$/); return m ? { feito: m[1] !== ' ', nome: m[2] } : { feito: false, nome: x }; });
@@ -456,7 +472,7 @@ window.A = window.A || {};
     const fim = q !== null && q < 0
       ? 'Se já tiver feito o Pix, me manda o comprovante quando puder, por favor. E se precisar combinar outra data, é só me falar, sem problema nenhum.'
       : 'Se já estiver tudo certo, pode desconsiderar esta mensagem. Qualquer dúvida, estou à disposição!';
-    return `Oi, ${primeiro}! Tudo bem? 😊\n\nPassando só para lembrar, com carinho, da parcela de ${u.brl(valor)} ${oQue}${quando}${prazo}.\n\n${fim}\n\nAbraço,\nJoão · Darzan Produções`;
+    return `Oi, ${primeiro}! Tudo bem? 😊\n\nPassando só para lembrar, com carinho, da parcela de ${u.reais(valor)} ${oQue}${quando}${prazo}.\n\n${fim}\n\nAbraço,\nJoão · Darzan Produções`;
   };
   c.linkWhats = (j, valor, venc) => { const f = c.foneWhats(j['TELEFONE']); return f ? `https://wa.me/${f}?text=${encodeURIComponent(c.msgCobranca(j, valor, venc))}` : null; };
   c.anexos = j => db.linhas('ANEXOS').filter(x => x['TRABALHO'] === j.ID).sort((a, b) => String(a['DATA']) < String(b['DATA']) ? -1 : 1);
@@ -524,7 +540,7 @@ window.A = window.A || {};
       });
     };
     c.tarefas().filter(t => !t.feita).forEach(t => {
-      const [tp, a] = t.id.split(':'), valor = t.valor ? u.brl(t.valor) : '';
+      const [tp, a] = t.id.split(':'), valor = t.valor ? u.reais(t.valor) : '';
       if (tp === 'f') add(t.id, t.data, `vence a fatura do ${a}`, [valor, t.estimado ? 'vencimento estimado' : '', t.banco && `sai do ${t.banco}`].filter(Boolean).join(' · '), 'fatura');
       else if (tp === 'l') add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.banco && t.banco !== 'Não informado' ? (t.grupo === 'receber' ? `entra no ${t.banco}` : `sai do ${t.banco}`) : ''].filter(Boolean).join(' · '), t.grupo === 'receber' ? 'receber' : 'conta');
       else add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.nota].filter(Boolean).join(' · '), 'tarefa');

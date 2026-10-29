@@ -59,13 +59,13 @@
 
   /* fatura que importa agora: a mais antiga ainda sem pagar (até 10 dias de atraso) ou a que está aberta */
   /* ícone de cada banco (Nubank, PicPay e Mercado Pago: desenhos do Simple Icons, licença CC0; Inter e Pan: a marca em texto) */
-  const LOGOS = {
+  const LOGOS = Object.assign(Object.create(null), {
     'Nubank': ['#820AD1', '<path fill="#fff" d="M7.2795 5.4336c-1.1815 0-2.1846.4628-2.9432 1.252h-.002c-.0541-.0022-.1074-.002-.162-.002-1.5436 0-2.9925.8835-3.699 2.2559-.3088.5996-.4234 1.2442-.459 1.9003-.0321.589 0 1.1863 0 1.7696v5.6523H3.184s.0022-2.784 0-5.1777c-.0014-1.6112-.0118-3.0471 0-3.3418.056-1.3937.4372-2.3053 1.1484-3.0508 2.3585.0018 3.8852 1.6091 3.9705 4.168.0196.5874.0254 3.7304.0254 3.7304v3.672h3.1678v-4.965c0-1.5007.0127-2.8006-.0918-3.6952-.292-2.5-1.821-4.168-4.1248-4.168zm8.3903.3008l-3.166.0039v4.9648c0 1.5009-.0127 2.8007.0919 3.6953.2921 2.5001 1.821 4.168 4.1248 4.168 1.1815 0 2.1846-.4628 2.9432-1.252.0003-.0003.0016.0004.002 0 .0542.0023.1093.002.164.002 1.5435 0 2.9905-.8835 3.6971-2.2558.3088-.5997.4233-1.2442.459-1.9004.032-.5889 0-1.1862 0-1.7695V5.7383H20.816s-.0022 2.784 0 5.1777c.0015 1.6113.0119 3.047 0 3.3418-.056 1.3935-.4372 2.3053-1.1483 3.0508-2.3586-.0018-3.8853-1.6091-3.9706-4.168-.0196-.5874-.0273-2.0437-.0273-3.7324Z"/>'],
     'PicPay': ['#21C25E', '<path fill="#fff" d="M16.463 1.587v7.537H24V1.587zm1.256 1.256h5.025v5.025h-5.025zm1.256 1.256v2.513h2.513V4.099zM3.77 5.355V8.53h3.376c2.142 0 3.358 1.04 3.358 2.939 0 1.947-1.216 3.011-3.358 3.011H3.769V8.53H0v13.884h3.769v-4.76h3.57c4.333 0 6.815-2.352 6.815-6.32 0-3.771-2.482-5.978-6.814-5.978Z"/>'],
     'Mercado Pago': ['#00B1EA', '<path fill="#fff" d="M11.115 16.479a.93.927 0 0 1-.939-.886c-.002-.042-.006-.155-.103-.155-.04 0-.074.023-.113.059-.112.103-.254.206-.46.206a.816.814 0 0 1-.305-.066c-.535-.214-.542-.578-.521-.725.006-.038.007-.08-.02-.11l-.032-.03h-.034c-.027 0-.055.012-.093.039a.788.786 0 0 1-.454.16.7.699 0 0 1-.253-.05c-.708-.27-.65-.928-.617-1.126.005-.041-.005-.072-.03-.092l-.05-.04-.047.043a.728.726 0 0 1-.505.203.73.728 0 0 1-.732-.725c0-.4.328-.722.732-.722.364 0 .675.27.721.63l.026.195.11-.165c.01-.018.307-.46.852-.46.102 0 .21.016.316.05.434.13.508.52.519.68.008.094.075.1.09.1.037 0 .064-.024.083-.045a.746.744 0 0 1 .54-.225c.128 0 .263.03.402.09.69.293.379 1.158.374 1.167-.058.144-.061.207-.005.244l.027.013h.02c.03 0 .07-.014.134-.035.093-.032.235-.08.367-.08a.944.942 0 0 1 .94.93.936.934 0 0 1-.94.928zm7.302-4.171c-1.138-.98-3.768-3.24-4.481-3.77-.406-.302-.685-.462-.928-.533a1.559 1.554 0 0 0-.456-.07c-.182 0-.376.032-.58.095-.46.145-.918.505-1.362.854l-.023.018c-.414.324-.84.66-1.164.73a1.986 1.98 0 0 1-.43.049c-.362 0-.687-.104-.81-.258-.02-.025-.007-.066.04-.125l.008-.008 1-1.067c.783-.774 1.525-1.506 3.23-1.545h.085c1.062 0 2.12.469 2.24.524a7.03 7.03 0 0 0 3.056.724c1.076 0 2.188-.263 3.354-.795a9.135 9.11 0 0 0-.405-.317c-1.025.44-2.003.66-2.946.66-.962 0-1.925-.229-2.858-.68-.05-.022-1.22-.567-2.44-.57-.032 0-.065 0-.096.002-1.434.033-2.24.536-2.782.976-.528.013-.982.138-1.388.25-.361.1-.673.186-.979.185-.125 0-.35-.01-.37-.012-.35-.01-2.115-.437-3.518-.962-.143.1-.28.203-.415.31 1.466.593 3.25 1.053 3.812 1.089.157.01.323.027.491.027.372 0 .744-.103 1.104-.203.213-.059.446-.123.692-.17l-.196.194-1.017 1.087c-.08.08-.254.294-.14.557a.705.703 0 0 0 .268.292c.243.162.677.27 1.08.271.152 0 .297-.015.43-.044.427-.095.874-.448 1.349-.82.377-.296.913-.672 1.323-.782a1.494 1.49 0 0 1 .37-.05.611.61 0 0 1 .095.005c.27.034.533.125 1.003.472.835.62 4.531 3.815 4.566 3.846.002.002.238.203.22.537-.007.186-.11.352-.294.466a.902.9 0 0 1-.484.15.804.802 0 0 1-.428-.124c-.014-.01-1.28-1.157-1.746-1.543-.074-.06-.146-.115-.22-.115a.122.122 0 0 0-.096.045c-.073.09.01.212.105.294l1.48 1.47c.002 0 .184.17.204.395.012.244-.106.447-.35.606a.957.955 0 0 1-.526.171.766.764 0 0 1-.42-.127l-.214-.206a21.035 20.978 0 0 0-1.08-1.009c-.072-.058-.148-.112-.221-.112a.127.127 0 0 0-.094.038c-.033.037-.056.103.028.212a.698.696 0 0 0 .075.083l1.078 1.198c.01.01.222.26.024.511l-.038.048a1.18 1.178 0 0 1-.1.096c-.184.15-.43.164-.527.164a.8.798 0 0 1-.147-.012c-.106-.018-.178-.048-.212-.089l-.013-.013c-.06-.06-.602-.609-1.054-.98-.059-.05-.133-.11-.21-.11a.128.128 0 0 0-.096.042c-.09.096.044.24.1.293l.92 1.003a.204.204 0 0 1-.033.062c-.033.044-.144.155-.479.196a.91.907 0 0 1-.122.007c-.345 0-.712-.164-.902-.264a1.343 1.34 0 0 0 .13-.576 1.368 1.365 0 0 0-1.42-1.357c.024-.342-.025-.99-.697-1.274a1.455 1.452 0 0 0-.575-.125c-.146 0-.287.025-.42.075a1.153 1.15 0 0 0-.671-.564 1.52 1.515 0 0 0-.494-.085c-.28 0-.537.08-.767.242a1.168 1.165 0 0 0-.903-.43 1.173 1.17 0 0 0-.82.335c-.287-.217-1.425-.93-4.467-1.613a17.39 17.344 0 0 1-.692-.189 4.822 4.82 0 0 0-.077.494l.67.157c3.108.682 4.136 1.391 4.309 1.525a1.145 1.142 0 0 0-.09.442 1.16 1.158 0 0 0 1.378 1.132c.096.467.406.821.879 1.003a1.165 1.162 0 0 0 .415.08c.09 0 .179-.012.266-.034.086.22.282.493.722.668a1.233 1.23 0 0 0 .457.094c.122 0 .241-.022.355-.063a1.373 1.37 0 0 0 1.269.841c.37.002.726-.147.985-.41.221.121.688.341 1.163.341.06 0 .118-.002.175-.01.47-.059.689-.24.789-.382a.571.57 0 0 0 .048-.078c.11.032.234.058.373.058.255 0 .501-.086.75-.265.244-.174.418-.424.444-.637v-.01c.083.017.167.026.251.026.265 0 .527-.082.773-.242.48-.31.562-.715.554-.98a1.28 1.279 0 0 0 .978-.194 1.04 1.04 0 0 0 .502-.808 1.088 1.085 0 0 0-.16-.653c.804-.342 2.636-1.003 4.795-1.483a4.734 4.721 0 0 0-.067-.492 27.742 27.667 0 0 0-5.049 1.62zm5.123-.763c0 4.027-5.166 7.293-11.537 7.293-6.372 0-11.538-3.266-11.538-7.293 0-4.028 5.165-7.293 11.539-7.293 6.371 0 11.537 3.265 11.537 7.293zm.46.004c0-4.272-5.374-7.755-12-7.755S.002 7.277.002 11.55L0 12.004c0 4.533 4.695 8.203 11.999 8.203 7.347 0 12-3.67 12-8.204z"/>'],
     'Inter': ['#FF7A00', '<text x="12" y="15.2" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.6" font-weight="700" fill="#fff">inter</text>'],
     'Banco Pan': ['#0A9DE3', '<text x="12" y="15.8" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="800" fill="#fff">pan</text>'],
-  };
+  });
   const logoBanco = nome => { const l = LOGOS[nome]; if (l) return `<span class="logob" style="background:${l[0]}" aria-hidden="true"><svg viewBox="0 0 24 24">${l[1]}</svg></span>`; const g = c.CORBANCO[nome] || c.CORBANCO['Não informado']; return `<span class="logob" style="background:linear-gradient(145deg,${g[0]},${g[1]})" aria-hidden="true">${u.esc(String(nome || '?').charAt(0))}</span>`; };
 
 
@@ -87,7 +87,7 @@
           <button class="eye" type="button" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}">${u.svg(ui.oculto ? 'eye-off' : 'eye')}</button>
           <button class="bell ${urg ? 'ring' : ''}" type="button" data-a="go" data-v="tarefas" aria-label="Tarefas">${u.svg('bell')}${urg ? `<span class="cnt">${urg}</span>` : ''}</button></div>
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
-          <div class="big num" data-cnt="${r.sobra}" data-fmt="big">${u.big(r.sobra)}</div></div>
+          <div class="big num" data-cnt="${r.futuro ? r.prevSobra : r.sobra}" data-fmt="big">${u.big(r.futuro ? r.prevSobra : r.sobra)}</div></div>
         <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="k0">${u.k0(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.k0(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="k0">${u.k0(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="k0">${u.k0(r.guardou)}</b></span></div>
         <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.k0(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
@@ -140,7 +140,7 @@
   const BAL_COR = [['trab', 'Trabalhos e outros', '--clt-sal'], ['rec', 'Recorrentes', '--clt-bon']];
   R.trabalhos = () => {
     const js = c.trabalhos(), quadro = js.filter(j => !c.recorrente(j)), abertos = quadro.filter(j => j['ETAPA'] !== 'Entregue' && j['ETAPA'] !== 'Orçamento');
-    const receber = u.sum(abertos, j => Math.max(c.faltaReceber(j) || 0, 0)), orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
+    const receber = u.sum(quadro.filter(j => j['ETAPA'] !== 'Orçamento'), j => Math.max(c.faltaReceber(j) || 0, 0)), /* inclui entregue que ainda deve */ orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
     const prox = quadro.filter(j => j['DATA DO EVENTO'] && u.ateHoje(String(j['DATA DO EVENTO'])) >= 0).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1)[0];
     const fat = c.resumo(ui.mes).fonte['Darzan Produções'], S = ui.jseg || 'quadro';
     const corpo = S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
@@ -400,7 +400,7 @@
   }
   FIN.metas = () => {
     const gs = db.linhas('METAS').filter(g => g['META']);
-    const tem = g => { const cx = c.caixinhas().find(x => u.sem(x['CONTA']).indexOf(u.sem(g['ONDE ESTÁ'])) >= 0 && g['ONDE ESTÁ']); return cx ? (c.saldo(cx) || 0) : c.num(g['JÁ GUARDADO']); };
+    const tem = g => { const cx = g['ONDE ESTÁ'] && c.caixinhas().find(x => u.sem(x['CONTA']).trim() === u.sem(g['ONDE ESTÁ']).trim()); return cx ? (c.saldo(cx) || 0) : c.num(g['JÁ GUARDADO']); };
     return `<section class="sec"><div class="sec-h"><h2>${u.svg('target')}Minhas metas</h2><button class="chip" type="button" data-a="novoM">${u.svg('plus')} Nova meta</button></div>
       <div class="goals">${gs.map(g => { const alvo = c.num(g['VALOR ALVO']) || 1, t = tem(g), p = t / alvo; return `<button type="button" class="goal" data-a="editM" data-id="${u.esc(g.ID)}"><div class="top">${u.ti(['target', '#9cc6ff', '#2a62e0'], 'lg')}<div class="gring">${anel(p, 52, 5, '#8fb0ff')}<b class="num">${u.pct(p)}</b></div></div><div><div class="t">${u.esc(g['META'])}</div><div class="m num">${u.k0(t)} de ${u.k0(alvo)}</div></div><div class="m">${g['ONDE ESTÁ'] ? 'Em: ' + u.esc(g['ONDE ESTÁ']) : 'Toque para editar'}${g['PRAZO'] ? ' · até ' + u.dm(String(g['PRAZO'])) : ''}</div></button>`; }).join('') || vazio(['target', '#9cc6ff', '#2a62e0'], 'Nenhuma meta ainda.')}</div>
       <p class="aviso">Se em “Onde está” você escrever o nome de uma caixinha (ex.: “Caixinha Reserva”), o app usa o saldo dela como “já guardado”.</p></section>`;
@@ -602,7 +602,9 @@
   function apagarLanc(id, botao) {
     if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
     const r = db.achar('EXTRATO', id), copia = Object.assign({}, r);
-    db.apagar('EXTRATO', id); fechar(); render(false);
+    if (/^L(FX|JP)-/.test(id)) db.salvar('EXTRATO', { ID: id, 'STATUS': 'Cancelado' }); /* gerado pelo app: fica guardado como cancelado para não voltar sozinho */
+    else db.apagar('EXTRATO', id);
+    fechar(); render(false);
     toast('Lançamento excluído', () => { db.salvar('EXTRATO', copia); render(false); });
   }
   function apagarCompra(pid, botao) {
@@ -821,10 +823,13 @@
     if (ed) ligarArquivosJob(j);
   }
   /* muda a etapa (pelo arrastar do quadro ou pelos botões da ficha), com "Desfazer" */
+  const semParcelas = j => c.parcelasPrevistas(j).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id }));
   function moverJob(id, etapa, quieto) {
     const j = db.achar('TRABALHOS', id); if (!j || j['ETAPA'] === etapa) return;
     const de = j['ETAPA'] || 'Orçamento';
-    db.salvar('TRABALHOS', { ID: id, 'ETAPA': etapa }); render(false);
+    db.lote([{ op: 'salvar', aba: 'TRABALHOS', registro: { ID: id, 'ETAPA': etapa } }].concat(etapa === 'Orçamento' ? semParcelas(j) : []));
+    if (etapa !== 'Orçamento') db.garantirFixas();
+    render(false);
     if (!quieto) toast(`${j['CLIENTE']}: ${etapa}`, () => moverJob(id, de, true));
   }
   function etapaNaFicha(b) {
@@ -880,8 +885,20 @@
   async function receber(id, sub) {
     const j = db.achar('TRABALHOS', id), v = u.num(val('rV')), arq = $('rArq') && $('rArq').files[0];
     if (!(v > 0)) { toast('Digite o valor recebido'); return; }
-    const lid = db.novoId('EXTRATO'), data = val('rDt') || u.hoje(), desc = val('rD').trim() || 'pagamento';
-    db.salvar('EXTRATO', { ID: lid, 'DATA': data, 'BANCO': val('rB'), 'DESCRIÇÃO': `${j['CLIENTE']} - ${desc}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': u.r2(v), 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': sub, 'STATUS': 'Pago', 'PARCELA': '', 'OBS': `Trabalho ${j.ID} · Recebido pelo app` });
+    const data = val('rDt') || u.hoje(), desc = val('rD').trim() || 'pagamento', prev = c.parcelasPrevistas(j).sort((a, b) => a.data < b.data ? -1 : 1), ops = [];
+    const pago = { 'DATA': data, 'BANCO': val('rB'), 'DESCRIÇÃO': `${j['CLIENTE']} - ${desc}`, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': u.r2(v), 'CATEGORIA': 'Darzan Produções', 'SUB-CATEGORIA': sub, 'STATUS': 'Pago', 'PARCELA': '' };
+    let lid;
+    if (prev.length && v >= prev[0].valor - 0.005) {
+      /* pagou a parcela (ou mais): a parcela prevista mais antiga vira este recebimento; o que passar, abate das próximas */
+      lid = prev[0].id; ops.push({ op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: lid, 'OBS': `Trabalho ${j.ID} · venc. ${prev[0].data} · Recebido pelo app` }, pago) });
+      let sobra = u.r2(v - prev[0].valor);
+      prev.slice(1).forEach(p => { if (sobra < 0.01) return; if (sobra >= p.valor - 0.005) { ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: p.id, 'STATUS': 'Cancelado' } }); sobra = u.r2(sobra - p.valor); } else { ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: p.id, 'VALOR': u.r2(p.valor - sobra) } }); sobra = 0; } });
+    } else {
+      /* pagou só um pedaço: entra o que veio e a parcela prevista diminui */
+      lid = db.novoId('EXTRATO'); ops.push({ op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: lid, 'OBS': `Trabalho ${j.ID} · Recebido pelo app` }, pago) });
+      if (prev.length) ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: prev[0].id, 'VALOR': u.r2(prev[0].valor - v) } });
+    }
+    db.lote(ops);
     confete(innerWidth / 2, 200); toast(`Recebido ${u.brl(v)} de ${j['CLIENTE']}`);
     if (arq) await anexar(id, arq, { 'TIPO': 'Comprovante', 'NOME': `Comprovante ${desc} ${u.dm(data)}`, 'VALOR': u.r2(v), 'DATA': data, 'LANÇAMENTO': lid });
     formJob(db.achar('TRABALHOS', id)); render(false);
@@ -975,12 +992,12 @@
   }));
   /* excluir o trabalho leva junto os comprovantes e contratos dele (LGPD: não fica documento de cliente esquecido) */
   function apagarJob(id, botao) {
-    const xs = c.anexos({ ID: id });
-    if (!xs.length) return apagarSimples('TRABALHOS', id, botao, 'Trabalho excluído');
-    if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + `Toque de novo: apaga também ${xs.length} ${xs.length > 1 ? 'arquivos' : 'arquivo'}`; return; }
-    db.lote([{ op: 'apagar', aba: 'TRABALHOS', id }].concat(xs.map(x => ({ op: 'apagar', aba: 'ANEXOS', id: x.ID }))));
+    const xs = c.anexos({ ID: id }), parc = semParcelas(db.achar('TRABALHOS', id) || { ID: id });
+    if (!xs.length && !parc.length) return apagarSimples('TRABALHOS', id, botao, 'Trabalho excluído');
+    if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + (xs.length ? `Toque de novo: apaga também ${xs.length} ${xs.length > 1 ? 'arquivos' : 'arquivo'}` : 'Toque de novo para excluir (e as parcelas a receber)'); return; }
+    db.lote([{ op: 'apagar', aba: 'TRABALHOS', id }].concat(xs.map(x => ({ op: 'apagar', aba: 'ANEXOS', id: x.ID })), parc));
     xs.forEach(x => { delete arquivos[x.ID]; });
-    fechar(); render(false); toast(`Trabalho e ${xs.length} ${xs.length > 1 ? 'arquivos excluídos' : 'arquivo excluído'}`);
+    fechar(); render(false); toast(xs.length ? `Trabalho e ${xs.length} ${xs.length > 1 ? 'arquivos excluídos' : 'arquivo excluído'}` : 'Trabalho excluído');
   }
   function apagarAnexo(id, botao) {
     if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
@@ -994,8 +1011,11 @@
     const [tipo, a, b] = id.split(':');
     const lv0 = c.nivel(c.xp()).n;
     if (tipo === 'l') {
-      const l = db.achar('EXTRATO', a), obs = String(l['OBS'] || '').replace(/\s*·?\s*(Pago|Recebido) pelo app/g, '');
-      db.salvar('EXTRATO', { ID: a, 'STATUS': t.feita ? 'Previsto' : 'Pago', 'OBS': t.feita ? obs : [obs, t.grupo === 'receber' ? 'Recebido pelo app' : 'Pago pelo app'].filter(Boolean).join(' · ') });
+      /* pagou/recebeu: a data passa a ser hoje (o saldo do banco conta a partir de quando o dinheiro mexeu) e o vencimento fica anotado */
+      const l = db.achar('EXTRATO', a), venc = (String(l['OBS'] || '').match(/venc\. (\d{4}-\d{2}-\d{2})/) || [])[1];
+      const obs = String(l['OBS'] || '').replace(/\s*·?\s*(Pago|Recebido) pelo app/g, '').replace(/\s*·?\s*venc\. \d{4}-\d{2}-\d{2}/g, '').replace(/^\s*·\s*/, '');
+      if (t.feita) db.salvar('EXTRATO', { ID: a, 'STATUS': 'Previsto', 'DATA': venc || l['DATA'], 'OBS': obs });
+      else db.salvar('EXTRATO', { ID: a, 'STATUS': 'Pago', 'DATA': u.hoje(), 'OBS': [obs, `venc. ${String(l['DATA']).slice(0, 10)}`, t.grupo === 'receber' ? 'Recebido pelo app' : 'Pago pelo app'].filter(Boolean).join(' · ') });
     } else if (tipo === 'f') {
       const pg = c.pagFatura(a, b);
       if (pg) db.apagar('EXTRATO', pg.id);
@@ -1104,7 +1124,7 @@
   function lembrarNav() {
     const n = navAgora();
     if (n.view === 'inicio') { pilha.length = 0; navAnt = n; return; } /* chegou no início: o caminho recomeça daqui */
-    if (navAnt && JSON.stringify(n) !== JSON.stringify(navAnt)) { pilha.push(navAnt); if (pilha.length > 40) pilha.shift(); try { history.pushState({ df: 1 }, ''); } catch (e) { /* sem histórico */ } }
+    if (navAnt && JSON.stringify(n) !== JSON.stringify(navAnt)) { pilha.push(navAnt); try { if (pilha.length > 40) { pilha.shift(); history.replaceState({ df: 1 }, ''); } else history.pushState({ df: 1 }, ''); } catch (e) { /* sem histórico */ } }
     navAnt = n;
   }
   function voltarUmPasso() { const n = pilha.pop(); if (!n) return; Object.assign(ui, n); navAnt = n; render(); scrollTo({ top: 0 }); }

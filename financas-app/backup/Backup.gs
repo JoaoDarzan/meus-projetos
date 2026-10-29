@@ -136,7 +136,7 @@ function escrever(ss, nome, cab, linhas, formatos) {
 function resumo(extrato) {
   var meses = {};
   extrato.forEach(function (l) {
-    if (!l.data) return;
+    if (!l.data || l.status === 'Cancelado') return;
     var m = String(l.data).slice(0, 7), v = Number(l.valor) || 0;
     var x = meses[m] || (meses[m] = { e: 0, s: 0, g: 0 });
     if (l.grupo === 'Renda') { if (l.status !== 'Previsto') x.e += v; } /* previsto ainda não entrou */
@@ -157,10 +157,11 @@ function bancos(contas, extrato, hoje) {
     var ehConta = sem(c.conta) === 'conta', nomeCx = sem(c.conta), saldo = conferido;
     if (conferido !== null && c.data_da_conferencia) {
       extrato.forEach(function (l) {
-        var paga = l.status === 'Pago' || (/d[eé]bito autom/i.test(l.obs || '') && l.data <= hoje);
+        if (l.status === 'Cancelado') return;
+        var paga = (l.status || 'Pago') === 'Pago' || (/d[eé]bito autom/i.test(l.obs || '') && l.data <= hoje); /* sem status = pago, como no app */
         if (!l.data || l.data <= c.data_da_conferencia || !paga) return;
         if (ehConta && !/cart/i.test(l.tipo || '') && l.banco === c.banco) saldo += Number(l.valor) || 0;
-        if (!ehConta && l.grupo === 'Guardado' && sem(l.obs).indexOf('para ' + nomeCx) >= 0) saldo -= Number(l.valor) || 0;
+        if (!ehConta && l.grupo === 'Guardado' && sem(l.obs).split(' · ').some(function (p) { return p.trim() === 'para ' + nomeCx; })) saldo -= Number(l.valor) || 0;
       });
       saldo = Math.round(saldo * 100) / 100;
     }
