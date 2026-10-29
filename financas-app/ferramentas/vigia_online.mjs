@@ -25,9 +25,13 @@ for (const [fn, corpo] of [['claude_ler', { p_chave: chute, p_tabela: 'extrato' 
   const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
   confere(r.status >= 400, `${fn} com chave inventada é recusada (${r.status})`);
 }
-/* 5. o site tem as proteções do navegador */
+/* 5. o site tem as proteções do navegador e está na versão mais nova (versão velha no ar = brechas já corrigidas abertas) */
+const { readFileSync } = await import('node:fs');
+const versao = (readFileSync(new URL('../../darzan-producoes/financas/index.html', import.meta.url), 'utf8').match(/\?v=(\d+)/) || [])[1];
 for (const url of SITES) {
-  const r = await fetch(url), html = await r.text(), csp = r.headers.get('content-security-policy') || (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
+  const r = await fetch(url), html = await r.text(), noAr = (html.match(/\?v=(\d+)/) || [])[1];
+  confere(noAr === versao, `${url}: está na versão nova (no ar: v${noAr}, código: v${versao})`);
+  const csp = r.headers.get('content-security-policy') || (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
   confere(/script-src 'self'(;|$)/.test(csp) && !/unsafe-eval/.test(csp), `${url}: política de segurança (CSP) forte`);
   confere(!/<script>(?!\s*<\/script>)/.test(html), `${url}: nenhum script escrito direto na página`);
   if (url.includes('netlify')) confere(/DENY/i.test(r.headers.get('x-frame-options') || ''), `${url}: não abre dentro de outro site`);
