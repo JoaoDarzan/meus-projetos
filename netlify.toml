@@ -1,6 +1,9 @@
 # Publica o site da Darzan Produções no Netlify (só o site: o app de finanças fica no GitHub Pages)
 [build]
   publish = "darzan-producoes"
+  # só publica quando o SITE muda (cada publicação gasta créditos do plano grátis do Netlify).
+  # Mudanças no app de finanças, nos testes e nos fluxos do GitHub não disparam publicação aqui.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- darzan-producoes/ netlify.toml netlify/ ':(exclude)darzan-producoes/financas/'"
 
 # lembrete diário que mantém o Supabase do app de finanças acordado
 [functions]

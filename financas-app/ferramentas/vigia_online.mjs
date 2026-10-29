@@ -4,7 +4,7 @@
 const SUPABASE = 'https://sczpyzcozcaibyzekmau.supabase.co', CHAVE = 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
 const SITES = ['https://joaodarzan.github.io/meus-projetos/financas/']; /* único endereço do app */
 const TABELAS = ['extrato', 'contas', 'cartoes', 'parcelados', 'fixas', 'equipamentos', 'trabalhos', 'anexos', 'tarefas', 'metas', 'categorias', 'avisos', 'aparelhos', 'acesso_claude', 'config_servidor', 'sinal_de_vida'];
-const problemas = [], ok = [];
+const problemas = [], ok = [], avisos = [];
 const confere = (bom, txt) => (bom ? ok : problemas).push(txt);
 const api = (caminho, op = {}) => fetch(SUPABASE + caminho, { ...op, headers: { apikey: CHAVE, 'Content-Type': 'application/json', ...(op.headers || {}) } });
 
@@ -27,7 +27,9 @@ for (const [fn, corpo] of [['claude_ler', { p_chave: chute, p_tabela: 'extrato' 
 }
 /* 4b. o Netlify não serve mais o app (só o site): /financas manda para o GitHub Pages */
 const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' });
-confere(nf.status >= 300 && nf.status < 400 && /joaodarzan\.github\.io\/meus-projetos\/financas/.test(nf.headers.get('location') || ''), `Netlify não serve mais a versão velha do app (${nf.status} → ${nf.headers.get('location') || 'sem redirecionar'})`);
+/* enquanto os créditos do Netlify estiverem acabados ele não publica: só avisa (não falha), para não mandar e-mail todo dia */
+if (nf.status >= 300 && nf.status < 400 && /joaodarzan\.github\.io\/meus-projetos\/financas/.test(nf.headers.get('location') || '')) ok.push('Netlify não serve mais a versão velha do app');
+else avisos.push(`Netlify ainda serve a versão velha do app (${nf.status}); ele volta a publicar quando os créditos do mês renovarem. Não use esse endereço.`);
 /* 5. o site tem as proteções do navegador e está na versão mais nova (versão velha no ar = brechas já corrigidas abertas) */
 const { readFileSync } = await import('node:fs');
 const versao = (readFileSync(new URL('../../darzan-producoes/financas/index.html', import.meta.url), 'utf8').match(/\?v=(\d+)/) || [])[1];
@@ -39,5 +41,6 @@ for (const url of SITES) {
   confere(!/<script>(?!\s*<\/script>)/.test(html), `${url}: nenhum script escrito direto na página`);
 }
 console.log(ok.map(x => '  ok  ' + x).join('\n'));
+if (avisos.length) console.log('\nAVISOS:\n' + avisos.map(x => '  !  ' + x).join('\n'));
 if (problemas.length) { console.log('\nPROBLEMAS DE SEGURANÇA:\n' + problemas.map(x => '  ✗  ' + x).join('\n')); process.exit(1); }
 console.log(`\nTudo fechado: ${ok.length} conferências.`);
