@@ -24,7 +24,7 @@ O vigia de segredos (`ferramentas/vigia_segredos.py`) confere isso a cada mudan�
 - **Injeção de código (XSS)**: tudo que vem do banco é limpo antes de aparecer na tela; o banco recusa ids com `< > " ' \` & \`;
   imagens e arquivos só entram como `data:tipo;base64,` de verdade; a política de segurança (CSP) só deixa rodar script
   do próprio app e só deixa os dados irem para o próprio app e para o Supabase.
-- **O app não abre escondido dentro de outro site** (clickjacking): `js/protecao.js` + cabeçalho `X-Frame-Options` no Netlify.
+- **O app não abre escondido dentro de outro site** (clickjacking): `js/protecao.js` (o GitHub Pages não deixa mandar cabeçalhos; quando houver domínio próprio, dá para pôr os cabeçalhos também).
 - **Leitor de PDF** (pdf.js) guardado no próprio app, conferido com a impressão digital oficial, com `isEvalSupported: false`
   (bloqueia a falha conhecida CVE-2024-4367 de PDF malicioso).
 - **Acesso do Claude**: chave de 256 bits; o banco guarda só a impressão digital (sha256); a chave aparece uma vez e não fica

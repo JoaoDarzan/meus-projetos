@@ -40,7 +40,7 @@
       ['PRAZO', 'prazo', 'date'], ['OBS', 'obs', 'text']] },
     CATEGORIAS: { tabela: 'categorias', prefixo: 'G', colunas: [
       ['CATEGORIA', 'categoria', 'text'], ['SUB-CATEGORIA', 'subcategoria', 'text'], ['GRUPO', 'grupo', 'text']] },
-    /* agenda de avisos que o app monta; o Netlify manda para o celular no dia (e marca ENVIADO) */
+    /* agenda de avisos que o app monta; o GitHub (avisos.yml) manda para o celular no dia (e marca ENVIADO) */
     AVISOS: { tabela: 'avisos', prefixo: 'V', opcional: true, colunas: [
       ['QUANDO', 'quando', 'date'], ['TITULO', 'titulo', 'text'], ['CORPO', 'corpo', 'text'], ['TIPO', 'tipo', 'text'], ['ENVIADO', 'enviado', 'text']] },
     /* aparelhos que recebem avisos (o "endereço" de cada celular) */

@@ -57,8 +57,8 @@ $$;
 revoke all on function public.manter_ativo() from public;
 grant execute on function public.manter_ativo() to anon, authenticated;
 
--- avisos: o Netlify (que só sabe o segredo dos avisos) pega o que mandar hoje e marca como enviado.
--- O segredo fica no Netlify; aqui só a "impressão digital" dele (sha256), que é colocada à parte.
+-- avisos: o GitHub (que só sabe o segredo dos avisos) pega o que mandar hoje e marca como enviado.
+-- O segredo fica nos segredos do GitHub; aqui só a "impressão digital" dele (sha256), que é colocada à parte.
 create table if not exists public.config_servidor (chave text primary key, valor text not null);
 alter table public.config_servidor enable row level security;
 revoke all on public.config_servidor from anon, authenticated;

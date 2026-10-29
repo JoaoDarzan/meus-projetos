@@ -3,7 +3,7 @@
 Site de portfólio de videomaker (filmes cinematográficos, teasers e cerimônia na íntegra) e storymaker,
 com seções de filmes, stories, fotos, feedbacks e contato. Campinas e região.
 
-**Site no ar:** https://darzanproducoes.netlify.app/ (endereço provisório, até comprar o domínio próprio).
+**Site no ar:** https://joaodarzan.github.io/meus-projetos/ (GitHub Pages; endereço provisório, até comprar o domínio próprio).
 
 Para ver o site no computador sem internet, abra o `index.html` no navegador.
 

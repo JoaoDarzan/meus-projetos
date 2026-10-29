@@ -1,6 +1,6 @@
 # Lembrete automático: a cada 3 dias avisa o Supabase que o app está em uso, para o projeto grátis não "dormir".
 # Também se religa a cada vez (o GitHub desliga lembretes de projetos sem mudanças por 60 dias).
-# A reserva fica no Netlify: netlify/functions/manter-supabase-acordado.mjs
+# (antes havia uma reserva no Netlify; o site e o app agora ficam só no GitHub Pages)
 name: Manter o Supabase acordado
 on:
   schedule:

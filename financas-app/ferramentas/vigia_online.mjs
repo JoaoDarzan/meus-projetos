@@ -25,11 +25,10 @@ for (const [fn, corpo] of [['claude_ler', { p_chave: chute, p_tabela: 'extrato' 
   const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
   confere(r.status >= 400, `${fn} com chave inventada é recusada (${r.status})`);
 }
-/* 4b. o Netlify não serve mais o app (só o site): /financas manda para o GitHub Pages */
-const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' });
-/* enquanto os créditos do Netlify estiverem acabados ele não publica: só avisa (não falha), para não mandar e-mail todo dia */
-if (nf.status >= 300 && nf.status < 400 && /joaodarzan\.github\.io\/meus-projetos\/financas/.test(nf.headers.get('location') || '')) ok.push('Netlify não serve mais a versão velha do app');
-else avisos.push(`Netlify ainda serve a versão velha do app (${nf.status}); ele volta a publicar quando os créditos do mês renovarem. Não use esse endereço.`);
+/* 4b. o Netlify foi desligado: o endereço antigo não pode mais servir a versão velha do app */
+const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' }).catch(() => null);
+if (!nf || nf.status === 404 || (nf.status >= 300 && nf.status < 400)) ok.push('endereço antigo do Netlify não serve mais o app');
+else avisos.push(`o endereço antigo do Netlify ainda responde (${nf.status}): confira se o projeto foi excluído lá.`);
 /* 5. o site tem as proteções do navegador e está na versão mais nova (versão velha no ar = brechas já corrigidas abertas) */
 const { readFileSync } = await import('node:fs');
 const versao = (readFileSync(new URL('../../darzan-producoes/financas/index.html', import.meta.url), 'utf8').match(/\?v=(\d+)/) || [])[1];

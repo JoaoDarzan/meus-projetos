@@ -3,12 +3,12 @@
 App pessoal de finanças do João Darzan: contas, cartões, trabalhos da Darzan Produções e da JPL SOM,
 equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de início) e no computador.
 
-**No ar em:** https://joaodarzan.github.io/meus-projetos/financas/ (GitHub Pages, sem selo) e https://darzanproducoes.netlify.app/financas/ (com login; só o João entra)
+**No ar em:** https://joaodarzan.github.io/meus-projetos/financas/ (GitHub Pages).
 
 ## Como funciona
 - **App** (`darzan-producoes/financas/`): páginas simples (HTML, CSS e JS, sem biblioteca de fora; só o leitor de PDF,
   pdf.js do cdnjs, é baixado na primeira vez que abre um PDF), publicadas pelo
-  Netlify junto com o site. Guarda uma cópia dos dados no aparelho: abre na hora e funciona sem internet.
+  GitHub Pages junto com o site. Guarda uma cópia dos dados no aparelho: abre na hora e funciona sem internet.
   Cada mudança entra numa fila e vai para o Supabase assim que der.
 - **Dados** (Supabase): uma tabela por assunto (extrato, contas, cartões, parcelados, fixas, equipamentos, trabalhos,
   anexos, tarefas, metas, categorias). Cada linha tem dono e só o dono vê e mexe (Row Level Security).
@@ -23,7 +23,7 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   Balanço mostra os trabalhos e o faturamento da Darzan por mês e no ano. Anexo aceita qualquer arquivo (foto vira JPEG
   leve; PDF e outros vão como estão, até 8 MB); abre em tela cheia com zoom e dá para compartilhar ou salvar.
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
-  a cada 3 dias) e, de reserva, Netlify (`netlify/functions/manter-supabase-acordado.mjs`, todo dia).
+  a cada 3 dias).
 
 - **Avisos no celular** (Web Push): o app monta a agenda (tabela `avisos`: faturas, contas para pagar na mão, tarefas e
   trabalhos, 1 dia antes e no dia). A cada 30 minutos o GitHub (`.github/workflows/avisos.yml` → `avisos/enviar.mjs`) manda os

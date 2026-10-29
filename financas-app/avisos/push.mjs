@@ -1,7 +1,7 @@
 /* Manda avisos para o celular (Web Push), sem biblioteca de fora: só o crypto do Node.
    - a mensagem vai trancada com as chaves do aparelho (RFC 8291, "aes128gcm")
    - o pedido vai assinado com a chave do app (VAPID, RFC 8292)
-   As chaves do app saem de um segredo só (AVISOS_SEGREDO), guardado no Netlify. */
+   As chaves do app saem de um segredo só (AVISOS_SEGREDO), guardado nos segredos do GitHub. */
 import crypto from 'node:crypto';
 
 export const b64u = buf => Buffer.from(buf).toString('base64url');

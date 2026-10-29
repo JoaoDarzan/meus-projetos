@@ -1,4 +1,4 @@
-# Publica o site (e o app em /financas) no GitHub Pages, sem o selo "Powered by Netlify".
+# Publica o site (e o app em /financas) no GitHub Pages: é o único lugar onde os dois ficam no ar.
 # Endereço: https://joaodarzan.github.io/meus-projetos/  ·  app: https://joaodarzan.github.io/meus-projetos/financas/
 # Precisa ligar uma vez: Settings → Pages → Source: GitHub Actions.
 name: Publicar no GitHub Pages
