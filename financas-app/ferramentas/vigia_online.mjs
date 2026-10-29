@@ -2,7 +2,7 @@
    Roda no GitHub todo dia (.github/workflows/vigia-seguranca.yml). Se algo abrir, o GitHub manda e-mail para o João.
    Só lê e tenta coisas que precisam ser recusadas: não grava nada. Uso: node financas-app/ferramentas/vigia_online.mjs */
 const SUPABASE = 'https://sczpyzcozcaibyzekmau.supabase.co', CHAVE = 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
-const SITES = ['https://darzanproducoes.netlify.app/financas/', 'https://joaodarzan.github.io/meus-projetos/financas/'];
+const SITES = ['https://joaodarzan.github.io/meus-projetos/financas/']; /* único endereço do app */
 const TABELAS = ['extrato', 'contas', 'cartoes', 'parcelados', 'fixas', 'equipamentos', 'trabalhos', 'anexos', 'tarefas', 'metas', 'categorias', 'avisos', 'aparelhos', 'acesso_claude', 'config_servidor', 'sinal_de_vida'];
 const problemas = [], ok = [];
 const confere = (bom, txt) => (bom ? ok : problemas).push(txt);
@@ -25,6 +25,9 @@ for (const [fn, corpo] of [['claude_ler', { p_chave: chute, p_tabela: 'extrato' 
   const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
   confere(r.status >= 400, `${fn} com chave inventada é recusada (${r.status})`);
 }
+/* 4b. o Netlify não serve mais o app (só o site): /financas manda para o GitHub Pages */
+const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' });
+confere(nf.status >= 300 && nf.status < 400 && /joaodarzan\.github\.io\/meus-projetos\/financas/.test(nf.headers.get('location') || ''), `Netlify não serve mais a versão velha do app (${nf.status} → ${nf.headers.get('location') || 'sem redirecionar'})`);
 /* 5. o site tem as proteções do navegador e está na versão mais nova (versão velha no ar = brechas já corrigidas abertas) */
 const { readFileSync } = await import('node:fs');
 const versao = (readFileSync(new URL('../../darzan-producoes/financas/index.html', import.meta.url), 'utf8').match(/\?v=(\d+)/) || [])[1];
@@ -34,7 +37,6 @@ for (const url of SITES) {
   const csp = r.headers.get('content-security-policy') || (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
   confere(/script-src 'self'(;|$)/.test(csp) && !/unsafe-eval/.test(csp), `${url}: política de segurança (CSP) forte`);
   confere(!/<script>(?!\s*<\/script>)/.test(html), `${url}: nenhum script escrito direto na página`);
-  if (url.includes('netlify')) confere(/DENY/i.test(r.headers.get('x-frame-options') || ''), `${url}: não abre dentro de outro site`);
 }
 console.log(ok.map(x => '  ok  ' + x).join('\n'));
 if (problemas.length) { console.log('\nPROBLEMAS DE SEGURANÇA:\n' + problemas.map(x => '  ✗  ' + x).join('\n')); process.exit(1); }

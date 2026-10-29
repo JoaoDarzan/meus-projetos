@@ -1,4 +1,4 @@
-# Publica o site da Darzan Produções no Netlify (o app de finanças fica em /financas)
+# Publica o site da Darzan Produções no Netlify (só o site: o app de finanças fica no GitHub Pages)
 [build]
   publish = "darzan-producoes"
 
@@ -7,22 +7,19 @@
   node_bundler = "esbuild"
   directory = "netlify/functions"
 
-# o app sempre busca a versão nova dos arquivos (o próprio app guarda a cópia para usar sem internet)
-[[headers]]
-  for = "/financas/*"
-  [headers.values]
-    Cache-Control = "no-cache"
-    X-Robots-Tag = "noindex, nofollow"
+# o app de finanças NÃO fica mais no Netlify (só o site): quem abrir /financas vai para o app no GitHub Pages,
+# que é o único endereço do app (a versão velha que estava aqui não abre mais)
+[[redirects]]
+  from = "/financas"
+  to = "https://joaodarzan.github.io/meus-projetos/financas/"
+  status = 301
+  force = true
 
-# proteções do navegador no app (o mesmo que o index.html pede, mais o que só dá para mandar por cabeçalho)
-[[headers]]
-  for = "/financas/*"
-  [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' https://sczpyzcozcaibyzekmau.supabase.co; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; frame-ancestors 'none'"
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
+[[redirects]]
+  from = "/financas/*"
+  to = "https://joaodarzan.github.io/meus-projetos/financas/:splat"
+  status = 301
+  force = true
 
 # o site também não abre dentro de outro site
 [[headers]]
