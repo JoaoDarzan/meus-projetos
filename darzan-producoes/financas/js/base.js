@@ -303,10 +303,12 @@ window.A = window.A || {};
     return dia > fecha ? fechou : u.addMes(fechou, 1);
   };
   c.vence = (nome, m) => { const { dia, estimado } = c.diasCartao(c.cartao(nome) || {}); return { data: u.dataNoMes(m, dia), estimado }; };
-  c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l));
+  /* compra devolvida ou reembolsada continua na fatura (o banco cobra e depois devolve), mas não conta como gasto */
+  c.naFatura = l => c.ehGasto(l) || l.grupo === 'Reembolso';
+  c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l));
   c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m)));
   c.pagFatura = (nome, m) => c.lancs().find(l => l.obs.indexOf(`Fatura ${nome} ${m}`) === 0);
-  c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.ehGasto(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
+  c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
   c.contaQuePaga = nome => { const k = c.cartao(nome) || {}; return String(k['PAGA PELA CONTA'] || nome).split('·')[0].trim(); };
 
   /* transferência entre contas: as duas pontas (saiu de um banco, entrou no outro) */
@@ -476,7 +478,7 @@ window.A = window.A || {};
   /* o que precisa de conserto */
   c.REVISAR = {
     banco: { nome: 'Sem banco', f: l => l.tipo === 'conta' && (!l.banco || l.banco === 'Não informado') },
-    categoria: { nome: 'Sem categoria', f: l => c.semCategoria(l) && l.grupo !== 'Transferência' },
+    categoria: { nome: 'Sem categoria', f: l => c.semCategoria(l) && l.grupo !== 'Transferência' && l.grupo !== 'Reembolso' },
     conferir: { nome: 'Para conferir', f: l => /conferir/i.test(l.obs) },
   };
   c.paraRevisar = k => c.lancs().filter(c.REVISAR[k].f);

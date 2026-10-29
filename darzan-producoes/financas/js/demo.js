@@ -121,7 +121,7 @@ window.A = window.A || {};
       meses.forEach(fm => {
         const venc = u.dataNoMes(fm, vence);
         if (venc >= hoje) return;
-        const v = -u.sum(abas.EXTRATO.filter(l => l['TIPO'] === 'cartão' && l['BANCO'] === nome && u.mes(l['DATA']) === fm && l['GRUPO'] !== 'Reembolso'), l => l['VALOR']);
+        const v = -u.sum(abas.EXTRATO.filter(l => l['TIPO'] === 'cartão' && l['BANCO'] === nome && u.mes(l['DATA']) === fm), l => l['VALOR']); /* devolvida também passa pela fatura */
         L(venc, paga, `Pagamento fatura ${nome} (${u.nomeMes(fm).toLowerCase()})`, 'Transferência', -v, 'Transferência', 'Pagamento de fatura', { 'OBS': `Fatura ${nome} ${fm}` });
       });
     });
@@ -148,7 +148,7 @@ window.A = window.A || {};
       ['Casa', ['Moradia', 'Contas'], 'Necessidades'], ['Saúde e beleza', ['Farmácia', 'Corte de cabelo'], 'Necessidades'], ['Trabalho', ['Equipamentos', 'Cursos', 'Software', 'Negócio'], 'Necessidades'],
       ['Assinaturas', ['Streaming', 'Apps'], 'Desejos'], ['Lazer', ['Lazer', 'Presente', 'Viagem'], 'Desejos'], ['Compras', ['Eletrônicos', 'Roupas'], 'Desejos'],
       ['Guardado', ['Reserva', 'Caixinha', 'Investimento'], 'Guardado'], ['Transferência', ['Entre minhas contas', 'Pagamento de fatura'], 'Transferência'],
-      ['Reembolso', ['JPL SOM', 'Família', 'Outros'], 'Reembolso'], ['Outros', ['Outros'], 'Desejos']]
+      ['Reembolso', ['JPL SOM', 'Família', 'Compra devolvida', 'Outros'], 'Reembolso'], ['Outros', ['Outros'], 'Desejos']]
       .forEach(([cat, subs, grupo]) => subs.forEach(sub => abas.CATEGORIAS.push({ ID: id('G'), 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'GRUPO': grupo })));
     return { app: 'Darzan Finanças', demo: true, abas };
   };

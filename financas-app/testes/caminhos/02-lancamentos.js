@@ -58,6 +58,15 @@ module.exports = { etapa: 'Lançamentos', testes: [
     certo(d && d.grupo === 'Reembolso' && d.valor === 200, 'dinheiro devolvido gravado errado: ' + JSON.stringify(d));
     const depois = await resumo(p, m0);
     igual(depois.entr, antes.entr, 'entrou não muda'); igual(depois.saiu, antes.saiu, 'saiu não muda');
+    // compra no cartão que foi devolvida: continua na fatura (cobrada e devolvida), não conta como gasto e não vai para o Revisar
+    const k = await p.evaluate(() => A.c.cartoes()[0]['CARTÃO']);
+    const f0 = await p.evaluate(([k, m]) => A.c.fatura(k, m), [k, m0]), s0 = (await resumo(p, m0)).saiu;
+    st.tabelas.extrato.push({ id: 'LTESTE-DEV', user_id: 'u-joao', data: HOJE, banco: k, descricao: 'Loja X (compra devolvida)', grupo: 'Reembolso', tipo: 'cartão', valor: -90, categoria: '', subcategoria: '', status: 'Pago', obs: '' },
+      { id: 'LTESTE-DEV-EST', user_id: 'u-joao', data: HOJE, banco: k, descricao: 'Estorno Loja X', grupo: 'Reembolso', tipo: 'cartão', valor: 40, categoria: '', subcategoria: '', status: 'Pago', obs: '' });
+    await p.evaluate(() => A.db.atualizar()); await p.evaluate(() => A.render(false));
+    igual(await p.evaluate(([k, m]) => A.c.fatura(k, m), [k, m0]), f0 + 50, 'a fatura tem a compra e o estorno');
+    igual((await resumo(p, m0)).saiu, s0, 'compra devolvida não conta como gasto');
+    certo(!(await p.evaluate(() => A.c.paraRevisar('categoria').some(l => /^LTESTE-DEV/.test(l.id)))), 'compra devolvida não vai para o Revisar');
     // editar uma transferência que entrou não pode virar saída
     await clica(p, '[data-a=editL][data-id="LTESTE-TR"]');
     await p.fill('#fV', '1600'); await clica(p, '#s2 .save'); await calmo(p);
