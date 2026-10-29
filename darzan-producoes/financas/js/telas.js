@@ -11,7 +11,7 @@
     const ms = c.meses(), i = ms.indexOf(ui.mes);
     return `<div class="mpill"><button type="button" data-a="mes" data-d="-1" aria-label="Mês anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><span>${u.nomeMes(ui.mes)}${ui.mes.slice(0, 4) !== u.hoje().slice(0, 4) ? ' ' + ui.mes.slice(2, 4) : ''}</span><button type="button" data-a="mes" data-d="1" aria-label="Próximo mês" ${i >= ms.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>`;
   };
-  const bar = (titulo, voltar, comMes = true) => `<header class="bar">${voltar ? `<button class="back" type="button" data-a="go" data-v="${voltar}" aria-label="Voltar">${u.svg('chevron-left')}</button>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
+  const bar = (titulo, voltar, comMes = true) => `<header class="bar">${pilha.length ? `<button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button>` : voltar ? `<button class="back" type="button" data-a="go" data-v="${voltar}" aria-label="Voltar">${u.svg('chevron-left')}</button>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
   const seg = (nome, atual, ops) => `<div class="seg" role="group">${ops.map(([k, n]) => `<button type="button" data-a="seg" data-s="${nome}" data-v="${k}" aria-pressed="${atual === k}">${n}</button>`).join('')}</div>`;
   const vazio = (icone, txt, botao) => `<div class="vazio">${u.ti(icone, 'lg')}<span>${txt}</span>${botao || ''}</div>`;
   function linhaL(l) {
@@ -19,10 +19,25 @@
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
     return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
-  function barras(cats) {
-    const mx = Math.max(...cats.map(x => x.valor), 1);
-    return `<div class="bars">${cats.map((x, i) => { const s = c.icone(x.cat); return `<button type="button" class="bx" data-a="filtroCat" data-v="${u.esc(x.cat)}" style="border:0;background:none;padding:0;text-align:left;color:inherit;width:100%">${u.ti(s)}<span class="n">${u.esc(x.cat)} <span class="c-muted" style="font-weight:500">· ${x.n}</span></span><b class="v num">${u.brl(x.valor)}</b><span class="t"><i style="width:${x.valor / mx * 100}%;--a:${s[1]};--b:${s[2]};--d:${.1 + i * .05}s"></i></span></button>`; }).join('')}</div>`;
+  /* "Para onde foi": rosca com as categorias (cores validadas para o fundo escuro) e a lista; tocar abre as subcategorias */
+  const CAT_COR = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9'];
+  function ondeFoi(r, onde) {
+    if (!r.cats.length) return '';
+    const tot = u.sum(r.cats, x => x.valor) || 1, top = r.cats.slice(0, 6), resto = r.cats.slice(6);
+    const fatias = top.map((x, i) => Object.assign({ cor: CAT_COR[i] }, x));
+    if (resto.length) fatias.push({ cat: 'Outras', valor: u.sum(resto, x => x.valor), n: u.sum(resto, x => x.n), cor: '#6b7591', outras: resto });
+    let acc = 0;
+    const R = 70, C = 2 * Math.PI * R, gap = fatias.length > 1 ? 1.6 : 0;
+    const arcos = fatias.map(f => { const len = Math.max(f.valor / tot * C - gap, .6), a = `<circle class="fatia" r="${R}" cx="90" cy="90" fill="none" stroke="${f.cor}" stroke-width="24" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(f.valor / tot)})</title></circle>`; acc += f.valor / tot * C; return a; }).join('');
+    const aberta = ui.cexp && fatias.find(f => f.cat === ui.cexp);
+    const subs = f => {
+      if (f.outras) return f.outras.map(x => [x.cat, x.valor]);
+      return Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
+    };
+    return `<div class="ondefoi"><div class="rosca"><svg viewBox="0 0 180 180" role="img" aria-label="Gastos por categoria"><g transform="rotate(-90 90 90)">${arcos}</g><text x="90" y="86" text-anchor="middle" class="rv num">${u.k0(r.saiu)}</text><text x="90" y="106" text-anchor="middle" class="rl">saiu no mês</text></svg></div>
+      <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}<small>${f.n} ${f.n === 1 ? 'gasto' : 'gastos'}</small></span><b class="num">${u.brl(f.valor)}<small>${u.pct(f.valor / tot)}</small></b></button>${aberta === f ? (() => { const ss = subs(f), mx = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / mx * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : `<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button>`}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div>`;
   }
+
   function anel(p, tam, esp, cor) { const r = (tam - esp) / 2, cf = 2 * Math.PI * r; return `<svg viewBox="0 0 ${tam} ${tam}" width="${tam}" height="${tam}"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="${esp}"/><circle class="rg" cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${cf}" stroke-dashoffset="${cf}" data-off="${cf * (1 - Math.min(Math.max(p, 0), 1))}"/></svg>`; }
   const foto = () => window.FOTO_JOAO ? `<img class="ava" src="${window.FOTO_JOAO}" alt="">` : `<span class="ava" style="display:grid;place-items:center;background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#3a2500;font-weight:800">JD</span>`;
   function tkLinha(t) {
@@ -56,7 +71,7 @@
     const d1 = c.dicas(m)[0];
     return `<div class="home"><div class="col-l">
       <section class="hero"><span class="blob b1"></span><span class="blob b2"></span>
-        <div class="hello"><button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+        <div class="hello">${pilha.length ? `<button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button>` : ''}<button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
           <button class="eye" type="button" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}">${u.svg(ui.oculto ? 'eye-off' : 'eye')}</button>
           <button class="bell ${urg ? 'ring' : ''}" type="button" data-a="go" data-v="tarefas" aria-label="Tarefas">${u.svg('bell')}${urg ? `<span class="cnt">${urg}</span>` : ''}</button></div>
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
@@ -76,7 +91,7 @@
       <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer</h2><button class="more" type="button" data-a="go" data-v="tarefas">Ver tudo</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], 'Nada pendente. Tudo em dia!')}</section>
       ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#ffd36b', '#c07a12'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
       <section class="sec"><div class="sec-h"><h2>Para onde foi</h2><span class="c-muted num" style="font-size:.86rem">${r.cats.length} categorias</span></div>
-        <div class="panel">${r.cats.length ? `<div class="scrollbox">${barras(r.cats)}</div><div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div>` : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto neste mês.')}</div></section>
+        <div class="panel">${r.cats.length ? ondeFoi(r) : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto neste mês.')}</div></section>
       <section class="sec"><div class="sec-h"><h2>Lançamentos de ${u.nomeMes(m).toLowerCase()}</h2><button class="more" type="button" data-a="irExtrato">Ver extrato</button></div>
         <div class="panel" style="padding:6px 10px">${ult.length ? `<div class="scrollbox fade">${ult.map(linhaL).join('')}</div><div class="tot-row" style="font-weight:600;font-size:.84rem"><span class="c-muted">${ult.length} lançamentos · toque para editar</span></div>` : vazio(['list-checks', '#9cc6ff', '#2a62e0'], 'Nada lançado neste mês.', `<button class="btn2 pri" type="button" data-a="novoL" data-t="saida">${u.svg('plus')}Lançar</button>`)}</div></section>
       <section class="sec"><div class="panel insight"><span class="eyebrow">Dica de ${u.nomeMes(m).toLowerCase()}</span><h3>${u.esc(d1.t)}</h3><p>${d1.s}</p><button class="more" type="button" data-a="irRel" data-v="mes" style="margin-top:8px">Ver relatório →</button></div></section>
@@ -389,7 +404,7 @@
         <p style="margin-top:10px">Entraram <b class="num">${u.brl(r.entr)}</b>: ${u.k0(r.fonte['Salário CLT'])} do salário, ${u.k0(r.fonte['Darzan Produções'])} da Darzan e ${u.k0(r.fonte['JPL SOM'])} da JPL SOM.</p>
         <p>Saíram <b class="num">${u.brl(r.saiu)}</b>${mg ? `, ${r.saiu > mg ? u.pct(r.saiu / mg - 1) + ' a mais' : u.pct(1 - r.saiu / mg) + ' a menos'} que a sua média` : ''}. Você guardou <b class="num">${u.k0(r.guardou)}</b> e ${r.sobra >= 0 ? 'sobraram' : 'faltaram'} <b class="num">${u.brl(Math.abs(r.sobra))}</b>.</p></div></section>
       <div class="two"><section class="sec"><div class="sec-h"><h2>O que dá pra melhorar</h2></div><ol class="tips">${c.dicas(ui.mes).slice(0, 4).map((d, n) => `<li><span class="n">${n + 1}</span><div><b>${u.esc(d.t)}</b><span class="s">${d.s}</span></div></li>`).join('')}</ol></section>
-      <section class="sec"><div class="sec-h"><h2>Para onde foi</h2></div><div class="panel">${r.cats.length ? `<div class="scrollbox">${barras(r.cats)}</div><div class="tot-row"><span>Total</span><b class="num">${u.brl(r.saiu)}</b></div>` : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto em ' + mm + '.')}</div></section></div>`;
+      <section class="sec"><div class="sec-h"><h2>Para onde foi</h2></div><div class="panel">${r.cats.length ? ondeFoi(r) : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto em ' + mm + '.')}</div></section></div>`;
   };
   REL.ano = () => {
     const ms = c.mesesPassados().concat(c.doMes(u.mes(u.hoje())).length ? [u.mes(u.hoje())] : []);
@@ -1047,7 +1062,7 @@
     $('fabwrap').hidden = ui.view === 'inicio' || (ui.view === 'fin' && ui.fseg === 'revisar');
   }
   function render(anim = true) {
-    nav();
+    lembrarNav(); nav();
     const v = $('view');
     v.innerHTML = (R[ui.view] || R.inicio)();
     if (DEPOIS[ui.view]) DEPOIS[ui.view]();
@@ -1056,10 +1071,29 @@
   }
   A.render = render;
   function go(v) { ui.view = v; render(); scrollTo({ top: 0 }); }
+  /* ---------- voltar: o app lembra por onde você passou (aba, seção, filtro) e volta um passo de cada vez.
+     O "voltar" do celular (Android) fecha primeiro a janela aberta; depois volta a tela */
+  const pilha = [];
+  let navAnt = null;
+  const navAgora = () => ({ view: ui.view, fseg: ui.fseg, rseg: ui.rseg, jseg: ui.jseg, filtro: ui.filtro, cartao: ui.cartao });
+  function lembrarNav() {
+    const n = navAgora();
+    if (navAnt && JSON.stringify(n) !== JSON.stringify(navAnt)) { pilha.push(navAnt); if (pilha.length > 40) pilha.shift(); try { history.pushState({ df: 1 }, ''); } catch (e) { /* sem histórico */ } }
+    navAnt = n;
+  }
+  function voltarUmPasso() { const n = pilha.pop(); if (!n) return; Object.assign(ui, n); navAnt = n; render(); scrollTo({ top: 0 }); }
+  A.voltar = () => { if (pilha.length) history.back(); };
+  addEventListener('popstate', () => {
+    const segura = () => { try { history.pushState({ df: 1 }, ''); } catch (e) { /* sem histórico */ } };
+    if (visor) { fecharVisor(); segura(); return; }
+    if (!$('scrim2').hidden) { fechar(); segura(); return; }
+    voltarUmPasso();
+  });
 
   /* ================= cliques ================= */
   const ACOES = {
     go: b => go(b.dataset.v),
+    voltar: () => A.voltar(),
     mes: b => { const ms = c.meses(), i = ms.indexOf(ui.mes) + +b.dataset.d; if (ms[i]) { ui.mes = ms[i]; render(); } },
     seg: b => { if (b.dataset.s === 'rvfil' && ui.rvfil !== b.dataset.v) ui.rvsel.clear(); ui[b.dataset.s] = b.dataset.v; render(!['filtro', 'tfil', 'rvfil'].includes(b.dataset.s)); },
     ocultar: () => { ui.oculto = !ui.oculto; try { localStorage.setItem('df-oculto', ui.oculto ? '1' : '0'); } catch (e) { /* sem armazenamento */ } render(false); },
@@ -1079,6 +1113,7 @@
     irCartoes: b => { ui.fseg = 'cartoes'; if (b.dataset.v) ui.cartao = b.dataset.v; go('fin'); },
     irExtrato: () => { ui.fseg = 'extrato'; ui.filtro = 'tudo'; go('fin'); },
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },
+    abreCat: b => { ui.cexp = ui.cexp === b.dataset.v ? null : b.dataset.v; render(false); },
     filtroCat: b => { ui.fseg = 'extrato'; ui.filtro = 'cat:' + b.dataset.v; go('fin'); },
     novoL: b => formLanc(b.dataset.t),
     trocaTipo: b => b.dataset.v === 'transferir' ? formTransferir() : formLanc(b.dataset.v),
@@ -1175,6 +1210,7 @@
     if (!c.doMes(ui.mes).length) { const ms = c.mesesPassados(); if (ms.length) ui.mes = ms[ms.length - 1]; }
   }
   async function abrirApp() {
+    pilha.length = 0; navAnt = null;
     document.body.classList.toggle('demo', N.ehDemo());
     const temCopia = db.abrirCopia();
     if (temCopia) { escolherMes(); render(); splash.sair(); }
