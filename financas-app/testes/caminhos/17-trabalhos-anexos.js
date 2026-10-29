@@ -96,14 +96,31 @@ module.exports = { etapa: 'Trabalhos: vídeos, anexos e parcelas', testes: [
     certo(prev.length === 2 && prev[0].data === m0 + '-26' && prev[1].data === addMes(m0, 1) + '-26' && prev.every(l => l.valor === 200 && l.status === 'Previsto' && l.grupo === 'Renda'), 'parcelas deste mês e do próximo: ' + JSON.stringify(prev.map(l => [l.id, l.data, l.valor, l.status])));
     const d = await p.evaluate(() => ({ rec: A.c.recebido(A.db.achar('TRABALHOS', 'JT4')), tarefa: A.c.tarefas().find(t => t.id === 'l:LJP-JT4-' + A.u.mes(A.u.hoje())), aviso: A.c.avisos().some(a => /casal parcela - parcela/i.test(a['TITULO'])) }));
     igual(d.rec, 200, 'parcela prevista não conta como recebida');
+    const r0 = await p.evaluate(m => { const r = A.c.resumo(m); return [r.entr, r.aReceber]; }, m0);
     certo(d.tarefa && d.tarefa.grupo === 'receber' && !d.tarefa.feita, 'a parcela aparece nas Tarefas para receber');
     certo(d.aviso, 'tem aviso no celular da parcela');
+    /* lembrete no WhatsApp: sem número, a ficha pede o número; com número, abre o WhatsApp com a mensagem pronta */
+    await p.evaluate(() => { A.ui.view = 'trabalhos'; A.render(false); });
+    await clica(p, '#view [data-a=editJ][data-id="JT4"]');
+    certo(await p.isVisible('#jRec .whats.sem'), 'sem WhatsApp do cliente: pede para colocar');
+    await clica(p, '#jRec .whats.sem'); certo(await p.evaluate(() => document.activeElement && document.activeElement.id === 'jW'), 'leva até o campo do WhatsApp');
+    await p.fill('#jW', '(19) 98888-7777'); await clica(p, '#s2 .save'); await calmo(p);
+    await clica(p, '#view [data-a=editJ][data-id="JT4"]');
+    const links = await p.$$eval('#jRec a.whats', as => as.map(a => decodeURIComponent(a.getAttribute('href'))));
+    certo(links.length === 2 && links.every(l => l.startsWith('https://wa.me/5519988887777?text=Oi, Casal!') && /R\$ 200,00/.test(l) && /Darzan Produções/.test(l)), 'link do WhatsApp com número e mensagem: ' + links[0]);
+    certo(/vence em 26\//.test(links[1]) && /desconsiderar/.test(links[1]), 'parcela que ainda vai vencer: lembrete leve');
+    await clica(p, '#s2 [data-a=fechar]');
+    await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
+    certo(await p.isVisible(`#view .tk a.whats`), 'a tarefa de receber tem o botão Lembrar');
+    certo(/Receber Casal Parcela/.test(await p.textContent('#view')), 'nome do cliente com maiúscula na tarefa');
     /* ela pagou: marca a tarefa */
     await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
     await clica(p, `#view [data-a=tarefa][data-id="l:LJP-JT4-${m0}"]`);
     await calmo(p);
     certo(st.linhas('extrato').find(l => l.id === 'LJP-JT4-' + m0).status === 'Pago', 'parcela marcada como recebida');
     igual(await p.evaluate(() => A.c.recebido(A.db.achar('TRABALHOS', 'JT4'))), 400, 'recebido sobe para 400');
+    const r1 = await p.evaluate(m => { const r = A.c.resumo(m); return [r.entr, r.aReceber]; }, m0);
+    certo(Math.abs(r1[0] - r0[0] - 200) < 0.01 && Math.abs(r0[1] - r1[1] - 200) < 0.01, 'a parcela só entra em "Entrou" quando chega (antes fica em "a receber"): ' + JSON.stringify([r0, r1]));
     /* abrir de novo não repete e não passa do valor do trabalho (600 = 3 parcelas) */
     await p.reload(); await p.waitForFunction(() => document.getElementById('splash').hidden && document.querySelector('#view').children.length); await calmo(p);
     igual(st.linhas('extrato').filter(l => /^LJP-JT4-/.test(l.id)).length, 2, 'sem parcela repetida nem a mais');

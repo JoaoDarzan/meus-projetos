@@ -41,12 +41,20 @@
 
   function anel(p, tam, esp, cor) { const r = (tam - esp) / 2, cf = 2 * Math.PI * r; return `<svg viewBox="0 0 ${tam} ${tam}" width="${tam}" height="${tam}"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="${esp}"/><circle class="rg" cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${cf}" stroke-dashoffset="${cf}" data-off="${cf * (1 - Math.min(Math.max(p, 0), 1))}"/></svg>`; }
   const foto = () => window.FOTO_JOAO ? `<img class="ava" src="${window.FOTO_JOAO}" alt="">` : `<span class="ava" style="display:grid;place-items:center;background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#3a2500;font-weight:800">JD</span>`;
+  /* botão "Lembrar no WhatsApp" (abre o WhatsApp com a mensagem pronta; você confere e envia) */
+  const botaoWhats = (j, valor, venc, mini) => {
+    const link = j && c.linkWhats(j, valor, venc);
+    if (link) return `<a class="whats${mini ? ' mini' : ''}" href="${u.esc(link)}" target="_blank" rel="noopener noreferrer">${u.svg('message-circle')}${mini ? 'Lembrar' : 'Lembrar no WhatsApp'}</a>`;
+    return j && !mini ? `<button type="button" class="whats sem" data-a="editJ" data-id="${u.esc(j.ID)}" data-foco="jW">${u.svg('message-circle')}Coloque o WhatsApp do cliente para lembrar</button>` : '';
+  };
+  /* tarefa de receber parcela de um trabalho: de qual trabalho é */
+  const jobDoLanc = id => { const l = db.achar('EXTRATO', id), m = l && String(l['OBS'] || '').match(/Trabalho (J[\w-]+)/); return m ? db.achar('TRABALHOS', m[1]) : null; };
   function tkLinha(t) {
     const ok = t.feita, urg = !ok && u.ateHoje(t.data) <= 1;
     const q = u.ateHoje(t.data), chip = ok ? '<span class="due feito">Feito</span>' : q < 0 ? '<span class="due amanha">Atrasada</span>' : q === 0 ? '<span class="due hoje">Hoje</span>' : q === 1 ? '<span class="due amanha">Amanhã</span>' : `<span class="due breve">${u.dm(t.data)}</span>`;
     return `<div class="tk ${ok ? 'ok' : ''} ${urg ? 'urgent' : ''}"><button class="ck" type="button" data-a="tarefa" data-id="${u.esc(t.id)}" aria-pressed="${ok}" aria-label="${ok ? 'Desmarcar' : 'Marcar como feito'}">${u.svg('check')}</button>${u.ti(t.icone)}
       <button type="button" data-a="editT" data-id="${u.esc(t.id)}" style="min-width:0;border:0;background:none;padding:0;text-align:left;color:inherit"><div class="t">${u.esc(t.titulo)}</div><div class="m">${t.valor ? `<b class="num" style="color:var(--fg)">${u.brl(t.valor)}</b>` : ''}${chip}${t.estimado && !ok ? '<span class="estim">vencimento estimado</span>' : ''}${t.banco && t.valor && t.banco !== 'Não informado' ? `<span>${t.grupo === 'receber' ? 'entra no' : 'sai do'} ${u.esc(t.banco)}</span>` : ''}</div></button>
-      ${ok ? `<button class="undo" type="button" data-a="tarefa" data-id="${u.esc(t.id)}">${u.svg('undo-2')}Desfazer</button>` : '<span></span>'}</div>`;
+      ${ok ? `<button class="undo" type="button" data-a="tarefa" data-id="${u.esc(t.id)}">${u.svg('undo-2')}Desfazer</button>` : t.grupo === 'receber' && t.id.startsWith('l:') ? botaoWhats(jobDoLanc(t.id.slice(2)), t.valor, t.data, true) || '<span></span>' : '<span></span>'}</div>`;
   }
 
   /* fatura que importa agora: a mais antiga ainda sem pagar (até 10 dias de atraso) ou a que está aberta */
@@ -80,7 +88,7 @@
           <button class="bell ${urg ? 'ring' : ''}" type="button" data-a="go" data-v="tarefas" aria-label="Tarefas">${u.svg('bell')}${urg ? `<span class="cnt">${urg}</span>` : ''}</button></div>
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
           <div class="big num" data-cnt="${r.sobra}" data-fmt="big">${u.big(r.sobra)}</div></div>
-        <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="k0">${u.k0(r.entr)}</b></span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="k0">${u.k0(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="k0">${u.k0(r.guardou)}</b></span></div>
+        <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="k0">${u.k0(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.k0(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="k0">${u.k0(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="k0">${u.k0(r.guardou)}</b></span></div>
         <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.k0(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
       ${cartoes.length ? `<section class="sec"><div class="sec-h"><h2>Cartões</h2><button class="more" type="button" data-a="irCartoes">Ver faturas</button></div><div class="rail">${cartoes.map(k => { const nome = k['CARTÃO'], fm = m, v = c.fatura(nome, fm), ven = c.vence(nome, fm), q = u.ateHoje(ven.data); return `<button type="button" class="gcard sm tilt" style="--g:${c.GRAD[nome] || 'var(--mp)'}" data-a="irCartoes" data-v="${u.esc(nome)}"><span class="sheen"></span><span class="bank">${u.esc(nome)}${u.svg('smartphone-nfc')}</span><span><span class="k">Fatura de ${u.nomeMes(fm).toLowerCase()}</span><br><span class="amt num">${u.brl(v)}</span></span><span class="foot"><span>${q < 0 ? 'Venceu' : 'Vence'} ${u.dm(ven.data)}${ven.estimado ? '*' : ''}</span><span>${c.pagFatura(nome, fm) ? 'Paga ✓' : q < 0 && v > 0 ? 'Atrasada' : 'Crédito'}</span></span></button>`; }).join('')}</div></section>` : ''}
@@ -254,7 +262,7 @@
     let html = '', dia = null;
     L.forEach(l => { if (l.data !== dia) { dia = l.data; const q = u.quando(l.data), sem = new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); html += `<div class="day">${/^(Hoje|Ontem|Amanhã)$/.test(q) ? q : sem} · ${u.ddmmaa(l.data)}</div>`; } html += linhaL(l); });
     const chips = [['tudo', 'Tudo'], ['entradas', 'Entradas'], ['saidas', 'Saídas'], ['cartao', 'Cartão'], ['previstos', 'Previstos']].concat(F.startsWith('cat:') ? [[F, F.slice(4)]] : []);
-    return `<section class="sec"><div class="kpis k4"><div class="kpi"><span>Entrou</span><b class="num c-in">${u.brl(r.entr)}</b></div><div class="kpi"><span>Saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div><div class="kpi"><span>Guardou</span><b class="num c-sav">${u.brl(r.guardou)}</b></div><div class="kpi"><span>Sobrou</span><b class="num">${u.brl(r.sobra)}</b></div></div></section>
+    return `<section class="sec"><div class="kpis k4"><div class="kpi"><span>Entrou</span><b class="num c-in">${u.brl(r.entr)}</b>${r.aReceber ? `<small>+ ${u.brl(r.aReceber)} a receber (ainda não entrou)</small>` : ''}</div><div class="kpi"><span>Saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div><div class="kpi"><span>Guardou</span><b class="num c-sav">${u.brl(r.guardou)}</b></div><div class="kpi"><span>Sobrou</span><b class="num">${u.brl(r.sobra)}</b></div></div></section>
       <div class="sec" style="display:grid;gap:12px"><input class="search" id="busca" type="search" placeholder="Buscar: gasolina, cliente, iFood…" value="${u.esc(ui.q)}" aria-label="Buscar"><div class="chips">${chips.map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="filtro" data-v="${u.esc(k)}" aria-pressed="${F === k}">${u.esc(n)}</button>`).join('')}</div></div>
       <div class="panel" style="margin-top:14px;padding:4px 10px 10px">${html || vazio(['search', '#9cc6ff', '#2a62e0'], 'Nada encontrado neste mês.')}</div>`;
   };
@@ -780,7 +788,7 @@
   function recebimentosJob(j) {
     const recs = c.recebimentos(j), prev = c.parcelasPrevistas(j), tot = c.num(j['VALOR TOTAL']);
     return `<h4>${u.svg('hand-coins')} Recebimentos · ${u.brl(c.recebido(j))}${tot ? ` de ${u.brl(tot)}` : ''}</h4>${recs.map(l => { const x = anexoDoLanc(l.id); return linhaL(l) + (x ? `<button type="button" class="vercomp" data-a="verX" data-id="${u.esc(x.ID)}">${u.svg('receipt')}Ver comprovante</button>` : ''); }).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
-      ${prev.length ? `<p class="c-muted" style="font-size:.84rem;margin:10px 2px 4px">${u.svg('calendar-clock')} Parcelas a receber (aparecem nas Tarefas, com aviso no celular):</p>${prev.map(linhaL).join('')}` : ''}
+      ${prev.length ? `<p class="c-muted" style="font-size:.84rem;margin:10px 2px 4px">${u.svg('calendar-clock')} Parcelas a receber (aparecem nas Tarefas, com aviso no celular):</p>${prev.map(l => linhaL(l) + `<div class="whatsl">${botaoWhats(j, l.valor, l.data)}</div>`).join('')}` : (c.faltaReceber(j) > 0 && j['ETAPA'] !== 'Orçamento' ? `<div class="whatsl">${botaoWhats(j, c.faltaReceber(j), null)}</div>` : '')}
       <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, parcela" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.esc(u.hoje())}" aria-label="Data"></div>
         ${semAnexos() ? '' : `<label class="btn2 comp" for="rArq">${u.svg('paperclip')}<span id="rArqN">Anexar comprovante (opcional)</span></label><input type="file" id="rArq" hidden>`}
         <button type="button" class="btn2 pri" data-a="receber" data-id="${u.esc(j.ID)}" data-sub="${u.esc(SUBJ[j['TIPO DE EVENTO']] || 'Evento')}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div>`;
@@ -1145,7 +1153,7 @@
     editE: b => formEquip(db.achar('EQUIPAMENTOS', b.dataset.id)),
     apagarE: b => apagarEquip(b.dataset.id, b),
     novoJ: () => formJob(null),
-    editJ: b => formJob(db.achar('TRABALHOS', b.dataset.id)),
+    editJ: b => { formJob(db.achar('TRABALHOS', b.dataset.id)); const f = b.dataset.foco && $(b.dataset.foco); if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); } },
     apagarJ: b => apagarJob(b.dataset.id, b),
     receber: b => receber(b.dataset.id, b.dataset.sub),
     etapaJ: b => etapaNaFicha(b),

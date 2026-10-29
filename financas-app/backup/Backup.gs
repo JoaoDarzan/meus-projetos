@@ -139,7 +139,7 @@ function resumo(extrato) {
     if (!l.data) return;
     var m = String(l.data).slice(0, 7), v = Number(l.valor) || 0;
     var x = meses[m] || (meses[m] = { e: 0, s: 0, g: 0 });
-    if (l.grupo === 'Renda') x.e += v;
+    if (l.grupo === 'Renda') { if (l.status !== 'Previsto') x.e += v; } /* previsto ainda não entrou */
     else if (l.grupo === 'Necessidades' || l.grupo === 'Desejos') x.s -= v;
     else if (l.grupo === 'Guardado') x.g -= v;
   });

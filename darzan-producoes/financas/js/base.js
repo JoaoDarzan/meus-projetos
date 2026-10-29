@@ -274,14 +274,15 @@ window.A = window.A || {};
 
   c.resumo = m => {
     const L = c.doMes(m);
-    const ent = L.filter(l => l.grupo === 'Renda'), gastos = L.filter(c.ehGasto), guard = L.filter(l => l.grupo === 'Guardado');
+    /* dinheiro previsto (ex.: parcela que o cliente ainda vai pagar) não conta como "entrou": fica em "a receber" até você marcar que chegou */
+    const ent = L.filter(l => l.grupo === 'Renda' && l.status !== 'Previsto'), aRec = L.filter(l => l.grupo === 'Renda' && l.status === 'Previsto'), gastos = L.filter(c.ehGasto), guard = L.filter(l => l.grupo === 'Guardado');
     const fonte = { 'Salário CLT': 0, 'Darzan Produções': 0, 'JPL SOM': 0, 'Outras rendas': 0 };
     ent.forEach(l => { fonte[fonte[l.cat] !== undefined ? l.cat : 'Outras rendas'] += l.valor; });
     const cats = {};
     gastos.forEach(l => { const k = l.cat || 'Outros'; const x = cats[k] || (cats[k] = { cat: k, valor: 0, n: 0, subs: {} }); x.valor -= l.valor; x.n++; x.subs[l.sub || '—'] = (x.subs[l.sub || '—'] || 0) - l.valor; });
     const entr = u.r2(u.sum(ent)), saiu = u.r2(-u.sum(gastos)), guardou = u.r2(-u.sum(guard));
     const nec = u.r2(-u.sum(gastos.filter(l => l.grupo === 'Necessidades')));
-    return { m, L, ent, gastos, guard, fonte, cats: Object.values(cats).map(x => (x.valor = u.r2(x.valor), x)).sort((a, b) => b.valor - a.valor), entr, saiu, guardou, sobra: u.r2(entr - saiu - guardou), nec, des: u.r2(saiu - nec), cartao: u.r2(-u.sum(gastos.filter(l => l.tipo === 'cartão'))), futuro: m > u.mes(u.hoje()) };
+    return { m, L, ent, aReceber: u.r2(u.sum(aRec)), aRec, gastos, guard, fonte, cats: Object.values(cats).map(x => (x.valor = u.r2(x.valor), x)).sort((a, b) => b.valor - a.valor), entr, saiu, guardou, sobra: u.r2(entr - saiu - guardou), nec, des: u.r2(saiu - nec), cartao: u.r2(-u.sum(gastos.filter(l => l.tipo === 'cartão'))), futuro: m > u.mes(u.hoje()) };
   };
   c.meses = () => {
     const ms = [...new Set(c.lancs().map(l => u.mes(l.data)))].sort();
@@ -387,7 +388,7 @@ window.A = window.A || {};
       if (l.status !== 'Previsto' && !feitaPeloApp) return;
       if (u.mes(l.data) > u.addMes(m0, 2)) return;
       const renda = l.grupo === 'Renda';
-      T.push({ id: 'l:' + l.id, grupo: renda ? 'receber' : 'conta', titulo: (renda ? 'Receber ' : 'Pagar ') + l.desc.charAt(0).toLowerCase() + l.desc.slice(1), valor: Math.abs(l.valor), data: l.data, banco: l.banco, feita: l.status === 'Pago', icone: c.icone(l.cat, l.sub), xp: c.XP[renda ? 'receber' : 'conta'] });
+      T.push({ id: 'l:' + l.id, grupo: renda ? 'receber' : 'conta', titulo: renda ? 'Receber ' + l.desc : 'Pagar ' + l.desc.charAt(0).toLowerCase() + l.desc.slice(1), /* receber: costuma ser nome de cliente, fica com maiúscula */ valor: Math.abs(l.valor), data: l.data, banco: l.banco, feita: l.status === 'Pago', icone: c.icone(l.cat, l.sub), xp: c.XP[renda ? 'receber' : 'conta'] });
     });
     c.cartoes().forEach(k => {
       const nome = k['CARTÃO'];
@@ -441,6 +442,23 @@ window.A = window.A || {};
     }
     return out;
   };
+  /* lembrete de pagamento no WhatsApp: o número do cliente (com 55 do Brasil) e uma mensagem educada, que muda se
+     a parcela ainda vai vencer, vence hoje ou já venceu. Abre o WhatsApp com o texto pronto; você confere e envia */
+  c.foneWhats = t => { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return /^55\d{10,11}$/.test(d) ? d : null; };
+  c.msgCobranca = (j, valor, venc) => {
+    const nome = String(j['CLIENTE'] || '').replace(/\s*\(.*?\)\s*/g, ' ').trim(), primeiro = / e /i.test(nome) ? nome : nome.split(' ')[0];
+    const tipo = String(j['TIPO DE EVENTO'] || ''), ev = String(j['DATA DO EVENTO'] || '');
+    const oQue = /casamento/i.test(tipo) ? 'da filmagem do casamento' : /15 anos|anivers/i.test(tipo) ? 'da filmagem da festa' : /formatura/i.test(tipo) ? 'da cobertura da formatura' : /social/i.test(tipo) ? 'dos vídeos' : `do trabalho (${tipo.toLowerCase() || 'evento'})`;
+    const dd = d => `${d.slice(8, 10)}/${d.slice(5, 7)}${d.slice(0, 4) !== u.hoje().slice(0, 4) ? '/' + d.slice(0, 4) : ''}`;
+    const quando = /^\d{4}-\d{2}-\d{2}$/.test(ev) ? ` (${dd(ev)})` : '';
+    const q = venc ? u.ateHoje(venc) : null, dt = venc ? dd(venc) : '';
+    const prazo = q === null ? '' : q > 0 ? `, que vence em ${dt}` : q === 0 ? `, que vence hoje (${dt})` : `, que venceu em ${dt}`;
+    const fim = q !== null && q < 0
+      ? 'Se já tiver feito o Pix, me manda o comprovante quando puder, por favor. E se precisar combinar outra data, é só me falar, sem problema nenhum.'
+      : 'Se já estiver tudo certo, pode desconsiderar esta mensagem. Qualquer dúvida, estou à disposição!';
+    return `Oi, ${primeiro}! Tudo bem? 😊\n\nPassando só para lembrar, com carinho, da parcela de ${u.brl(valor)} ${oQue}${quando}${prazo}.\n\n${fim}\n\nAbraço,\nJoão · Darzan Produções`;
+  };
+  c.linkWhats = (j, valor, venc) => { const f = c.foneWhats(j['TELEFONE']); return f ? `https://wa.me/${f}?text=${encodeURIComponent(c.msgCobranca(j, valor, venc))}` : null; };
   c.anexos = j => db.linhas('ANEXOS').filter(x => x['TRABALHO'] === j.ID).sort((a, b) => String(a['DATA']) < String(b['DATA']) ? -1 : 1);
   c.recebido = j => u.r2(u.sum(c.recebimentos(j)));
   c.faltaReceber = j => { const t = c.num(j['VALOR TOTAL']); return t ? u.r2(t - c.recebido(j)) : null; };

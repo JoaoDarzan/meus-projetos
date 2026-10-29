@@ -792,3 +792,10 @@ body.com-visor{overflow:hidden}
 .bp .logob svg text{font-size:8.6px}
 /* barra de cima: voltar e casinha lado a lado */
 .navb{display:inline-flex;gap:6px;flex:none}
+.flow small.arec{grid-column:1/-1;font-size:.68rem;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* lembrete no WhatsApp */
+.whats{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 14px;min-height:44px;font-weight:700;font-size:.88rem;text-decoration:none;background:#1f9d55;color:#fff;border:0}
+.whats svg{width:18px;height:18px}
+.whats.mini{min-height:36px;padding:6px 10px;font-size:.78rem;border-radius:10px}
+.whats.sem{background:var(--glass-2);color:var(--muted);border:1px dashed var(--stroke);font-weight:600}
+.whatsl{margin:-2px 0 10px 54px}
