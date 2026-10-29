@@ -59,7 +59,7 @@ window.A = window.A || {};
     /* seis meses para trás e o mês atual */
     for (let k = -6; k <= 0; k++) {
       const D = d => dia(k, d), ok = d => k < 0 || d <= dHoje;
-      renda(D(5), 'Inter', 'Salário', 3200, 'Salário CLT', 'Salário');
+      renda(D(5), 'Inter', 'Salário', 2950, 'Salário CLT', 'Salário');
       renda(D(5), 'Inter', 'Vale-refeição e transporte', 650, 'Salário CLT', 'Benefícios');
       transf(D(6), 'Inter', 'PicPay', 2600);
       transf(D(6), 'Inter', 'Nubank', 700);

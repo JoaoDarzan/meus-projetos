@@ -25,6 +25,8 @@ window.A = window.A || {};
   u.dm = d => d ? `${d.slice(8, 10)}/${CURTO[+d.slice(5, 7) - 1]}${d.slice(0, 4) !== u.hoje().slice(0, 4) ? '/' + d.slice(2, 4) : ''}` : '';
   u.ddmmaa = d => d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '';
   u.quando = d => { const n = u.ateHoje(d); if (n === 0) return 'Hoje'; if (n === 1) return 'Amanhã'; if (n === -1) return 'Ontem'; return u.dm(d); };
+  /* só aceita imagem ou PDF em "data:...;base64," (nada de script, link ou outro tipo escondido) */
+  u.dadoSeguro = s => /^data:(image\/(jpeg|png|webp|gif|heic|heif|svg\+xml)|application\/pdf);base64,[A-Za-z0-9+/=]+$/.test(String(s || '')) ? String(s) : '';
   u.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   u.cap = s => s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : '';
   u.sem = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -75,6 +77,13 @@ window.A = window.A || {};
     });
   }
 
+  /* ID de registro: só letras, números e - _ : . (nada que vire código na tela) */
+  db.idOk = id => /^[A-Za-z0-9_:.-]{1,120}$/.test(String(id || ''));
+  /* sair do aparelho: apaga a cópia dos dados guardada nele (num aparelho emprestado, ninguém lê depois) */
+  db.esquecer = () => {
+    try { ['dados', 'fila'].forEach(k => localStorage.removeItem(chave(k))); } catch (e) { /* sem armazenamento */ }
+    db.abas = {}; db.fila = []; db.carregado = false; db.quando = 0;
+  };
   /* abre na hora com a cópia do aparelho (se tiver) */
   db.abrirCopia = () => {
     const c0 = guarda.ler(chave('dados'));
@@ -219,11 +228,11 @@ window.A = window.A || {};
   /* trazer os dados da planilha (arquivo .json) e fazer cópia de segurança */
   db.importar = async (dados, progresso) => {
     const abas = dados.abas || dados;
-    const todas = ABAS.filter(a => Array.isArray(abas[a]));
+    const todas = ABAS.filter(a => Array.isArray(abas[a]) && !T[a].opcional); /* avisos, aparelhos e anexos nunca vêm de arquivo */
     let feito = 0;
     const total = todas.reduce((s, a) => s + abas[a].length, 0);
     for (const aba of todas) {
-      const linhas = abas[aba].map(r => TAB.paraNuvem(aba, Object.assign({}, r, { ID: r.ID || db.novoId(aba) })));
+      const linhas = abas[aba].filter(r => !r.ID || db.idOk(r.ID)).map(r => TAB.paraNuvem(aba, Object.assign({}, r, { ID: r.ID || db.novoId(aba) })));
       /* todas as linhas com as mesmas colunas */
       const cols = ['id'].concat(T[aba].colunas.map(x => x[1]));
       const cheias = linhas.map(l => Object.fromEntries(cols.map(k => [k, k in l ? l[k] : (T[aba].colunas.find(x => x[1] === k) || [])[2] === 'boolean' ? false : null])));
@@ -243,7 +252,7 @@ window.A = window.A || {};
   c.subsDe = cat => c.categorias().filter(x => x['CATEGORIA'] === cat).map(x => x['SUB-CATEGORIA']);
   c.grupoDe = cat => (c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
   c.BANCOS = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Banco Pan', 'Não informado'];
-  c.CORBANCO = { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Banco Pan': ['#9be7ff', '#0a8fc7'], 'Não informado': ['#b5bfd6', '#5c6886'] };
+  c.CORBANCO = Object.assign(Object.create(null), { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Banco Pan': ['#9be7ff', '#0a8fc7'], 'Não informado': ['#b5bfd6', '#5c6886'] });
   c.GRAD = { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' };
   const ICAT = {
     'Alimentação': ['shopping-cart', '#4ee0a0', '#05905c'], 'Alimentação fora': ['utensils', '#ff8aa0', '#d61c4e'], 'Transporte': ['car', '#6cc8ff', '#1f5fe0'],

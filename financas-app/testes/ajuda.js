@@ -18,13 +18,13 @@ const APARELHOS = {
 async function abrir(b, st, { larg = 390, alt = 844, logar = true, host = '127.0.0.1', aparelho, push } = {}) {
   const ap = aparelho ? APARELHOS[aparelho] : null;
   const ctx = await b.newContext({ viewport: { width: ap ? ap.w : larg, height: ap ? ap.h : alt }, hasTouch: !!(ap && ap.toque), isMobile: !!(ap && ap.toque && ap.w < 700), timezoneId: 'America/Sao_Paulo', locale: 'pt-BR' });
-  await ctx.addInitScript(([hoje, porta, push]) => {
-    window.DF_CONFIG = { url: 'http://127.0.0.1:' + porta, chave: 'chave-de-teste', vapid: 'BAnX0hPDbPdvv3yWufNnEvrbzfOK1aXIZ5BSyXL9qSCuxF548EjP9iDG5NsCz-IimHc_xTqJjJod-cOakGoK82o' };
+  await ctx.addInitScript(([hoje, porta, push, host]) => {
+    window.DF_CONFIG = { url: `http://${host}:${porta}`, /* mesmo endereço da página: a política de segurança (CSP) só deixa falar com ele */ chave: 'chave-de-teste', vapid: 'BAnX0hPDbPdvv3yWufNnEvrbzfOK1aXIZ5BSyXL9qSCuxF548EjP9iDG5NsCz-IimHc_xTqJjJod-cOakGoK82o' };
     if (push) window.DF_PUSH_FALSO = push; /* o "celular" que recebe avisos, nos testes */
     /* relógio parado no dia do teste */
     const D = Date, fixo = new D(hoje + 'T10:00:00-03:00').getTime(), ini = D.now();
     window.Date = class extends D { constructor(...a) { super(...(a.length ? a : [fixo + (D.now() - ini)])); } static now() { return fixo + (D.now() - ini); } };
-  }, [HOJE, st.porta, push || null]);
+  }, [HOJE, st.porta, push || null, host]);
   const p = await ctx.newPage();
   p.erros = []; p.aparelho = ap;
   p.on('pageerror', e => p.erros.push(e.message));

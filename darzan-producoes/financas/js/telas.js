@@ -11,13 +11,13 @@
     const ms = c.meses(), i = ms.indexOf(ui.mes);
     return `<div class="mpill"><button type="button" data-a="mes" data-d="-1" aria-label="Mês anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><span>${u.nomeMes(ui.mes)}${ui.mes.slice(0, 4) !== u.hoje().slice(0, 4) ? ' ' + ui.mes.slice(2, 4) : ''}</span><button type="button" data-a="mes" data-d="1" aria-label="Próximo mês" ${i >= ms.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>`;
   };
-  const bar = (titulo, voltar, comMes = true) => `<header class="bar">${pilha.length ? `<button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button>` : voltar ? `<button class="back" type="button" data-a="go" data-v="${voltar}" aria-label="Voltar">${u.svg('chevron-left')}</button>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
-  const seg = (nome, atual, ops) => `<div class="seg" role="group">${ops.map(([k, n]) => `<button type="button" data-a="seg" data-s="${nome}" data-v="${k}" aria-pressed="${atual === k}">${n}</button>`).join('')}</div>`;
+  const bar = (titulo, voltar, comMes = true) => `<header class="bar">${pilha.length ? `<button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button>` : voltar ? `<button class="back" type="button" data-a="go" data-v="${u.esc(voltar)}" aria-label="Voltar">${u.svg('chevron-left')}</button>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
+  const seg = (nome, atual, ops) => `<div class="seg" role="group">${ops.map(([k, n]) => `<button type="button" data-a="seg" data-s="${u.esc(nome)}" data-v="${u.esc(k)}" aria-pressed="${atual === k}">${n}</button>`).join('')}</div>`;
   const vazio = (icone, txt, botao) => `<div class="vazio">${u.ti(icone, 'lg')}<span>${txt}</span>${botao || ''}</div>`;
   function linhaL(l) {
     const renda = l.grupo === 'Renda' || (l.grupo === 'Reembolso' && l.valor > 0), ic = c.icone(l.cat, l.sub);
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
-    return `<button type="button" class="it btn" data-a="editL" data-id="${l.id}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
+    return `<button type="button" class="it btn" data-a="editL" data-id="${u.esc(l.id)}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
   /* "Para onde foi": rosca com as categorias (cores validadas para o fundo escuro) e a lista; tocar abre as subcategorias */
   const CAT_COR = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9'];
@@ -86,7 +86,7 @@
         <button class="act" type="button" data-a="novoL" data-t="guardar"><span class="o">${u.svg('piggy-bank')}</span>Guardei</button>
         <button class="act" type="button" data-a="novoE"><span class="o">${u.svg('camera')}</span>Equipamento</button></div></section>
       <section class="sec"><div class="sec-h"><h2>Minhas rendas</h2></div><div class="incomes">
-        ${[['Salário CLT', 'Salário CLT'], ['Darzan Produções', 'Darzan'], ['JPL SOM', 'JPL SOM']].map(([k, n]) => `<button class="inc" type="button" data-a="irRel" data-v="${k === 'Darzan Produções' ? 'darzan' : k === 'JPL SOM' ? 'jpl' : 'mes'}">${u.ti(c.icone(k))}<span class="n">${n}</span><b class="v num">${u.k0(r.fonte[k])}</b>${dif(r.fonte[k], media(k))}</button>`).join('')}</div></section>
+        ${[['Salário CLT', 'Salário CLT'], ['Darzan Produções', 'Darzan'], ['JPL SOM', 'JPL SOM']].map(([k, n]) => `<button class="inc" type="button" data-a="irRel" data-v="${u.esc(k === 'Darzan Produções' ? 'darzan' : k === 'JPL SOM' ? 'jpl' : 'mes')}">${u.ti(c.icone(k))}<span class="n">${n}</span><b class="v num">${u.k0(r.fonte[k])}</b>${dif(r.fonte[k], media(k))}</button>`).join('')}</div></section>
     </div><div class="col-r">
       <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer</h2><button class="more" type="button" data-a="go" data-v="tarefas">Ver tudo</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], 'Nada pendente. Tudo em dia!')}</section>
       ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#ffd36b', '#c07a12'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
@@ -106,7 +106,7 @@
     const G = [['Atrasadas', t => u.ateHoje(t.data) < 0], ['Hoje', t => u.ateHoje(t.data) === 0], ['Amanhã', t => u.ateHoje(t.data) === 1], ['Esta semana', t => u.ateHoje(t.data) > 1 && u.ateHoje(t.data) <= 7], ['Mais pra frente', t => u.ateHoje(t.data) > 7]];
     const cnt = g => c.tarefas().filter(t => !t.feita && (g === 'todas' || t.grupo === g || (g === 'conta' && t.grupo === 'receber'))).length;
     return bar('Tarefas', null, false) + `<div class="miniplayer"><div class="ringw">${anel(lv.atual / lv.prox, 52, 4, '#ffd36b')}${foto()}<span class="lvl">Nv ${lv.n}</span></div><div style="flex:1;min-width:0"><b>${lv.nome}</b><div class="xpbar"><i style="width:${lv.atual / lv.prox * 100}%"></i></div><div class="xpinfo num" style="margin-top:4px"><span>${lv.atual}/${lv.prox} XP</span><span>cada tarefa feita vale XP</span></div></div></div>
-      <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px"><div class="chips">${[['todas', 'Todas'], ['conta', 'Contas'], ['darzan', 'Darzan'], ['pessoal', 'Pessoais']].map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="tfil" data-v="${k}" aria-pressed="${F === k}">${n} · ${cnt(k)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoT" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Nova tarefa</button></div>
+      <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px"><div class="chips">${[['todas', 'Todas'], ['conta', 'Contas'], ['darzan', 'Darzan'], ['pessoal', 'Pessoais']].map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="tfil" data-v="${u.esc(k)}" aria-pressed="${F === k}">${n} · ${cnt(k)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoT" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Nova tarefa</button></div>
       <div class="two"><div>${G.map(([n, f]) => { const a = abertas.filter(f); return a.length ? `<div class="grp"><span>${n}</span><b>${a.length}</b></div>${a.map(tkLinha).join('')}` : ''; }).join('') || `<div class="panel" style="margin-top:16px">${vazio(['party-popper', '#cf9cff', '#7a35e6'], 'Tudo em dia por aqui!')}</div>`}</div>
       <div><div class="grp"><span>Feitas</span><b>${feitas.length}</b></div>${feitas.map(tkLinha).join('') || '<p class="c-muted" style="font-size:.88rem">Marcou sem querer? É só tocar em “Desfazer”.</p>'}
       <p class="aviso">As contas do mês (seguro, boletos) e as faturas dos cartões entram aqui sozinhas. Marcar uma fatura como paga tira o valor do banco que paga o cartão.</p></div></div>`;
@@ -118,7 +118,7 @@
   function cardJob(j) {
     const s = TIPOEV[j['TIPO DE EVENTO']] || TIPOEV.Evento, tot = c.num(j['VALOR TOTAL']), rec = c.recebido(j), falta = c.faltaReceber(j), d = String(j['DATA DO EVENTO'] || '');
     const vs = c.entregas(j), ok = vs.filter(v => v.feito).length, nx = c.anexos(j).length;
-    return `<button type="button" class="job" data-a="editJ" data-id="${j.ID}" style="--a:${s[1]};--b:${s[2]}"><div class="cov"></div><div class="in">
+    return `<button type="button" class="job" data-a="editJ" data-id="${u.esc(j.ID)}" style="--a:${s[1]};--b:${s[2]}"><div class="cov"></div><div class="in">
       <div class="tp"><span>${u.esc(j['TIPO DE EVENTO'] || 'Trabalho')}</span>${j['ETAPA'] === 'Entregue' ? '<span class="c-in">✓</span>' : ''}</div><div class="nm">${u.esc(j['CLIENTE'])}</div>
       <div class="meta">${d ? `<span>${u.svg('calendar-days')}${u.dm(d)}${u.ateHoje(d) >= 0 && u.ateHoje(d) <= 60 ? ` · em ${u.ateHoje(d)} dias` : ''}</span>` : ''}${j['LOCAL'] ? `<span>${u.svg('map-pin')}${u.esc(j['LOCAL'])}</span>` : ''}</div>
       ${tot ? `<div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span class="c-muted">${u.k0(rec)} de ${u.k0(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.k0(falta)}</b>` : '<b class="c-in">pago</b>'}</div>` : `<div class="mrow num"><span class="c-muted">Recebido ${u.k0(rec)}</span><span class="estim">sem valor total</span></div>`}
@@ -133,7 +133,7 @@
     const fat = c.resumo(ui.mes).fonte['Darzan Produções'], S = ui.jseg || 'quadro';
     const corpo = S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
         <p class="dica-q">${u.svg('hand-coins')}Segure um cartão e arraste para outra coluna para mudar a etapa.</p>
-        <div class="board">${ETAPAS.map(([n, cor]) => { const l = quadro.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col" data-etapa="${n}"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted vaziocol">Nada aqui.</p>'}</div>`; }).join('')}</div>
+        <div class="board">${ETAPAS.map(([n, cor]) => { const l = quadro.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col" data-etapa="${u.esc(n)}"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted vaziocol">Nada aqui.</p>'}</div>`; }).join('')}</div>
         <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
     return bar('Trabalhos', null, false) + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
       <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
@@ -147,9 +147,9 @@
         const g = c.ganhosPorMes(j), ms = Object.keys(g).sort(), ini = ms[0] || m0, lista = [];
         for (let m = ini; m <= m0; m = u.addMes(m, 1)) lista.push(m);
         const tot = u.sum(Object.values(g), v => v), meses = lista.length, media = meses ? tot / meses : 0, n = c.recebimentos(j);
-        return `<div class="panel recp"><button type="button" class="rech" data-a="editJ" data-id="${j.ID}"><span>${u.ti(TIPOEV[j['TIPO DE EVENTO']] ? [TIPOEV[j['TIPO DE EVENTO']][0], TIPOEV[j['TIPO DE EVENTO']][1], TIPOEV[j['TIPO DE EVENTO']][2]] : ['user', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['O QUE FOI FECHADO'] || j['TIPO DE EVENTO'] || '')}</small></div>${u.svg('chevron-right')}</button>
+        return `<div class="panel recp"><button type="button" class="rech" data-a="editJ" data-id="${u.esc(j.ID)}"><span>${u.ti(TIPOEV[j['TIPO DE EVENTO']] ? [TIPOEV[j['TIPO DE EVENTO']][0], TIPOEV[j['TIPO DE EVENTO']][1], TIPOEV[j['TIPO DE EVENTO']][2]] : ['user', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['O QUE FOI FECHADO'] || j['TIPO DE EVENTO'] || '')}</small></div>${u.svg('chevron-right')}</button>
           <div class="kpis"><div class="kpi"><span>Este mês</span><b class="num c-in">${u.k0(g[m0] || 0)}</b><small>${u.nomeMes(m0).toLowerCase()}</small></div><div class="kpi"><span>Média por mês</span><b class="num">${u.k0(media)}</b><small>em ${meses} ${meses > 1 ? 'meses' : 'mês'}</small></div><div class="kpi"><span>Total</span><b class="num">${u.k0(tot)}</b><small>desde ${u.nomeMes(ini).toLowerCase()}${ini.slice(0, 4) !== m0.slice(0, 4) ? ' de ' + ini.slice(0, 4) : ''}</small></div><div class="kpi"><span>Pagamentos</span><b class="num">${n.length}</b><small>${n.length ? 'último em ' + u.dm(n[n.length - 1].data) : '—'}</small></div></div>
-          <div class="chart" id="chRec${i}" data-id="${j.ID}" style="margin-top:12px"></div>
+          <div class="chart" id="chRec${i}" data-id="${u.esc(j.ID)}" style="margin-top:12px"></div>
           <div class="recm">${lista.slice().reverse().map(m => `<div class="mrow2"><span>${u.cap(u.nomeMes(m))}${m.slice(0, 4) !== m0.slice(0, 4) ? ' ' + m.slice(0, 4) : ''}</span><b class="num ${g[m] ? '' : 'c-muted'}">${g[m] ? u.brl(g[m]) : '—'}</b></div>`).join('')}</div></div>`;
       }).join('') : `<div class="panel">${vazio(['refresh-cw', '#c9a7ff', '#7a35e6'], 'Nenhum cliente recorrente ainda. Abra um trabalho e toque em “Recorrente”.')}</div>`}
       <p class="aviso">Cliente recorrente é quem te paga todo mês (social media, pacote de vídeos). Ele não fica no quadro; aqui aparece quanto rendeu em cada mês, somando as entradas com o nome dele.</p></section>`;
@@ -159,11 +159,11 @@
     const anos = c.anosDarzan(), ano = anos.includes(ui.jano) ? ui.jano : anos[anos.length - 1] || u.hoje().slice(0, 4), ms = c.balancoDarzan(ano);
     const jobs = ms.flatMap(x => x.jobs), fat = u.sum(ms, x => x.fat), rec = u.sum(ms, x => x.rec), vt = u.sum(jobs, j => c.num(j['VALOR TOTAL'])), comValor = jobs.filter(j => c.num(j['VALOR TOTAL'])).length;
     const melhor = ms.slice().sort((a, b) => b.fat - a.fat)[0];
-    return `${anos.length > 1 ? `<div class="sec chips">${anos.map(a => `<button class="chip" type="button" data-a="seg" data-s="jano" data-v="${a}" aria-pressed="${a === ano}">${a}</button>`).join('')}</div>` : ''}
+    return `${anos.length > 1 ? `<div class="sec chips">${anos.map(a => `<button class="chip" type="button" data-a="seg" data-s="jano" data-v="${u.esc(a)}" aria-pressed="${a === ano}">${a}</button>`).join('')}</div>` : ''}
       <section class="sec"><div class="kpis k4"><div class="kpi"><span>Trabalhos em ${ano}</span><b class="num">${jobs.length}</b><small>eventos que aconteceram</small></div><div class="kpi"><span>Faturou em ${ano}</span><b class="num c-in">${u.k0(fat)}</b><small>tudo da Darzan</small></div><div class="kpi"><span>Dos recorrentes</span><b class="num">${u.k0(rec)}</b><small>${fat ? u.pct(rec / fat) + ' do total' : '—'}</small></div><div class="kpi"><span>Valor médio</span><b class="num">${u.k0(comValor ? vt / comValor : 0)}</b><small>por trabalho fechado</small></div></div></section>
-      <section class="sec"><div class="panel"><div class="sec-h"><h2>${u.svg('chart-column')}Quanto entrou por mês</h2></div><div class="lgd">${BAL_COR.map(([, n, cor]) => `<span><i style="background:var(${cor})"></i>${n}</span>`).join('')}</div><div class="chart" id="chBal" data-ano="${ano}"></div>${melhor && melhor.fat ? `<p class="c-muted" style="font-size:.84rem;margin:8px 2px 0">Melhor mês: ${u.nomeMes(melhor.m).toLowerCase()}, com ${u.k0(melhor.fat)}.</p>` : ''}</div></section>
+      <section class="sec"><div class="panel"><div class="sec-h"><h2>${u.svg('chart-column')}Quanto entrou por mês</h2></div><div class="lgd">${BAL_COR.map(([, n, cor]) => `<span><i style="background:var(${cor})"></i>${n}</span>`).join('')}</div><div class="chart" id="chBal" data-ano="${u.esc(ano)}"></div>${melhor && melhor.fat ? `<p class="c-muted" style="font-size:.84rem;margin:8px 2px 0">Melhor mês: ${u.nomeMes(melhor.m).toLowerCase()}, com ${u.k0(melhor.fat)}.</p>` : ''}</div></section>
       <section class="sec"><div class="sec-h"><h2>${u.svg('calendar-days')}Mês a mês</h2></div>
-        ${ms.slice().reverse().filter(x => x.fat || x.jobs.length).map(x => `<div class="panel balm"><div class="mrow2"><b>${u.cap(u.nomeMes(x.m))}</b><b class="num c-in">${u.brl(x.fat)}</b></div><div class="c-muted" style="font-size:.8rem;margin-bottom:${x.jobs.length ? 8 : 0}px">${x.jobs.length} ${x.jobs.length === 1 ? 'trabalho' : 'trabalhos'}${x.rec ? ` · ${u.k0(x.rec)} dos recorrentes` : ''}</div>${x.jobs.map(j => `<button type="button" class="balj" data-a="editJ" data-id="${j.ID}"><span>${u.dm(String(j['DATA DO EVENTO']))}</span><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['TIPO DE EVENTO'] || '')}${c.num(j['VALOR TOTAL']) ? ' · ' + u.k0(c.num(j['VALOR TOTAL'])) : ''}</small></button>`).join('')}</div>`).join('') || `<div class="panel">${vazio(['calendar-days', '#9cc6ff', '#2a62e0'], 'Nada neste ano ainda.')}</div>`}</section>`;
+        ${ms.slice().reverse().filter(x => x.fat || x.jobs.length).map(x => `<div class="panel balm"><div class="mrow2"><b>${u.cap(u.nomeMes(x.m))}</b><b class="num c-in">${u.brl(x.fat)}</b></div><div class="c-muted" style="font-size:.8rem;margin-bottom:${x.jobs.length ? 8 : 0}px">${x.jobs.length} ${x.jobs.length === 1 ? 'trabalho' : 'trabalhos'}${x.rec ? ` · ${u.k0(x.rec)} dos recorrentes` : ''}</div>${x.jobs.map(j => `<button type="button" class="balj" data-a="editJ" data-id="${u.esc(j.ID)}"><span>${u.dm(String(j['DATA DO EVENTO']))}</span><b>${u.esc(j['CLIENTE'])}</b><small>${u.esc(j['TIPO DE EVENTO'] || '')}${c.num(j['VALOR TOTAL']) ? ' · ' + u.k0(c.num(j['VALOR TOTAL'])) : ''}</small></button>`).join('')}</div>`).join('') || `<div class="panel">${vazio(['calendar-days', '#9cc6ff', '#2a62e0'], 'Nada neste ano ainda.')}</div>`}</section>`;
   }
   DEPOIS.trabalhos = () => {
     const b = $('chBal');
@@ -235,7 +235,7 @@
     const tot = u.sum(es, e => c.num(e['VALOR'])), falta = u.sum(es, c.faltaPagar);
     return bar('Equipamentos', null, false) + `<section><div class="kpis k4"><div class="kpi"><span>Investido</span><b class="num">${u.k0(tot)}</b><small>${es.length} itens</small></div><div class="kpi"><span>Falta pagar</span><b class="num c-warn">${u.k0(falta)}</b><small>parcelas no cartão</small></div><div class="kpi"><span>Quitados</span><b class="num">${es.filter(e => !c.faltaPagar(e)).length}</b><small>de ${es.length}</small></div><div class="kpi"><span>Mais caro</span><b class="num">${u.k0(Math.max(0, ...es.map(e => c.num(e['VALOR']))))}</b><small>${u.esc((es.slice().sort((a, b) => c.num(b['VALOR']) - c.num(a['VALOR']))[0] || {})['NOME'] || '')}</small></div></div></section>
       <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div class="chips">${tipos.map(t => `<button class="chip mini" type="button" data-a="seg" data-s="efil" data-v="${u.esc(t)}" aria-pressed="${ui.efil === t}">${u.esc(t)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoE">${u.svg('plus')}Novo equipamento</button></div>
-      <section class="sec"><div class="eqs">${lista.map(e => { const f = c.fotoEquip(e), fp = c.faltaPagar(e), s = ICON_EQ[e['TIPO']] || ICON_EQ['Acessório']; return `<button type="button" class="eq" data-a="editE" data-id="${e.ID}"><div class="ph">${f ? `<img src="${f}" alt="" loading="lazy">` : `<div class="art" style="--a:${s[1]};--b:${s[2]};height:100%">${u.svg(s[0])}</div>`}</div>${fp ? `<span class="st pd">falta ${u.k0(fp)}</span>` : '<span class="st ok">Quitado</span>'}<div class="t">${u.esc(e['NOME'])}</div><div class="m">${u.esc(e['TIPO'] || '')}${e['ESTADO'] ? ' · ' + u.esc(e['ESTADO']) : ''}</div><div class="v num">${u.brl(c.num(e['VALOR']))}</div><div class="m">${u.esc(e['COMO PAGOU'] || '')}</div></button>`; }).join('') || vazio(['camera', '#8fb6ff', '#2148d6'], 'Nenhum equipamento cadastrado.')}</div></section>`;
+      <section class="sec"><div class="eqs">${lista.map(e => { const f = c.fotoEquip(e), fp = c.faltaPagar(e), s = ICON_EQ[e['TIPO']] || ICON_EQ['Acessório']; return `<button type="button" class="eq" data-a="editE" data-id="${u.esc(e.ID)}"><div class="ph">${f ? `<img src="${u.esc(u.dadoSeguro(f))}" alt="" loading="lazy">` : `<div class="art" style="--a:${s[1]};--b:${s[2]};height:100%">${u.svg(s[0])}</div>`}</div>${fp ? `<span class="st pd">falta ${u.k0(fp)}</span>` : '<span class="st ok">Quitado</span>'}<div class="t">${u.esc(e['NOME'])}</div><div class="m">${u.esc(e['TIPO'] || '')}${e['ESTADO'] ? ' · ' + u.esc(e['ESTADO']) : ''}</div><div class="v num">${u.brl(c.num(e['VALOR']))}</div><div class="m">${u.esc(e['COMO PAGOU'] || '')}</div></button>`; }).join('') || vazio(['camera', '#8fb6ff', '#2148d6'], 'Nenhum equipamento cadastrado.')}</div></section>`;
   };
 
   /* ================= FINANÇAS ================= */
@@ -290,16 +290,16 @@
     const ids = new Set(c.lancs().map(l => l.id));
     [...ui.rvsel].forEach(id => { if (!ids.has(id)) ui.rvsel.delete(id); });
     const sel = ui.rvsel.size, todosVis = L.length && L.every(l => ui.rvsel.has(l.id));
-    const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${k}" aria-pressed="${K === k}">${x.nome} · ${c.paraRevisar(k).length}</button>`).join('');
+    const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${u.esc(k)}" aria-pressed="${K === k}">${x.nome} · ${c.paraRevisar(k).length}</button>`).join('');
     let html = '', mes = null;
     L.forEach(l => {
       const m = u.mes(l.data);
-      if (m !== mes) { mes = m; const doMes = L.filter(x => u.mes(x.data) === m), tudo = doMes.every(x => ui.rvsel.has(x.id)); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${m}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
+      if (m !== mes) { mes = m; const doMes = L.filter(x => u.mes(x.data) === m), tudo = doMes.every(x => ui.rvsel.has(x.id)); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${u.esc(m)}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
       const sug = K === 'categoria' ? c.sugerir(l.desc, mem) : null, on = ui.rvsel.has(l.id);
-      html += `<div class="rv ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarca" data-id="${l.id}" aria-pressed="${on}" aria-label="Marcar ${u.esc(l.desc)}">${u.svg('check')}</button>
-        <button type="button" class="rv-txt" data-a="rvMarca" data-id="${l.id}"><span class="t">${u.esc(u.cap(l.desc))}</span><span class="m">${u.dm(l.data)} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ''} · ${u.esc(l.sub || l.cat || 'sem categoria')}</span>${sug ? `<span class="sug">${u.svg('sparkles')}Sugestão: ${u.esc(sug.cat)} · ${u.esc(sug.sub)}</span>` : ''}</button>
+      html += `<div class="rv ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarca" data-id="${u.esc(l.id)}" aria-pressed="${on}" aria-label="Marcar ${u.esc(l.desc)}">${u.svg('check')}</button>
+        <button type="button" class="rv-txt" data-a="rvMarca" data-id="${u.esc(l.id)}"><span class="t">${u.esc(u.cap(l.desc))}</span><span class="m">${u.dm(l.data)} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ''} · ${u.esc(l.sub || l.cat || 'sem categoria')}</span>${sug ? `<span class="sug">${u.svg('sparkles')}Sugestão: ${u.esc(sug.cat)} · ${u.esc(sug.sub)}</span>` : ''}</button>
         <span class="v num ${l.grupo === 'Renda' ? 'c-in' : ''}">${u.brl(Math.abs(l.valor))}</span>
-        <button type="button" class="rv-ed" data-a="editL" data-id="${l.id}" aria-label="Editar">${u.svg('pencil')}</button></div>`;
+        <button type="button" class="rv-ed" data-a="editL" data-id="${u.esc(l.id)}" aria-label="Editar">${u.svg('pencil')}</button></div>`;
     });
     const comSug = K === 'categoria' ? [...ui.rvsel].filter(id => { const l = c.lancs().find(x => x.id === id); return l && c.sugerir(l.desc, mem); }).length : 0;
     return `<section class="sec rvwrap">
@@ -370,7 +370,7 @@
     const onde = c.BANCOS.filter(b => b !== 'Não informado'), t0 = f ? (c.fixaTipo(f) === 'débito' ? 'débito automático' : c.fixaTipo(f)) : 'cartão';
     abrir(`<h3 style="margin:0 0 12px">${f ? 'Editar conta fixa' : 'Nova conta fixa'}</h3>
       ${campo('O que é', `<input class="txt" id="xD" required value="${u.esc(f ? f['DESCRIÇÃO'] : '')}" placeholder="Ex.: Netflix, seguro do carro">`)}
-      <div class="grid2">${campo(t0 === 'anual' ? 'Valor no ano' : 'Valor', `<input class="txt num" id="xV" inputmode="decimal" value="${f ? String(Math.abs(c.num(f['VALOR']))).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}${campo('Dia que cobra', `<input class="txt num" id="xDia" inputmode="numeric" value="${u.esc(f ? f['DIA'] || '' : '')}" placeholder="ex.: 15">`)}</div>
+      <div class="grid2">${campo(t0 === 'anual' ? 'Valor no ano' : 'Valor', `<input class="txt num" id="xV" inputmode="decimal" value="${u.esc(f ? String(Math.abs(c.num(f['VALOR']))).replace('.', ',') : '')}" placeholder="R$ 0,00">`)}${campo('Dia que cobra', `<input class="txt num" id="xDia" inputmode="numeric" value="${u.esc(f ? f['DIA'] || '' : '')}" placeholder="ex.: 15">`)}</div>
       <div class="grid2">${campo('Como paga', `<select class="txt" id="xT">${opts(tipos, t0)}</select>`)}${campo('Banco ou cartão', `<select class="txt" id="xB">${opts(onde, f ? f['BANCO'] : 'Inter')}</select>`)}</div>
       <div class="grid2">${campo('Categoria', `<select class="txt" id="xC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="xS">${opts(c.subsDe(cat0), f ? f['SUB-CATEGORIA'] : '')}</select>`)}</div>
       <div class="checkline"><input type="checkbox" id="xA" ${!f || c.fixaAtiva(f) ? 'checked' : ''}><label for="xA">Ativa (ainda pago)</label></div>
@@ -390,7 +390,7 @@
     const gs = db.linhas('METAS').filter(g => g['META']);
     const tem = g => { const cx = c.caixinhas().find(x => u.sem(x['CONTA']).indexOf(u.sem(g['ONDE ESTÁ'])) >= 0 && g['ONDE ESTÁ']); return cx ? (c.saldo(cx) || 0) : c.num(g['JÁ GUARDADO']); };
     return `<section class="sec"><div class="sec-h"><h2>${u.svg('target')}Minhas metas</h2><button class="chip" type="button" data-a="novoM">${u.svg('plus')} Nova meta</button></div>
-      <div class="goals">${gs.map(g => { const alvo = c.num(g['VALOR ALVO']) || 1, t = tem(g), p = t / alvo; return `<button type="button" class="goal" data-a="editM" data-id="${g.ID}"><div class="top">${u.ti(['target', '#9cc6ff', '#2a62e0'], 'lg')}<div class="gring">${anel(p, 52, 5, '#8fb0ff')}<b class="num">${u.pct(p)}</b></div></div><div><div class="t">${u.esc(g['META'])}</div><div class="m num">${u.k0(t)} de ${u.k0(alvo)}</div></div><div class="m">${g['ONDE ESTÁ'] ? 'Em: ' + u.esc(g['ONDE ESTÁ']) : 'Toque para editar'}${g['PRAZO'] ? ' · até ' + u.dm(String(g['PRAZO'])) : ''}</div></button>`; }).join('') || vazio(['target', '#9cc6ff', '#2a62e0'], 'Nenhuma meta ainda.')}</div>
+      <div class="goals">${gs.map(g => { const alvo = c.num(g['VALOR ALVO']) || 1, t = tem(g), p = t / alvo; return `<button type="button" class="goal" data-a="editM" data-id="${u.esc(g.ID)}"><div class="top">${u.ti(['target', '#9cc6ff', '#2a62e0'], 'lg')}<div class="gring">${anel(p, 52, 5, '#8fb0ff')}<b class="num">${u.pct(p)}</b></div></div><div><div class="t">${u.esc(g['META'])}</div><div class="m num">${u.k0(t)} de ${u.k0(alvo)}</div></div><div class="m">${g['ONDE ESTÁ'] ? 'Em: ' + u.esc(g['ONDE ESTÁ']) : 'Toque para editar'}${g['PRAZO'] ? ' · até ' + u.dm(String(g['PRAZO'])) : ''}</div></button>`; }).join('') || vazio(['target', '#9cc6ff', '#2a62e0'], 'Nenhuma meta ainda.')}</div>
       <p class="aviso">Se em “Onde está” você escrever o nome de uma caixinha (ex.: “Caixinha Reserva”), o app usa o saldo dela como “já guardado”.</p></section>`;
   };
   FIN.relatorios = () => {
@@ -419,7 +419,7 @@
     const doMes = c.resumo(ui.mes).ent.filter(l => l.cat === nome).sort((a, b) => a.data < b.data ? 1 : -1);
     return `<section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(c.icone(nome), 'xl')}<div><div class="sub">${nome} em ${u.nomeMes(ui.mes).toLowerCase()}</div><div class="bignum num">${u.big(c.resumo(ui.mes).fonte[nome])}</div></div></div>
       <div class="kpis" style="margin-top:16px"><div class="kpi"><span>No ano</span><b class="num">${u.k0(ano)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.k0(ms.length ? ano / ms.length : 0)}</b></div></div></section>
-      <section class="sec"><div class="sec-h"><h2>Mês a mês</h2></div><div class="panel"><div class="chart" id="chFonte" data-fonte="${nome}"></div></div></section>
+      <section class="sec"><div class="sec-h"><h2>Mês a mês</h2></div><div class="panel"><div class="chart" id="chFonte" data-fonte="${u.esc(nome)}"></div></div></section>
       <section class="sec"><div class="sec-h"><h2>Entradas do mês</h2></div><div class="panel" style="padding:6px 10px">${doMes.map(linhaL).join('') || vazio(c.icone(nome), 'Nada neste mês.')}</div></section>`;
   };
   /* meu trabalho (CLT): quanto entrou de cada holerite, o que mudou e o que a empresa guardou de FGTS */
@@ -468,7 +468,7 @@
       ps.forEach((p, j) => { const yy = y(acc + p.v), hh = Math.max((p.v / top) * ih - (j > 0 ? 2 : 0), 0); s += j === ps.length - 1 ? `<path d="M${x},${yy + hh}V${yy + 5}Q${x},${yy} ${x + 5},${yy}H${x + bw - 5}Q${x + bw},${yy} ${x + bw},${yy + 5}V${yy + hh}Z" fill="var(${p.c})"/>` : `<rect x="${x}" y="${yy}" width="${bw}" height="${hh}" fill="var(${p.c})"/>`; acc += p.v; });
       s += '</g>';
       if (d.line) s += `<line x1="${x - 6}" x2="${x + bw + 6}" y1="${y(d.line.v)}" y2="${y(d.line.v)}" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round"/>`;
-      s += `<text x="${cx}" y="${H - 8}" text-anchor="middle">${d.l}</text><rect class="hit" data-i="${i}" x="${pl + gap * i}" y="${pt}" width="${gap}" height="${ih}" rx="8" tabindex="0"/>`;
+      s += `<text x="${cx}" y="${H - 8}" text-anchor="middle">${d.l}</text><rect class="hit" data-i="${u.esc(i)}" x="${pl + gap * i}" y="${pt}" width="${gap}" height="${ih}" rx="8" tabindex="0"/>`;
     });
     el.innerHTML = s + '</svg>';
     const tip = $('tip');
@@ -498,10 +498,10 @@
     const compra = l && (l.obs.match(/Compra (P[\w-]+)/) || [])[1];
     const titulo = { saida: 'Gastei', entrada: 'Recebi', guardar: 'Guardei', transf: 'Transferência' }[tipo];
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar lançamento' : titulo}</h3>
-      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div>`}
-      <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${l ? String(Math.abs(l.valor).toFixed(2)).replace('.', ',') : ''}" aria-label="Valor" required></label>
+      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${u.esc(k)}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div>`}
+      <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${u.esc(l ? String(Math.abs(l.valor).toFixed(2)).replace('.', ',') : '')}" aria-label="Valor" required></label>
       ${campo('O que foi', `<input class="txt" id="fD" value="${u.esc(l ? l.desc : '')}" placeholder="${tipo === 'entrada' ? 'Ex.: Ana - casamento, JPL SOM 2 dias' : 'Ex.: gasolina, mercado'}">`)}
-      <div class="grid2">${campo('Data', `<input class="txt" id="fDt" type="date" value="${l ? l.data : hoje}">`)}${tipo === 'saida' && !ed ? campo('Como pagou', `<select class="txt" id="fF">${opts([['conta', 'Pix / débito'], ['cartão', 'Cartão de crédito']], forma0)}</select>`) : campo('Banco', `<select class="txt" id="fB">${opts(l && l.tipo === 'cartão' ? cartoes : bancosConta, l ? l.banco : 'Nubank')}</select>`)}</div>
+      <div class="grid2">${campo('Data', `<input class="txt" id="fDt" type="date" value="${u.esc(l ? l.data : hoje)}">`)}${tipo === 'saida' && !ed ? campo('Como pagou', `<select class="txt" id="fF">${opts([['conta', 'Pix / débito'], ['cartão', 'Cartão de crédito']], forma0)}</select>`) : campo('Banco', `<select class="txt" id="fB">${opts(l && l.tipo === 'cartão' ? cartoes : bancosConta, l ? l.banco : 'Nubank')}</select>`)}</div>
       ${tipo === 'saida' && !ed ? `<div class="grid2" id="linhaBanco">${campo('Banco', `<select class="txt" id="fB">${opts(bancosConta, 'Nubank')}</select>`)}<div id="boxParc" hidden>${campo('Parcelas', `<select class="txt" id="fP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="avisoCartao" hidden></p>` : ''}
       ${tipo === 'guardar' ? campo('Para onde foi', `<select class="txt" id="fX">${opts(c.caixinhas().map(x => [x['CONTA'], `${x['CONTA']} (${x['BANCO']})`]).concat([['', 'Outro lugar']]), l ? (l.obs.match(/Para (.+)/) || [])[1] : '')}</select>`) : ''}
       ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), l ? l.sub : '')}</select>`)}</div>` : ''}
@@ -509,7 +509,7 @@
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? l.obs.replace(/Compra P[\w-]+\s*·?\s*/, '').replace(/^Para .+$/, '') : '')}" placeholder="opcional">`)}
       ${compra ? `<p class="aviso">Esta é a parcela <b>${u.esc(l.parcela)}</b> de uma compra parcelada. Salvar muda só esta parcela.</p>` : ''}
-      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarL" data-id="${l.id}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>${compra ? `<button type="button" class="btn2 perigo" data-a="apagarCompra" data-id="${compra}" style="width:100%;margin-top:10px">${u.svg('trash-2')}Excluir a compra inteira (todas as parcelas)</button>` : ''}` : '<button class="save" type="submit">Salvar</button>'}`,
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarL" data-id="${u.esc(l.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>${compra ? `<button type="button" class="btn2 perigo" data-a="apagarCompra" data-id="${u.esc(compra)}" style="width:100%;margin-top:10px">${u.svg('trash-2')}Excluir a compra inteira (todas as parcelas)</button>` : ''}` : '<button class="save" type="submit">Salvar</button>'}`,
       () => salvarLanc(tipo, l));
     ligarForm(tipo);
   }
@@ -606,13 +606,13 @@
     const ed = !!par, sai = par && par.sai, entra = par && par.entra, bancos = c.BANCOS.filter(b => b !== 'Não informado');
     const nota = sai ? sai.obs.replace(/^Transferência T[\w-]+\s*·?\s*/, '') : '';
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar transferência' : 'Transferi'}</h3>
-      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${k}" aria-pressed="${k === 'transferir'}">${n}</button>`).join('')}</div>`}
-      <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${sai ? String(Math.abs(sai.valor).toFixed(2)).replace('.', ',') : ''}" aria-label="Valor" required></label>
+      ${ed ? '' : `<div class="seg" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,1fr);width:100%">${[['saida', 'Gastei'], ['entrada', 'Recebi'], ['guardar', 'Guardei'], ['transferir', 'Transferi']].map(([k, n]) => `<button type="button" data-a="trocaTipo" data-v="${u.esc(k)}" aria-pressed="${k === 'transferir'}">${n}</button>`).join('')}</div>`}
+      <label class="amount" for="fV"><span>R$</span><input id="fV" class="num" inputmode="decimal" placeholder="0,00" value="${u.esc(sai ? String(Math.abs(sai.valor).toFixed(2)).replace('.', ',') : '')}" aria-label="Valor" required></label>
       <div class="grid2">${campo('Saiu do', `<select class="txt" id="tDe">${opts(bancos, sai ? sai.banco : 'Nubank')}</select>`)}${campo('Foi para o', `<select class="txt" id="tPara">${opts(bancos, entra ? entra.banco : 'PicPay')}</select>`)}</div>
-      ${campo('Data', `<input class="txt" id="fDt" type="date" value="${sai ? sai.data : u.hoje()}">`)}
+      ${campo('Data', `<input class="txt" id="fDt" type="date" value="${u.esc(sai ? sai.data : u.hoje())}">`)}
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(nota)}" placeholder="opcional">`)}
       <p class="aviso">Dinheiro passando de uma conta sua para outra: <b>não conta como entrada nem como saída</b>. Só muda o saldo de cada banco.</p>
-      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarTransf" data-id="${sai.id}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Salvar</button>'}`,
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarTransf" data-id="${u.esc(sai.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Salvar</button>'}`,
       () => {
         const v = u.num(val('fV')), de = val('tDe'), para = val('tPara'), data = val('fDt') || u.hoje(), obs = val('fO').trim();
         if (!(v > 0)) { toast('Digite um valor, por exemplo 200'); return false; }
@@ -635,11 +635,13 @@
 
   /* ---------- trazer correções de um arquivo (o Claude manda): junta com o que já tem ---------- */
   function trazerCorrecoes(dados) {
-    const ops = []; let novos = 0, mudados = 0;
+    const ops = []; let novos = 0, mudados = 0, ignorados = 0;
     Object.entries(dados.abas || {}).forEach(([aba, regs]) => {
-      if (!window.TABELAS[aba] || !Array.isArray(regs)) return;
+      /* só as abas dos seus dados: avisos, aparelhos (quem recebe as notificações) e anexos nunca vêm de arquivo */
+      if (!window.TABELAS[aba] || window.TABELAS[aba].opcional || !Array.isArray(regs)) return;
+      const cols = new Set(['ID', '_apagar'].concat(window.TABELAS[aba].colunas.map(x => x[0])));
       regs.forEach(r => {
-        if (!r.ID) return;
+        if (!r || !db.idOk(r.ID) || Object.keys(r).some(k => !cols.has(k))) { ignorados++; return; }
         const x = db.achar(aba, r.ID);
         if (r._apagar) { if (x) { ops.push({ op: 'apagar', aba, id: r.ID }); mudados++; } return; }
         if (x && Object.keys(r).every(k => k === 'ID' || String(x[k]) === String(r[k]))) return; /* já está igual */
@@ -647,8 +649,9 @@
         ops.push({ op: 'salvar', aba, registro: r });
       });
     });
-    return { ops, novos, mudados };
+    return { ops, novos, mudados, ignorados };
   }
+  A.trazerCorrecoesTeste = trazerCorrecoes; /* para o teste de segurança (etapa 20) */
   function formCorrecoes() {
     abrir(`<h3 style="margin:0 0 4px">Trazer correções</h3><p class="c-muted" style="margin:0 0 14px;font-size:.88rem">Escolha o arquivo que o Claude te mandou. Antes de mudar qualquer coisa, o app mostra o que vai fazer.</p>
       <label class="btn2 pri" style="cursor:pointer;justify-content:center">${u.svg('file-text')}Escolher o arquivo<input type="file" id="corArq" accept=".json,application/json" hidden></label>
@@ -659,7 +662,7 @@
         const dados = JSON.parse(await arq.text());
         const r = trazerCorrecoes(dados);
         if (!r.ops.length) { res.innerHTML = `<p class="aviso">Nada para mudar: o app já está igual ao arquivo.</p>`; return; }
-        res.innerHTML = `${dados.descricao ? `<p class="aviso">${u.esc(dados.descricao)}</p>` : ''}<p style="margin:12px 0">Vai <b>adicionar ${r.novos}</b> e <b>corrigir ${r.mudados}</b> lançamento(s).</p><button type="button" class="save" id="corOk">Fazer as correções</button>`;
+        res.innerHTML = `${dados.descricao ? `<p class="aviso">${u.esc(dados.descricao)}</p>` : ''}<p style="margin:12px 0">Vai <b>adicionar ${r.novos}</b> e <b>corrigir ${r.mudados}</b> lançamento(s).</p>${r.ignorados ? `<p class="aviso">${r.ignorados} linha(s) com algo estranho foram deixadas de fora, por segurança.</p>` : ""}<button type="button" class="save" id="corOk">Fazer as correções</button>`;
         $('corOk').addEventListener('click', () => { db.lote(r.ops); fechar(); render(false); toast(`Pronto: ${r.novos} adicionado(s) e ${r.mudados} corrigido(s)`); });
       } catch (e) { res.innerHTML = `<p class="aviso" style="color:var(--out)">Não consegui ler esse arquivo: ${u.esc(e.message)}</p>`; }
     });
@@ -674,17 +677,17 @@
     fotoNova = null;
     const notas = e ? String(e['OBS'] || '').replace(/(Compra P[\w-]+|Lançamento L[\w-]+)\s*·?\s*/g, '').trim() : '';
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar equipamento' : 'Novo equipamento'}</h3>
-      <div class="fotoedit"><div class="ph" id="fotoPrev">${f ? `<img src="${f}" alt="">` : u.svg('camera')}</div><div><label class="btn2">${u.svg('camera')}${f ? 'Trocar foto' : 'Pôr foto'}<input type="file" accept="image/*" id="fFoto"></label><p class="c-muted" style="font-size:.78rem;margin:8px 0 0">No celular, dá para tirar a foto na hora.</p></div></div>
+      <div class="fotoedit"><div class="ph" id="fotoPrev">${f ? `<img src="${u.esc(u.dadoSeguro(f))}" alt="">` : u.svg('camera')}</div><div><label class="btn2">${u.svg('camera')}${f ? 'Trocar foto' : 'Pôr foto'}<input type="file" accept="image/*" id="fFoto"></label><p class="c-muted" style="font-size:.78rem;margin:8px 0 0">No celular, dá para tirar a foto na hora.</p></div></div>
       ${campo('Nome', `<input class="txt" id="eN" required value="${u.esc(e ? e['NOME'] : '')}" placeholder="Ex.: Rode Wireless GO II">`)}
-      <div class="grid2">${campo('Tipo', `<select class="txt" id="eT">${opts(TIPOS_EQ, e ? e['TIPO'] : 'Câmera')}</select>`)}${campo('Valor', `<input class="txt num" id="eV" inputmode="decimal" value="${e ? String(c.num(e['VALOR']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00" required>`)}</div>
-      <div class="grid2">${campo('Data da compra', `<input class="txt" id="eD" type="date" value="${e ? String(e['DATA DA COMPRA'] || '') : u.hoje()}">`)}${campo('Estado', `<select class="txt" id="eE">${opts(['Novo', 'Semi-novo', 'Usado', 'Na manutenção', 'Vendido'], e ? e['ESTADO'] : 'Novo')}</select>`)}</div>
-      ${ed ? '' : campo('Como entrou', `<div class="rchips">${[['catalogo', 'Já tinha'], ['vista', 'Paguei à vista'], ['cartao', 'No cartão']].map(([k, n], i) => `<input type="radio" name="eF" id="eF${i}" value="${k}" ${i === 0 ? 'checked' : ''}><label for="eF${i}">${n}</label>`).join('')}</div>
+      <div class="grid2">${campo('Tipo', `<select class="txt" id="eT">${opts(TIPOS_EQ, e ? e['TIPO'] : 'Câmera')}</select>`)}${campo('Valor', `<input class="txt num" id="eV" inputmode="decimal" value="${u.esc(e ? String(c.num(e['VALOR']).toFixed(2)).replace('.', ',') : '')}" placeholder="R$ 0,00" required>`)}</div>
+      <div class="grid2">${campo('Data da compra', `<input class="txt" id="eD" type="date" value="${u.esc(e ? String(e['DATA DA COMPRA'] || '') : u.hoje())}">`)}${campo('Estado', `<select class="txt" id="eE">${opts(['Novo', 'Semi-novo', 'Usado', 'Na manutenção', 'Vendido'], e ? e['ESTADO'] : 'Novo')}</select>`)}</div>
+      ${ed ? '' : campo('Como entrou', `<div class="rchips">${[['catalogo', 'Já tinha'], ['vista', 'Paguei à vista'], ['cartao', 'No cartão']].map(([k, n], i) => `<input type="radio" name="eF" id="eF${i}" value="${u.esc(k)}" ${i === 0 ? 'checked' : ''}><label for="eF${i}">${n}</label>`).join('')}</div>
         <div class="grid2" id="eLinha" hidden><div>${campo('Banco / cartão', `<select class="txt" id="eB"></select>`)}</div><div id="eParcBox">${campo('Parcelas', `<select class="txt" id="eP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="eAviso">“Já tinha” só cataloga: não mexe no dinheiro de nenhum mês.</p>`)}
       ${campo('Nº de série', `<input class="txt" id="eS" value="${u.esc(e ? e['Nº DE SÉRIE'] || '' : '')}" placeholder="opcional">`)}
       ${campo('Anotações', `<input class="txt" id="eO" value="${u.esc(notas)}" placeholder="opcional">`)}
       ${ed && vinc.length ? `<p class="aviso">Ligado a ${pid ? `uma compra no cartão: <b>${vinc.length} parcelas</b> (${u.brl(-u.sum(vinc))})` : `um lançamento de <b>${u.brl(-u.sum(vinc))}</b> em ${u.nomeMes(u.mes(vinc[0].data)).toLowerCase()}`}. Se mudar o valor, as parcelas acompanham.</p>` : ''}
       ${ed ? `<div class="checkline" id="eApagarJunto" ${vinc.length ? '' : 'hidden'}><input type="checkbox" id="eJunto" checked><label for="eJunto">Ao excluir, apagar também ${pid ? `as ${vinc.length} parcelas no cartão` : 'o lançamento ligado'} (${u.brl(-u.sum(vinc))})</label></div>
-        <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarE" data-id="${e.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Cadastrar</button>'}`,
+        <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarE" data-id="${u.esc(e.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Cadastrar</button>'}`,
       () => salvarEquip(e), true);
     $('fFoto').addEventListener('change', ev => { const arq = ev.target.files[0]; if (arq) reduzirFoto(arq).then(url => { fotoNova = url; $('fotoPrev').innerHTML = `<img src="${url}" alt="">`; }).catch(() => toast('Não consegui ler essa foto')); });
     document.querySelectorAll('input[name=eF]').forEach(r => r.addEventListener('change', () => {
@@ -757,46 +760,46 @@
   function videosJob(j) {
     const vs = c.entregas(j), ok = vs.filter(v => v.feito).length;
     return `<h4>${u.svg('clapperboard')} Vídeos${vs.length ? ` · ${ok} de ${vs.length} prontos` : ''}</h4>
-      ${vs.length ? `<div class="vids">${vs.map((v, i) => `<div class="vid${v.feito ? ' ok' : ''}"><button type="button" class="vck" data-a="vidJ" data-id="${j.ID}" data-i="${i}" aria-pressed="${v.feito}">${u.svg(v.feito ? 'circle-check' : 'circle')}<span>${u.esc(v.nome)}</span></button><button type="button" class="vx" data-a="tiraVid" data-id="${j.ID}" data-i="${i}" aria-label="Tirar ${u.esc(v.nome)}">${u.svg('x')}</button></div>`).join('')}</div>` : '<p class="c-muted" style="font-size:.86rem;margin:0 0 8px">Coloque aqui cada vídeo que precisa entregar e marque quando ficar pronto.</p>'}
-      <div class="addv"><input class="txt" id="jNv" placeholder="Novo vídeo, ex.: teaser" aria-label="Novo vídeo"><button type="button" class="btn2" data-a="addVid" data-id="${j.ID}">${u.svg('plus')}Pôr</button></div>`;
+      ${vs.length ? `<div class="vids">${vs.map((v, i) => `<div class="vid${v.feito ? ' ok' : ''}"><button type="button" class="vck" data-a="vidJ" data-id="${u.esc(j.ID)}" data-i="${u.esc(i)}" aria-pressed="${v.feito}">${u.svg(v.feito ? 'circle-check' : 'circle')}<span>${u.esc(v.nome)}</span></button><button type="button" class="vx" data-a="tiraVid" data-id="${u.esc(j.ID)}" data-i="${u.esc(i)}" aria-label="Tirar ${u.esc(v.nome)}">${u.svg('x')}</button></div>`).join('')}</div>` : '<p class="c-muted" style="font-size:.86rem;margin:0 0 8px">Coloque aqui cada vídeo que precisa entregar e marque quando ficar pronto.</p>'}
+      <div class="addv"><input class="txt" id="jNv" placeholder="Novo vídeo, ex.: teaser" aria-label="Novo vídeo"><button type="button" class="btn2" data-a="addVid" data-id="${u.esc(j.ID)}">${u.svg('plus')}Pôr</button></div>`;
   }
   const tipoArq = m => /pdf/.test(m) ? 'PDF' : /^image\//.test(m) ? 'foto' : 'arquivo';
   function anexosJob(j) {
     const xs = c.anexos(j);
     return `<h4>${u.svg('paperclip')} Comprovantes e contratos${xs.length ? ` · ${xs.length}` : ''}</h4>
-      ${xs.map(x => `<button type="button" class="it btn" data-a="verX" data-id="${x.ID}">${u.ti(TIPOANX[x['TIPO']] || TIPOANX.Outro)}<div style="min-width:0"><div class="t">${u.esc(x['NOME'] || x['TIPO'])}</div><div class="m">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', tipoArq(x['ARQUIVO'])].filter(Boolean).map(t => `<span>${u.esc(t)}</span>`).join('<span>·</span>')}</div></div><div class="v num">${c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : u.svg('eye')}</div></button>`).join('')}
-      ${semAnexos() ? `<div class="aviso">Não consegui carregar os anexos agora (sem internet?). <button type="button" class="chip mini" data-a="recarregarX" data-id="${j.ID}">${u.svg('refresh-cw')}Tentar de novo</button></div>` : `<div class="addx2">
+      ${xs.map(x => `<button type="button" class="it btn" data-a="verX" data-id="${u.esc(x.ID)}">${u.ti(TIPOANX[x['TIPO']] || TIPOANX.Outro)}<div style="min-width:0"><div class="t">${u.esc(x['NOME'] || x['TIPO'])}</div><div class="m">${[x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', tipoArq(x['ARQUIVO'])].filter(Boolean).map(t => `<span>${u.esc(t)}</span>`).join('<span>·</span>')}</div></div><div class="v num">${c.num(x['VALOR']) ? u.brl(c.num(x['VALOR'])) : u.svg('eye')}</div></button>`).join('')}
+      ${semAnexos() ? `<div class="aviso">Não consegui carregar os anexos agora (sem internet?). <button type="button" class="chip mini" data-a="recarregarX" data-id="${u.esc(j.ID)}">${u.svg('refresh-cw')}Tentar de novo</button></div>` : `<div class="addx2">
         <label class="btn2 grande" for="aArqC">${u.svg('receipt')}<span>Anexar comprovante<small>foto, print ou PDF do Pix</small></span></label><input type="file" id="aArqC" hidden>
         <label class="btn2 grande" for="aArqD">${u.svg('file-text')}<span>Anexar contrato ou PDF<small>contrato, orçamento, outros</small></span></label><input type="file" id="aArqD" hidden>
       </div><p class="c-muted" id="aSt" style="font-size:.82rem;margin:8px 2px 0" hidden></p>`}`;
   }
   function recebimentosJob(j) {
     const recs = c.recebimentos(j), prev = c.parcelasPrevistas(j), tot = c.num(j['VALOR TOTAL']);
-    return `<h4>${u.svg('hand-coins')} Recebimentos · ${u.brl(c.recebido(j))}${tot ? ` de ${u.brl(tot)}` : ''}</h4>${recs.map(l => { const x = anexoDoLanc(l.id); return linhaL(l) + (x ? `<button type="button" class="vercomp" data-a="verX" data-id="${x.ID}">${u.svg('receipt')}Ver comprovante</button>` : ''); }).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
+    return `<h4>${u.svg('hand-coins')} Recebimentos · ${u.brl(c.recebido(j))}${tot ? ` de ${u.brl(tot)}` : ''}</h4>${recs.map(l => { const x = anexoDoLanc(l.id); return linhaL(l) + (x ? `<button type="button" class="vercomp" data-a="verX" data-id="${u.esc(x.ID)}">${u.svg('receipt')}Ver comprovante</button>` : ''); }).join('') || '<p class="c-muted" style="font-size:.86rem">Nada recebido ainda.</p>'}
       ${prev.length ? `<p class="c-muted" style="font-size:.84rem;margin:10px 2px 4px">${u.svg('calendar-clock')} Parcelas a receber (aparecem nas Tarefas, com aviso no celular):</p>${prev.map(linhaL).join('')}` : ''}
-      <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, parcela" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.hoje()}" aria-label="Data"></div>
+      <div class="panel" style="margin-top:10px;padding:12px"><b style="font-size:.9rem">Registrar recebimento</b><div class="grid2" style="margin-top:8px"><input class="txt num" id="rV" inputmode="decimal" placeholder="R$ 0,00" aria-label="Valor recebido"><select class="txt" id="rB" aria-label="Banco">${opts(c.BANCOS, 'PicPay')}</select></div><div class="grid2" style="margin-top:8px"><input class="txt" id="rD" placeholder="Ex.: sinal, parcela" aria-label="Descrição"><input class="txt" id="rDt" type="date" value="${u.esc(u.hoje())}" aria-label="Data"></div>
         ${semAnexos() ? '' : `<label class="btn2 comp" for="rArq">${u.svg('paperclip')}<span id="rArqN">Anexar comprovante (opcional)</span></label><input type="file" id="rArq" hidden>`}
-        <button type="button" class="btn2 pri" data-a="receber" data-id="${j.ID}" data-sub="${SUBJ[j['TIPO DE EVENTO']] || 'Evento'}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div>`;
+        <button type="button" class="btn2 pri" data-a="receber" data-id="${u.esc(j.ID)}" data-sub="${u.esc(SUBJ[j['TIPO DE EVENTO']] || 'Evento')}" style="width:100%;margin-top:10px">${u.svg('plus')}Registrar</button></div>`;
   }
   function formJob(j, novo) {
     const ed = !!j, tot = j ? c.num(j['VALOR TOTAL']) : 0, rec = j ? c.recebido(j) : 0, falta = j ? c.faltaReceber(j) : null, prox = j ? c.parcelasPrevistas(j)[0] : null;
     const sem = TAB.falta.TRABALHOS || new Set();
     const et0 = (j && j['ETAPA']) || (novo && novo['ETAPA']) || 'Orçamento';
     abrir(`<h3 style="margin:0 0 10px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
-      <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${j.ID}"` : ''} data-v="${n}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
+      <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${u.esc(j.ID)}"` : ''} data-v="${u.esc(n)}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
       ${ed && tot ? `<div class="jres"><div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span>${u.brl(rec)} de ${u.brl(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.brl(falta)}</b>` : '<b class="c-in">pago</b>'}</div>${prox ? `<small>Próxima parcela: ${u.brl(prox.valor)} em ${u.dm(prox.data)}</small>` : ''}</div>` : ''}
       ${ed ? `<div class="jsec" id="jVid">${videosJob(j)}</div><div class="jsec" id="jAnx">${anexosJob(j)}</div><div class="jsec" id="jRec">${recebimentosJob(j)}</div><div class="jsec"><h4>${u.svg('pencil')} Dados do trabalho</h4></div>` : ''}
       ${campo('Cliente ou casal', `<input class="txt" id="jC" required value="${u.esc(j ? j['CLIENTE'] : '')}" placeholder="Ex.: Ana e Pedro">`)}
       ${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : (novo && novo['TIPO DE EVENTO']) || 'Casamento')}</select>`)}
-      <div class="grid2">${campo('Data do evento', `<input class="txt" id="jD" type="date" value="${j ? String(j['DATA DO EVENTO'] || '') : ''}">`)}${campo('Entrega', `<input class="txt" id="jEn" type="date" value="${j ? String(j['ENTREGA'] || '') : ''}">`)}</div>
-      <div class="grid2">${campo('Valor total', `<input class="txt num" id="jV" inputmode="decimal" value="${j && j['VALOR TOTAL'] !== '' ? String(c.num(j['VALOR TOTAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}${campo('Local', `<input class="txt" id="jL" value="${u.esc(j ? j['LOCAL'] || '' : '')}">`)}</div>
-      <div class="grid2">${campo('Paga por mês', `<input class="txt num" id="jPm" inputmode="decimal" value="${j && c.num(j['PARCELA MENSAL']) ? String(c.num(j['PARCELA MENSAL']).toFixed(2)).replace('.', ',') : ''}" placeholder="se paga parcelado">`)}${campo('Todo dia', `<input class="txt num" id="jPd" inputmode="numeric" value="${j && j['DIA DA PARCELA'] ? parseInt(j['DIA DA PARCELA'], 10) : ''}" placeholder="ex.: 26">`)}</div>
+      <div class="grid2">${campo('Data do evento', `<input class="txt" id="jD" type="date" value="${u.esc(j ? String(j['DATA DO EVENTO'] || '') : '')}">`)}${campo('Entrega', `<input class="txt" id="jEn" type="date" value="${u.esc(j ? String(j['ENTREGA'] || '') : '')}">`)}</div>
+      <div class="grid2">${campo('Valor total', `<input class="txt num" id="jV" inputmode="decimal" value="${u.esc(j && j['VALOR TOTAL'] !== '' ? String(c.num(j['VALOR TOTAL']).toFixed(2)).replace('.', ',') : '')}" placeholder="R$ 0,00">`)}${campo('Local', `<input class="txt" id="jL" value="${u.esc(j ? j['LOCAL'] || '' : '')}">`)}</div>
+      <div class="grid2">${campo('Paga por mês', `<input class="txt num" id="jPm" inputmode="decimal" value="${u.esc(j && c.num(j['PARCELA MENSAL']) ? String(c.num(j['PARCELA MENSAL']).toFixed(2)).replace('.', ',') : '')}" placeholder="se paga parcelado">`)}${campo('Todo dia', `<input class="txt num" id="jPd" inputmode="numeric" value="${u.esc(j && j['DIA DA PARCELA'] ? parseInt(j['DIA DA PARCELA'], 10) : '')}" placeholder="ex.: 26">`)}</div>
       ${campo('O que foi fechado', `<input class="txt" id="jF" value="${u.esc(j ? j['O QUE FOI FECHADO'] || '' : '')}" placeholder="Ex.: Teaser + filme completo + 10 reels">`)}
       ${campo('Briefing / orçamento', `<textarea class="txt" id="jBr" rows="5" placeholder="Horário, equipe, o que está incluso, adicionais…">${u.esc(j ? j['BRIEFING'] || '' : '')}</textarea>`)}
       <div class="grid2">${campo('WhatsApp', `<input class="txt" id="jW" inputmode="tel" value="${u.esc(j ? j['TELEFONE'] || '' : '')}" placeholder="(19) 9…">`)}${campo('Contrato (link)', `<input class="txt" id="jK" value="${u.esc(j ? j['CONTRATO'] || '' : '')}" placeholder="ou anexe o PDF acima">`)}</div>
       ${campo('Anotações', `<textarea class="txt" id="jO">${u.esc(j ? j['OBS'] || '' : '')}</textarea>`)}
       ${sem.has('briefing') ? '<p class="aviso">Briefing, vídeos e parcela mensal só ficam salvos depois de rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : ''}
-      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${j.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${u.esc(j.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
       () => {
         const nome = val('jC').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
         const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10);
@@ -879,14 +882,14 @@
     const j = db.achar('TRABALHOS', x['TRABALHO']), recs = j ? c.recebimentos(j) : [], pdf = /pdf/.test(x['ARQUIVO']), img = /^image\//.test(x['ARQUIVO']);
     abrir(`<h3 style="margin:0 0 4px">${u.esc(x['NOME'] || x['TIPO'])}</h3><p class="c-muted" style="margin:0 0 12px;font-size:.86rem">${[j ? j['CLIENTE'] : '', x['TIPO'], x['DATA'] ? u.dm(String(x['DATA'])) : '', tipoArq(x['ARQUIVO'])].filter(Boolean).map(u.esc).join(' · ')}</p>
       ${novo ? `<p class="aviso ok-av">${u.svg('circle-check')} Guardado no trabalho. Confira o nome e, se for comprovante, o valor e de qual recebimento é.</p>` : ''}
-      <button type="button" class="xver" id="xVer" data-a="telaX" data-id="${x.ID}" aria-label="Abrir em tela cheia"><p class="c-muted">Abrindo…</p></button>
-      <div class="grid2" style="margin-top:10px"><button type="button" class="btn2" data-a="telaX" data-id="${x.ID}">${u.svg('eye')}Tela cheia</button><button type="button" class="btn2" data-a="shareX" data-id="${x.ID}">${u.svg('upload')}Compartilhar</button></div>
+      <button type="button" class="xver" id="xVer" data-a="telaX" data-id="${u.esc(x.ID)}" aria-label="Abrir em tela cheia"><p class="c-muted">Abrindo…</p></button>
+      <div class="grid2" style="margin-top:10px"><button type="button" class="btn2" data-a="telaX" data-id="${u.esc(x.ID)}">${u.svg('eye')}Tela cheia</button><button type="button" class="btn2" data-a="shareX" data-id="${u.esc(x.ID)}">${u.svg('upload')}Compartilhar</button></div>
       <div class="jsec"><h4>${u.svg('pencil')} Sobre o arquivo</h4></div>
       ${campo('Nome', `<input class="txt" id="xN" value="${u.esc(x['NOME'] || '')}">`)}
-      <div class="grid2">${campo('Tipo', `<select class="txt" id="xT">${opts(Object.keys(TIPOANX), x['TIPO'] || 'Outro')}</select>`)}${campo('Valor (se for comprovante)', `<input class="txt num" id="xV" inputmode="decimal" value="${c.num(x['VALOR']) ? String(c.num(x['VALOR']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}</div>
+      <div class="grid2">${campo('Tipo', `<select class="txt" id="xT">${opts(Object.keys(TIPOANX), x['TIPO'] || 'Outro')}</select>`)}${campo('Valor (se for comprovante)', `<input class="txt num" id="xV" inputmode="decimal" value="${u.esc(c.num(x['VALOR']) ? String(c.num(x['VALOR']).toFixed(2)).replace('.', ',') : '')}" placeholder="R$ 0,00">`)}</div>
       ${recs.length ? campo('É o comprovante de qual recebimento?', `<select class="txt" id="xL">${opts([['', 'Nenhum']].concat(recs.map(l => [l.id, `${u.dm(l.data)} · ${u.brl(l.valor)} · ${l.desc}`])), x['LANÇAMENTO'] || '')}</select>`) : ''}
-      <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarX" data-id="${x.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>
-      <button type="button" class="btn2" data-a="editJ" data-id="${x['TRABALHO']}" style="width:100%;margin-top:10px">${u.svg('chevron-left')}Voltar para ${u.esc(j ? j['CLIENTE'] : 'o trabalho')}</button>`,
+      <div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarX" data-id="${u.esc(x.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>
+      <button type="button" class="btn2" data-a="editJ" data-id="${u.esc(x['TRABALHO'])}" style="width:100%;margin-top:10px">${u.svg('chevron-left')}Voltar para ${u.esc(j ? j['CLIENTE'] : 'o trabalho')}</button>`,
       () => {
         const v = u.num(val('xV')), lid = val('xL'), l = lid && recs.find(r => r.id === lid);
         db.salvar('ANEXOS', { ID: id, 'NOME': val('xN').trim() || x['TIPO'], 'TIPO': val('xT'), 'VALOR': v > 0 ? u.r2(v) : l ? l.valor : '', 'LANÇAMENTO': lid || '', 'DATA': l ? l.data : x['DATA'] });
@@ -896,10 +899,10 @@
     try { dado = await dadoDe(id); } catch (e) { dado = null; }
     const el = $('xVer'); if (!el || el.closest('#s2') !== $('s2')) return;
     if (!dado) { el.innerHTML = `<p class="aviso">Não consegui abrir agora (sem internet?). Toque para tentar de novo.</p>`; return; }
-    if (img) { el.innerHTML = `<img src="${dado}" alt="${u.esc(x['NOME'] || 'comprovante')}">`; return; }
+    if (img) { el.innerHTML = `<img src="${u.esc(u.dadoSeguro(dado))}" alt="${u.esc(x['NOME'] || 'comprovante')}">`; return; }
     if (!pdf) { el.innerHTML = `<div class="xarq">${u.svg('file-text')}<span>Este tipo de arquivo não abre aqui. Use “Compartilhar” para abrir em outro app ou salvar.</span></div>`; return; }
     try {
-      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado) }).promise, pg = await doc.getPage(1), v1 = pg.getViewport({ scale: 1 });
+      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado), isEvalSupported: false }).promise, pg = await doc.getPage(1), v1 = pg.getViewport({ scale: 1 });
       const vp = pg.getViewport({ scale: Math.min(2, ((el.clientWidth || 340) * (devicePixelRatio || 1)) / v1.width) }), cv = document.createElement('canvas');
       cv.width = vp.width; cv.height = vp.height; await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
       if (!$('xVer')) return;
@@ -913,17 +916,17 @@
     const x = db.achar('ANEXOS', id); if (!x) return;
     fecharVisor();
     visor = document.createElement('div'); visor.className = 'visor'; visor.id = 'visor'; visor.dataset.zoom = '1';
-    visor.innerHTML = `<div class="vbar"><button type="button" data-a="fecharVisor" aria-label="Fechar">${u.svg('x')}</button><b>${u.esc(x['NOME'] || x['TIPO'])}</b><button type="button" data-a="zoomV" data-v="-1" aria-label="Diminuir">${u.svg('minus')}</button><button type="button" data-a="zoomV" data-v="1" aria-label="Aumentar">${u.svg('plus')}</button><button type="button" data-a="shareX" data-id="${x.ID}" aria-label="Compartilhar">${u.svg('upload')}</button></div><div class="vpg" id="vPg"><p class="c-muted">Abrindo…</p></div>`;
+    visor.innerHTML = `<div class="vbar"><button type="button" data-a="fecharVisor" aria-label="Fechar">${u.svg('x')}</button><b>${u.esc(x['NOME'] || x['TIPO'])}</b><button type="button" data-a="zoomV" data-v="-1" aria-label="Diminuir">${u.svg('minus')}</button><button type="button" data-a="zoomV" data-v="1" aria-label="Aumentar">${u.svg('plus')}</button><button type="button" data-a="shareX" data-id="${u.esc(x.ID)}" aria-label="Compartilhar">${u.svg('upload')}</button></div><div class="vpg" id="vPg"><p class="c-muted">Abrindo…</p></div>`;
     document.body.appendChild(visor); document.body.classList.add('com-visor');
     const box = $('vPg');
     box.addEventListener('dblclick', () => zoomVisor(visor.dataset.zoom === '1' ? 1 : -9));
     let dado; try { dado = await dadoDe(id); } catch (e) { dado = null; }
     if (!visor || !box.isConnected) return;
     if (!dado) { box.innerHTML = '<p class="aviso">Não consegui abrir agora (sem internet?).</p>'; return; }
-    if (/^image\//.test(x['ARQUIVO'])) { box.innerHTML = `<img src="${dado}" alt="">`; return; }
+    if (/^image\//.test(x['ARQUIVO'])) { box.innerHTML = `<img src="${u.esc(u.dadoSeguro(dado))}" alt="">`; return; }
     if (!/pdf/.test(x['ARQUIVO'])) { box.innerHTML = '<p class="aviso">Este tipo de arquivo não abre aqui. Use o botão de compartilhar.</p>'; return; }
     try {
-      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado) }).promise; box.innerHTML = '';
+      const doc = await (await carregarPdfjs()).getDocument({ data: bytesDe(dado), isEvalSupported: false }).promise; box.innerHTML = '';
       for (let i = 1; i <= Math.min(doc.numPages, 40); i++) {
         if (!box.isConnected) return;
         const pg = await doc.getPage(i), v1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: Math.min(3, (innerWidth * (devicePixelRatio || 1) * 1.6) / v1.width) });
@@ -944,12 +947,13 @@
     const x = db.achar('ANEXOS', id); if (!x) return;
     let dado; try { dado = await dadoDe(id); } catch (e) { dado = null; }
     if (!dado) { toast('Não consegui pegar o arquivo agora (sem internet?)'); return; }
-    const tipo = x['ARQUIVO'] || 'application/octet-stream', nome = String(x['NOME'] || 'arquivo').replace(/[\\/:*?"<>|]+/g, ' ').trim() + (EXT[tipo] || ''), blob = new Blob([bytesDe(dado)], { type: tipo });
+    /* foto e PDF vão com o tipo certo; qualquer outro arquivo vai como "arquivo" (o navegador não abre como página) */
+    const tipo = /^(image\/(jpeg|png|webp|gif|heic|heif)|application\/pdf)$/.test(x['ARQUIVO']) ? x['ARQUIVO'] : 'application/octet-stream', nome = String(x['NOME'] || 'arquivo').replace(/[\\/:*?"<>|]+/g, ' ').trim() + (EXT[tipo] || ''), blob = new Blob([bytesDe(dado)], { type: tipo });
     try { const arq = new File([blob], nome, { type: tipo }); if (navigator.canShare && navigator.canShare({ files: [arq] })) { await navigator.share({ files: [arq], title: nome }); return; } } catch (e) { if (e.name === 'AbortError') return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
-  /* leitor de PDF (pdf.js), baixado só na primeira vez que abrir um PDF */
-  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  /* leitor de PDF (pdf.js), carregado só na primeira vez que abrir um PDF */
+  const PDFJS = 'vendor/pdfjs/'; /* pdf.js 3.11.174 guardado no próprio app (veja vendor/pdfjs/LEIA-ME.md) */
   let pdfjs = null;
   const carregarPdfjs = () => pdfjs || (pdfjs = new Promise((ok, erro) => {
     const sc = document.createElement('script'); sc.src = PDFJS + 'pdf.min.js';
@@ -957,6 +961,15 @@
     sc.onerror = () => { pdfjs = null; erro(new Error('leitor de PDF não carregou')); };
     document.head.appendChild(sc);
   }));
+  /* excluir o trabalho leva junto os comprovantes e contratos dele (LGPD: não fica documento de cliente esquecido) */
+  function apagarJob(id, botao) {
+    const xs = c.anexos({ ID: id });
+    if (!xs.length) return apagarSimples('TRABALHOS', id, botao, 'Trabalho excluído');
+    if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + `Toque de novo: apaga também ${xs.length} ${xs.length > 1 ? 'arquivos' : 'arquivo'}`; return; }
+    db.lote([{ op: 'apagar', aba: 'TRABALHOS', id }].concat(xs.map(x => ({ op: 'apagar', aba: 'ANEXOS', id: x.ID }))));
+    xs.forEach(x => { delete arquivos[x.ID]; });
+    fechar(); render(false); toast(`Trabalho e ${xs.length} ${xs.length > 1 ? 'arquivos excluídos' : 'arquivo excluído'}`);
+  }
   function apagarAnexo(id, botao) {
     if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
     const x = db.achar('ANEXOS', id); db.apagar('ANEXOS', id); delete arquivos[id];
@@ -986,10 +999,10 @@
     const ed = !!t;
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar tarefa' : 'Nova tarefa'}</h3>
       ${campo('O que precisa fazer', `<input class="txt" id="tT" required value="${u.esc(t ? t['TAREFA'] : '')}" placeholder="Ex.: pagar o Igor, mandar orçamento">`)}
-      <div class="grid2">${campo('Quando', `<input class="txt" id="tD" type="date" value="${t ? String(t['DATA'] || '') : u.hoje()}">`)}${campo('Valor (se tiver)', `<input class="txt num" id="tV" inputmode="decimal" value="${t && t['VALOR'] !== '' ? String(c.num(t['VALOR']).toFixed(2)).replace('.', ',') : ''}" placeholder="R$ 0,00">`)}</div>
+      <div class="grid2">${campo('Quando', `<input class="txt" id="tD" type="date" value="${u.esc(t ? String(t['DATA'] || '') : u.hoje())}">`)}${campo('Valor (se tiver)', `<input class="txt num" id="tV" inputmode="decimal" value="${u.esc(t && t['VALOR'] !== '' ? String(c.num(t['VALOR']).toFixed(2)).replace('.', ',') : '')}" placeholder="R$ 0,00">`)}</div>
       ${campo('Tipo', `<select class="txt" id="tY">${opts(['Conta', 'Darzan', 'Pessoal'], t ? t['TIPO'] : 'Pessoal')}</select>`)}
       ${campo('Anotação', `<input class="txt" id="tO" value="${u.esc(t ? t['OBS'] || '' : '')}">`)}
-      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarT" data-id="${t.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar tarefa</button>'}`,
+      ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarT" data-id="${u.esc(t.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar tarefa</button>'}`,
       () => { const n = val('tT').trim(); if (!n) return false; db.salvar('TAREFAS', Object.assign(t ? { ID: t.ID } : { 'FEITA': false }, { 'TAREFA': n, 'DATA': val('tD'), 'VALOR': val('tV') ? u.r2(u.num(val('tV'))) : '', 'TIPO': val('tY'), 'OBS': val('tO') })); fechar(); render(false); toast(t ? 'Tarefa atualizada' : 'Tarefa criada'); });
   }
 
@@ -997,7 +1010,7 @@
   function formConferir(banco) {
     const subs = c.contas().filter(x => x['BANCO'] === banco);
     abrir(`<h3 style="margin:0 0 4px">Conferir ${u.esc(banco)}</h3><p class="c-muted" style="margin:0 0 6px;font-size:.88rem">Abra o app do ${u.esc(banco)} e digite o saldo que aparece lá agora.</p>
-      ${subs.map((x, i) => { const v = c.saldo(x); return campo(u.esc(x['CONTA']), `<input class="txt num" id="cf${i}" inputmode="decimal" data-calc="${v == null ? '' : v}" value="${v == null ? '' : String(v.toFixed(2)).replace('.', ',')}" placeholder="R$ 0,00"><div class="diff" id="df${i}">${v == null ? '' : `O app calculou ${u.brl(v)}`}</div>`); }).join('')}
+      ${subs.map((x, i) => { const v = c.saldo(x); return campo(u.esc(x['CONTA']), `<input class="txt num" id="cf${i}" inputmode="decimal" data-calc="${v == null ? '' : v}" value="${u.esc(v == null ? '' : String(v.toFixed(2)).replace('.', ','))}" placeholder="R$ 0,00"><div class="diff" id="df${i}">${v == null ? '' : `O app calculou ${u.brl(v)}`}</div>`); }).join('')}
       <button class="save" type="submit">Salvar conferência</button>`,
       () => {
         let aj = 0; const ops = [];
@@ -1012,12 +1025,12 @@
   }
   function formCartao(nome) {
     const k = c.cartao(nome);
-    abrir(`<h3 style="margin:0 0 12px">Cartão ${u.esc(nome)}</h3><div class="grid2">${campo('Fecha dia', `<input class="txt num" id="kF" inputmode="numeric" value="${u.esc(k['FECHA DIA'] || '')}">`)}${campo('Vence dia', `<input class="txt num" id="kV" inputmode="numeric" value="${u.esc(k['VENCE DIA'] || '')}" placeholder="ex.: 14">`)}</div><div class="grid2">${campo('Limite', `<input class="txt num" id="kL" inputmode="decimal" value="${k['LIMITE'] !== '' ? String(c.num(k['LIMITE'])) : ''}">`)}${campo('Pago pela conta', `<select class="txt" id="kP">${opts(c.BANCOS.filter(b => b !== 'Não informado').map(b => [b + ' · Conta', b]), String(k['PAGA PELA CONTA'] || nome + ' · Conta'))}</select>`)}</div><button class="save" type="submit">Salvar</button>`,
+    abrir(`<h3 style="margin:0 0 12px">Cartão ${u.esc(nome)}</h3><div class="grid2">${campo('Fecha dia', `<input class="txt num" id="kF" inputmode="numeric" value="${u.esc(k['FECHA DIA'] || '')}">`)}${campo('Vence dia', `<input class="txt num" id="kV" inputmode="numeric" value="${u.esc(k['VENCE DIA'] || '')}" placeholder="ex.: 14">`)}</div><div class="grid2">${campo('Limite', `<input class="txt num" id="kL" inputmode="decimal" value="${u.esc(k['LIMITE'] !== '' ? String(c.num(k['LIMITE'])) : '')}">`)}${campo('Pago pela conta', `<select class="txt" id="kP">${opts(c.BANCOS.filter(b => b !== 'Não informado').map(b => [b + ' · Conta', b]), String(k['PAGA PELA CONTA'] || nome + ' · Conta'))}</select>`)}</div><button class="save" type="submit">Salvar</button>`,
       () => { db.salvar('CARTOES', { ID: k.ID, 'FECHA DIA': parseInt(val('kF'), 10) || '', 'VENCE DIA': parseInt(val('kV'), 10) || '', 'LIMITE': u.num(val('kL')) || '', 'PAGA PELA CONTA': val('kP') }); fechar(); render(false); toast('Cartão atualizado'); });
   }
   function formMeta(g) {
-    abrir(`<h3 style="margin:0 0 12px">${g ? 'Editar meta' : 'Nova meta'}</h3>${campo('Meta', `<input class="txt" id="gN" required value="${u.esc(g ? g['META'] : '')}" placeholder="Ex.: Viagem Chile">`)}<div class="grid2">${campo('Valor alvo', `<input class="txt num" id="gA" inputmode="decimal" value="${g ? String(c.num(g['VALOR ALVO'])) : ''}">`)}${campo('Já guardado', `<input class="txt num" id="gJ" inputmode="decimal" value="${g ? String(c.num(g['JÁ GUARDADO'])) : ''}">`)}</div><div class="grid2">${campo('Onde está', `<select class="txt" id="gO">${opts([['', '—']].concat(c.caixinhas().map(x => [x['CONTA'], x['CONTA']])), g ? g['ONDE ESTÁ'] : '')}</select>`)}${campo('Prazo', `<input class="txt" id="gP" type="date" value="${g ? String(g['PRAZO'] || '') : ''}">`)}</div>
-      ${g ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarM" data-id="${g.ID}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar meta</button>'}`,
+    abrir(`<h3 style="margin:0 0 12px">${g ? 'Editar meta' : 'Nova meta'}</h3>${campo('Meta', `<input class="txt" id="gN" required value="${u.esc(g ? g['META'] : '')}" placeholder="Ex.: Viagem Chile">`)}<div class="grid2">${campo('Valor alvo', `<input class="txt num" id="gA" inputmode="decimal" value="${u.esc(g ? String(c.num(g['VALOR ALVO'])) : '')}">`)}${campo('Já guardado', `<input class="txt num" id="gJ" inputmode="decimal" value="${u.esc(g ? String(c.num(g['JÁ GUARDADO'])) : '')}">`)}</div><div class="grid2">${campo('Onde está', `<select class="txt" id="gO">${opts([['', '—']].concat(c.caixinhas().map(x => [x['CONTA'], x['CONTA']])), g ? g['ONDE ESTÁ'] : '')}</select>`)}${campo('Prazo', `<input class="txt" id="gP" type="date" value="${u.esc(g ? String(g['PRAZO'] || '') : '')}">`)}</div>
+      ${g ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarM" data-id="${u.esc(g.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar meta</button>'}`,
       () => { const n = val('gN').trim(); if (!n) return false; db.salvar('METAS', Object.assign(g ? { ID: g.ID } : {}, { 'META': n, 'VALOR ALVO': u.num(val('gA')), 'JÁ GUARDADO': u.num(val('gJ')), 'ONDE ESTÁ': val('gO'), 'PRAZO': val('gP') })); fechar(); render(false); toast('Meta salva'); });
   }
   function apagarSimples(aba, id, botao, msg) {
@@ -1055,8 +1068,8 @@
   const TABS = [['inicio', 'Início', 'house'], ['trabalhos', 'Trabalhos', 'clapperboard'], ['tarefas', 'Tarefas', 'list-checks'], ['equip', 'Equipamentos', 'camera'], ['fin', 'Finanças', 'wallet']];
   function nav() {
     const urg = c.urgentes();
-    $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
-    $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${k}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
+    $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
+    $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
     const lv = c.nivel(c.xp());
     $('sbrand').innerHTML = `<div class="ringw">${anel(lv.atual / lv.prox, 56, 4, '#ffd36b')}${foto()}<span class="lvl">Nv ${lv.n}</span></div><div><b>João Darzan</b><span>${lv.nome}</span></div>`;
     $('fabwrap').hidden = ui.view === 'inicio' || (ui.view === 'fin' && ui.fseg === 'revisar');
@@ -1128,7 +1141,7 @@
     apagarE: b => apagarEquip(b.dataset.id, b),
     novoJ: () => formJob(null),
     editJ: b => formJob(db.achar('TRABALHOS', b.dataset.id)),
-    apagarJ: b => apagarSimples('TRABALHOS', b.dataset.id, b, 'Trabalho excluído'),
+    apagarJ: b => apagarJob(b.dataset.id, b),
     receber: b => receber(b.dataset.id, b.dataset.sub),
     etapaJ: b => etapaNaFicha(b),
     novoRec: () => formJob(null, { 'ETAPA': 'Recorrente', 'TIPO DE EVENTO': 'Social media' }),
@@ -1280,11 +1293,18 @@
     baixarCopia: () => baixarCopia(),
     sair: b => {
       if (db.pendentes() && b.dataset.certeza !== '1') { b.dataset.certeza = '1'; b.innerHTML = u.svg('log-out') + 'Tem mudança sem salvar. Toque de novo para sair mesmo assim'; return; }
-      N.sair(); db.abas = {}; fechar(); mostrarLogin();
+      sairDoAparelho().then(() => { fechar(); mostrarLogin(); });
     },
     recomecar: () => { $('splash').querySelector('.spin').hidden = false; $('splash').querySelector('p').textContent = 'Abrindo…'; iniciar(); },
   });
   N.aoSair = () => mostrarLogin('Sua sessão terminou. Entre de novo.');
+  /* sair deste aparelho: tira ele dos avisos, esquece o Face ID e apaga a cópia dos dados (num aparelho emprestado não sobra nada) */
+  async function sairDoAparelho() {
+    try { const id = avisos.meu(); if (id && N.sessao && !N.ehDemo()) await N.apagar('aparelhos', [id]); } catch (e) { /* sem internet: o aparelho fica na lista até o aviso falhar */ }
+    try { await avisos.desligar(); } catch (e) { /* nada */ }
+    try { face.desligar(); localStorage.removeItem('df-chave-claude'); localStorage.removeItem('df-ultimo-uso'); } catch (e) { /* nada */ }
+    claude.nova = ''; db.esquecer(); await N.sair();
+  }
 
   /* ================= Face ID (trava do aparelho) ================= */
   /* Usa a biometria do próprio aparelho (WebAuthn). Fica só neste aparelho: o login continua salvo
@@ -1351,7 +1371,7 @@
   }
   /* a tela inteira é o botão (menos o "Entrar com a senha") */
   $('trava').addEventListener('click', e => { if (!e.target.closest('#trSenha')) destravar(); });
-  $('trSenha').addEventListener('click', () => { face.desligar(); N.sair(); db.abas = {}; db.carregado = false; $('trava').hidden = true; travado = false; mostrarLogin('Entre com a senha. Depois dá para ligar o Face ID de novo em “Sua conta”.'); });
+  $('trSenha').addEventListener('click', () => { face.desligar(); db.esquecer(); N.sair(); $('trava').hidden = true; travado = false; mostrarLogin('Entre com a senha. Depois dá para ligar o Face ID de novo em “Sua conta”.'); });
   /* enquanto está usando, vai marcando; saiu e voltou depois de 15 minutos, pede o rosto */
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (!travado) usou(); return; }
@@ -1441,17 +1461,19 @@
   /* uma chave que o João cria aqui e manda para o Claude no chat: com ela o Claude lê e corrige os dados direto.
      No Supabase fica só a impressão digital (sha256) da chave; trocar ou desligar aqui corta o acesso na hora. */
   const claude = {
-    chaveLocal: () => { try { return localStorage.getItem('df-chave-claude') || ''; } catch (e) { return ''; } },
+    /* a chave aparece só logo depois de criar e nunca fica guardada no aparelho (se alguém pegar o celular, não acha) */
+    nova: '',
+    chaveLocal: () => claude.nova,
     async estado() { const r = await N.ler('acesso_claude'); return r[0] || null; },
     async criar() {
       const bytes = crypto.getRandomValues(new Uint8Array(32));
       const chave = 'dfc_' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chave)))).map(b => b.toString(16).padStart(2, '0')).join('');
       await N.gravar('acesso_claude', [{ id: N.sessao.user.id, hash }]);
-      try { localStorage.setItem('df-chave-claude', chave); } catch (e) { /* nada */ }
+      claude.nova = chave;
       return chave;
     },
-    async desligar() { await N.apagar('acesso_claude', [N.sessao.user.id]); try { localStorage.removeItem('df-chave-claude'); } catch (e) { /* nada */ } },
+    async desligar() { await N.apagar('acesso_claude', [N.sessao.user.id]); claude.nova = ''; },
   };
   A.claude = claude;
   async function blocoClaude() {
@@ -1460,7 +1482,7 @@
     try { est = await claude.estado(); } catch (e) { el.innerHTML = `<div class="aviso">${e.semInternet ? 'Sem internet agora: o acesso do Claude aparece aqui quando a conexão voltar.' : 'O acesso do Claude ainda não está instalado no Supabase (falta rodar o SQL novo).'}</div>`; return; }
     const chave = claude.chaveLocal();
     el.innerHTML = est ? `<div class="aviso ok-av">${u.svg('sparkles')} Acesso ligado${est.ultimo_uso ? ` · o Claude usou em ${new Date(est.ultimo_uso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ' · o Claude ainda não usou'}.</div>
-        ${chave ? `<input class="txt" id="clChave" readonly value="${u.esc(chave)}" aria-label="Chave do Claude"><button type="button" class="btn2 pri" data-a="claudeCopiar">${u.svg('file-text')}Copiar a chave</button>` : ''}
+        ${chave ? `<input class="txt" id="clChave" readonly value="${u.esc(chave)}" aria-label="Chave do Claude"><button type="button" class="btn2 pri" data-a="claudeCopiar">${u.svg('file-text')}Copiar a chave</button><p class="aviso">Copie agora: por segurança, a chave não fica guardada no aparelho e some quando você sair desta tela. Se perder, é só trocar.</p>` : ''}
         <button type="button" class="btn2" data-a="claudeCriar">${u.svg('refresh-ccw')}Trocar a chave</button>
         <button type="button" class="btn2 perigo" data-a="claudeDesligar">${u.svg('x')}Desligar o acesso do Claude</button>`
       : `<p class="c-muted" style="margin:0;font-size:.86rem">Com uma chave, o Claude lê e corrige seus dados direto, sem você precisar trazer arquivos. Você troca ou desliga quando quiser.</p>

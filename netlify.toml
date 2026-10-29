@@ -13,3 +13,21 @@
   [headers.values]
     Cache-Control = "no-cache"
     X-Robots-Tag = "noindex, nofollow"
+
+# proteções do navegador no app (o mesmo que o index.html pede, mais o que só dá para mandar por cabeçalho)
+[[headers]]
+  for = "/financas/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' https://sczpyzcozcaibyzekmau.supabase.co; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; frame-ancestors 'none'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
+
+# o site também não abre dentro de outro site
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

@@ -21,7 +21,12 @@ function criar(op = {}) {
   const novoToken = u => { const a = `acc-${u.id}-${++seq}`, r = `ref-${u.id}-${seq}`; tokens[a] = { u, vence: Date.now() / 1000 + st.duracaoToken }; tokens['R' + r] = { u }; return { access_token: a, refresh_token: r, expires_in: st.duracaoToken, expires_at: Math.floor(Date.now() / 1000 + st.duracaoToken), token_type: 'bearer', user: { id: u.id, email: u.email } }; };
   const json = (res, status, corpo) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(corpo === undefined ? '' : JSON.stringify(corpo)); };
   const quem = req => { const t = (req.headers.authorization || '').replace(/^Bearer /, ''); const x = tokens[t]; return x && x.vence > Date.now() / 1000 ? x.u : null; };
+  /* as mesmas regras de segurança do esquema.sql */
+  const SEGURO = { id: v => v.length >= 1 && v.length <= 120 && !/[<>"'`&\\]/.test(v), conteudo: v => v.length <= 12e6 && /^data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/.test(v), foto: v => v === '' || (v.length <= 2e6 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)) };
   const confere = (tab, linha) => {
+    if ('id' in linha && !SEGURO.id(String(linha.id))) return `new row for relation "${tab}" violates check constraint "${tab}_id_seguro"`;
+    if (tab === 'anexos' && linha.conteudo != null && !SEGURO.conteudo(linha.conteudo)) return 'new row for relation "anexos" violates check constraint "anexos_conteudo_seguro"';
+    if (tab === 'equipamentos' && linha.foto != null && !SEGURO.foto(linha.foto)) return 'new row for relation "equipamentos" violates check constraint "equipamentos_foto_segura"';
     for (const [k, v] of Object.entries(linha)) {
       const tipo = colunas[tab][k];
       if (!tipo) return `Could not find the '${k}' column of '${tab}' in the schema cache`;
@@ -34,6 +39,8 @@ function criar(op = {}) {
     return null;
   };
 
+  /* como o gatilho apagar_anexos: excluir o trabalho apaga os anexos dele */
+  const semAnexosDe = j => { if (tabelas.anexos) tabelas.anexos = tabelas.anexos.filter(x => !(x.trabalho === j.id && x.user_id === j.user_id)); };
   const servidor = http.createServer((req, res) => {
     const u = url.parse(req.url, true), p = u.pathname;
     if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS' }); return res.end(); }
@@ -83,11 +90,13 @@ function criar(op = {}) {
         const ok = t => Object.values(T).some(x => x.tabela === t) && t !== 'aparelhos';
         if (p.endsWith('claude_ler')) { if (!ok(dados.p_tabela)) return json(res, 400, { message: 'tabela não permitida' }); return json(res, 200, tabelas[dados.p_tabela].filter(l => l.user_id === ac.user_id).map(l => { const o = Object.assign({}, l); delete o.conteudo; return o; })); }
         let n = 0;
+        if (!Array.isArray(dados.p_ops) || dados.p_ops.length > 1000) return json(res, 400, { message: 'mande no máximo 1000 mudanças por vez' });
         for (const o of dados.p_ops) {
           if (!ok(o.tabela)) return json(res, 400, { message: 'tabela não permitida' });
+          if (o.tabela === 'avisos') return json(res, 400, { message: 'a chave não grava avisos (só o app agenda os avisos)' });
           const lista = tabelas[o.tabela], l = Object.assign({}, o.linha); delete l.user_id;
           const atual = lista.find(x => x.id === l.id);
-          if (o.op === 'apagar') { if (atual && atual.user_id === ac.user_id) { lista.splice(lista.indexOf(atual), 1); n++; } continue; }
+          if (o.op === 'apagar') { if (atual && atual.user_id === ac.user_id) { lista.splice(lista.indexOf(atual), 1); n++; if (o.tabela === 'trabalhos') semAnexosDe(atual); } continue; }
           const erro = confere(o.tabela, l); if (erro) return json(res, 400, { message: erro });
           if (atual) { if (atual.user_id === ac.user_id) { Object.assign(atual, l); n++; } }
           else { lista.push(Object.assign(Object.fromEntries(Object.entries(colunas[o.tabela]).map(([k, t]) => [k, t === 'boolean' ? false : null])), l, { user_id: ac.user_id })); n++; }
@@ -142,6 +151,7 @@ function criar(op = {}) {
         const f = String(u.query.id || '').match(/^in\.\((.*)\)$/);
         if (!f) return json(res, 400, { message: 'filtro de id obrigatório' });
         const ids = f[1].split(',').map(x => decodeURIComponent(x.replace(/^"|"$/g, '')));
+        if (tab === 'trabalhos') lista.filter(l => l.user_id === us.id && ids.includes(l.id)).forEach(semAnexosDe);
         tabelas[tab] = lista.filter(l => !(l.user_id === us.id && ids.includes(l.id)));
         return json(res, 204);
       }

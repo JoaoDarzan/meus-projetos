@@ -43,6 +43,9 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   da própria planilha) lê tudo pelo `claude_ler` a cada hora e reescreve as abas Resumo, Bancos e uma aba por tabela.
   Só lê; mudar a planilha não muda o app. A chave fica nas Propriedades do script, nunca na planilha.
 
+- **Segurança e LGPD**: o que protege os dados, os vigias (a cada mudança e todo dia) e o que cabe ao João fazer estão em
+  `SEGURANCA-E-LGPD.md`.
+
 ## Pastas
 | Onde | O que tem |
 |---|---|

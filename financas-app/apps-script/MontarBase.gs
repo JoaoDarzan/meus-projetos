@@ -100,7 +100,10 @@ const PALAVRAS = [
   [/presente/i, 'Lazer', 'Presente'],
   [/cinema|bar |show|festa/i, 'Lazer', 'Lazer'],
 ];
-const SUB_RENDA = [[/casamento/i, 'Casamento'], [/storymaker/i, 'Storymaker'], [/palestra/i, 'Palestra'], [/kellen|v[ií]deos?|capta[cç]/i, 'Social media'], [/hub/i, 'HUB Darzan']];
+const SUB_RENDA = [[/casamento/i, 'Casamento'], [/storymaker/i, 'Storymaker'], [/palestra/i, 'Palestra'], [/v[ií]deos?|capta[cç]/i, 'Social media'], [/hub/i, 'HUB Darzan']];
+
+/* clientes que costumam ser da Darzan (preencha na sua cópia do script; o código público não tem nomes de clientes) */
+var CLIENTES_DARZAN = /(?!)/;
 
 function montarBaseDeDados() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -168,7 +171,7 @@ function lerExtratoAtual_(sh) {
       if (/jpl/i.test(cat)) cat = 'JPL SOM';
       if (!cat) cat = /jpl/i.test(desc) ? 'JPL SOM' : 'Darzan Produções';
       if (!sub) sub = cat === 'JPL SOM' ? 'Serviço' : (SUB_RENDA.find(([re]) => re.test(desc)) || [0, 'Outros'])[1];
-      if (cat === 'JPL SOM' && /kellen/i.test(desc)) obs = 'Conferir: Kellen costuma ser Darzan';
+      if (cat === 'JPL SOM' && CLIENTES_DARZAN.test(desc)) obs = 'Conferir: esse cliente costuma ser Darzan';
       if (cat === 'Darzan Produções' && /jpl/i.test(desc)) obs = 'Conferir: parece JPL SOM';
     } else if (!sub) {
       const pelaCat = PALAVRAS.find(([re]) => re.test(cat));
@@ -274,7 +277,7 @@ function lerMetas_(antiga) {
 }
 function trabalhos_() {
   /* "JÁ RECEBIDO" soma sozinho tudo do EXTRATO cuja descrição tem o nome do cliente */
-  return [['Kellen', 'Social media', '', '', 'Vídeos e captações', '', '', '', '', 'Em andamento', '', 'Cliente recorrente'],
+  return [['Cliente recorrente', 'Social media', '', '', 'Vídeos e captações', '', '', '', '', 'Em andamento', '', 'Cliente recorrente'],
     ['Grazi', 'Casamento', '', '', '', '', '', '', '', 'Fechado', '', 'Preencha o valor total e a data'],
     ['Patricia', 'Palestra', '', '', '', '', '', '', '', 'Entregue', '', ''],
     ['Casamento 22/08/27', 'Casamento', new Date(2027, 7, 22), '', '', '', '', '', '', 'Fechado', '', 'Sinal recebido em 26/09. Troque pelo nome do casal']];

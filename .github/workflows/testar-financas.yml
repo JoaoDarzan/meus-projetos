@@ -19,6 +19,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - name: Nada de senha, chave ou CPF no repositório (é público)
+        run: python3 financas-app/ferramentas/vigia_segredos.py
       - name: O SQL está em dia com as tabelas do app
         run: node financas-app/ferramentas/gerar_sql.js && git diff --exit-code financas-app/supabase/esquema.sql
       - name: A planilha de backup está em dia com as tabelas do app

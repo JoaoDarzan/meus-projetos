@@ -28,10 +28,25 @@ drop policy if exists "so o dono" on ${n};
 create policy "so o dono" on ${n} for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on ${n} from anon;
 grant select, insert, update, delete on ${n} to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table ${n} drop constraint if exists ${t.tabela}_id_seguro;
+alter table ${n} add constraint ${t.tabela}_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\\\`&\\\\]');
 drop trigger if exists marcar_atualizado on ${n};
 create trigger marcar_atualizado before update on ${n} for each row execute function public.marcar_atualizado();
 `);
 });
+out.push(`-- arquivos: só "data:tipo;base64,..." (nada de link ou script escondido) e no máximo uns 9 MB de arquivo
+alter table public.anexos drop constraint if exists anexos_conteudo_seguro;
+alter table public.anexos add constraint anexos_conteudo_seguro check (conteudo is null or (char_length(conteudo) <= 12000000 and conteudo ~ '^data:[a-z]+/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+$'));
+alter table public.equipamentos drop constraint if exists equipamentos_foto_segura;
+alter table public.equipamentos add constraint equipamentos_foto_segura check (foto is null or foto = '' or (char_length(foto) <= 2000000 and foto ~ '^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$'));
+
+-- excluir um trabalho apaga junto os comprovantes e contratos dele (LGPD: não sobra documento de cliente esquecido)
+create or replace function public.apagar_anexos_do_trabalho() returns trigger language plpgsql set search_path = '' as $$
+begin delete from public.anexos where trabalho = old.id and user_id = old.user_id; return old; end $$;
+drop trigger if exists apagar_anexos on public.trabalhos;
+create trigger apagar_anexos after delete on public.trabalhos for each row execute function public.apagar_anexos_do_trabalho();
+`);
 out.push(`-- sinal de vida: o lembrete automático chama isto a cada poucos dias para o projeto não "dormir"
 create table if not exists public.sinal_de_vida (id int primary key default 1, em timestamptz not null default now());
 alter table public.sinal_de_vida enable row level security;
@@ -102,7 +117,7 @@ begin
 end $$;
 revoke all on function public.claude_dono(text) from public, anon, authenticated;
 
-create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable as $$
+create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable set search_path = '' as $$
   select p_tabela = any (array[%TABELAS%]);
 $$;
 
@@ -120,9 +135,11 @@ end $$;
 create or replace function public.claude_gravar(p_chave text, p_ops jsonb) returns json language plpgsql security definer set search_path = '' as $$
 declare u uuid := public.claude_dono(p_chave); o jsonb; t text; l jsonb; cols text[]; c text; n int; feitos int := 0;
 begin
+  if jsonb_typeof(p_ops) <> 'array' or jsonb_array_length(p_ops) > 1000 then raise exception 'mande no máximo 1000 mudanças por vez'; end if;
   for o in select * from jsonb_array_elements(p_ops) loop
     t := o->>'tabela'; l := o->'linha';
     if not public.claude_tabela_ok(t) then raise exception 'tabela não permitida: %', t; end if;
+    if t = 'avisos' then raise exception 'a chave não grava avisos (só o app agenda os avisos)'; end if;
     if coalesce(l->>'id', '') = '' then raise exception 'linha sem id na tabela %', t; end if;
     if o->>'op' = 'apagar' then
       execute format('delete from public.%I where id = $1 and user_id = $2', t) using l->>'id', u;

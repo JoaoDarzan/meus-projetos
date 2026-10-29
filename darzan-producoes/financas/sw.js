@@ -1,10 +1,10 @@
 /* Deixa o app abrir mesmo sem internet: tenta buscar a versão nova e, se não der, usa a guardada. */
-const CACHE = 'darzan-financas-v24';
+const CACHE = 'darzan-financas-v25';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
-  const nosso = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$|^cdnjs\.cloudflare\.com$/.test(url.hostname); /* cdnjs: leitor de PDF */
+  const nosso = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (req.method !== 'GET' || !nosso) return; /* dados do Supabase nunca passam por aqui */
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
@@ -34,6 +34,9 @@ self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
     const aberto = cs.find(c => 'focus' in c);
-    return aberto ? aberto.focus() : self.clients.openWindow((e.notification.data && e.notification.data.url) || './');
+    /* só abre endereço do próprio app: um aviso falso não consegue mandar você para um site de golpe */
+    let url = './';
+    try { const u = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope); if (u.href.startsWith(self.registration.scope)) url = u.href; } catch (x) { /* fica no app */ }
+    return aberto ? aberto.focus() : self.clients.openWindow(url);
   }));
 });

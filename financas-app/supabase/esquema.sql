@@ -40,6 +40,9 @@ drop policy if exists "so o dono" on public.extrato;
 create policy "so o dono" on public.extrato for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.extrato from anon;
 grant select, insert, update, delete on public.extrato to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.extrato drop constraint if exists extrato_id_seguro;
+alter table public.extrato add constraint extrato_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.extrato;
 create trigger marcar_atualizado before update on public.extrato for each row execute function public.marcar_atualizado();
 
@@ -68,6 +71,9 @@ drop policy if exists "so o dono" on public.contas;
 create policy "so o dono" on public.contas for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.contas from anon;
 grant select, insert, update, delete on public.contas to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.contas drop constraint if exists contas_id_seguro;
+alter table public.contas add constraint contas_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.contas;
 create trigger marcar_atualizado before update on public.contas for each row execute function public.marcar_atualizado();
 
@@ -96,6 +102,9 @@ drop policy if exists "so o dono" on public.cartoes;
 create policy "so o dono" on public.cartoes for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.cartoes from anon;
 grant select, insert, update, delete on public.cartoes to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.cartoes drop constraint if exists cartoes_id_seguro;
+alter table public.cartoes add constraint cartoes_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.cartoes;
 create trigger marcar_atualizado before update on public.cartoes for each row execute function public.marcar_atualizado();
 
@@ -130,6 +139,9 @@ drop policy if exists "so o dono" on public.parcelados;
 create policy "so o dono" on public.parcelados for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.parcelados from anon;
 grant select, insert, update, delete on public.parcelados to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.parcelados drop constraint if exists parcelados_id_seguro;
+alter table public.parcelados add constraint parcelados_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.parcelados;
 create trigger marcar_atualizado before update on public.parcelados for each row execute function public.marcar_atualizado();
 
@@ -166,6 +178,9 @@ drop policy if exists "so o dono" on public.fixas;
 create policy "so o dono" on public.fixas for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.fixas from anon;
 grant select, insert, update, delete on public.fixas to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.fixas drop constraint if exists fixas_id_seguro;
+alter table public.fixas add constraint fixas_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.fixas;
 create trigger marcar_atualizado before update on public.fixas for each row execute function public.marcar_atualizado();
 
@@ -200,6 +215,9 @@ drop policy if exists "so o dono" on public.equipamentos;
 create policy "so o dono" on public.equipamentos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.equipamentos from anon;
 grant select, insert, update, delete on public.equipamentos to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.equipamentos drop constraint if exists equipamentos_id_seguro;
+alter table public.equipamentos add constraint equipamentos_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.equipamentos;
 create trigger marcar_atualizado before update on public.equipamentos for each row execute function public.marcar_atualizado();
 
@@ -246,6 +264,9 @@ drop policy if exists "so o dono" on public.trabalhos;
 create policy "so o dono" on public.trabalhos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.trabalhos from anon;
 grant select, insert, update, delete on public.trabalhos to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.trabalhos drop constraint if exists trabalhos_id_seguro;
+alter table public.trabalhos add constraint trabalhos_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.trabalhos;
 create trigger marcar_atualizado before update on public.trabalhos for each row execute function public.marcar_atualizado();
 
@@ -280,6 +301,9 @@ drop policy if exists "so o dono" on public.anexos;
 create policy "so o dono" on public.anexos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.anexos from anon;
 grant select, insert, update, delete on public.anexos to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.anexos drop constraint if exists anexos_id_seguro;
+alter table public.anexos add constraint anexos_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.anexos;
 create trigger marcar_atualizado before update on public.anexos for each row execute function public.marcar_atualizado();
 
@@ -308,6 +332,9 @@ drop policy if exists "so o dono" on public.tarefas;
 create policy "so o dono" on public.tarefas for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.tarefas from anon;
 grant select, insert, update, delete on public.tarefas to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.tarefas drop constraint if exists tarefas_id_seguro;
+alter table public.tarefas add constraint tarefas_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.tarefas;
 create trigger marcar_atualizado before update on public.tarefas for each row execute function public.marcar_atualizado();
 
@@ -336,6 +363,9 @@ drop policy if exists "so o dono" on public.metas;
 create policy "so o dono" on public.metas for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.metas from anon;
 grant select, insert, update, delete on public.metas to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.metas drop constraint if exists metas_id_seguro;
+alter table public.metas add constraint metas_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.metas;
 create trigger marcar_atualizado before update on public.metas for each row execute function public.marcar_atualizado();
 
@@ -358,6 +388,9 @@ drop policy if exists "so o dono" on public.categorias;
 create policy "so o dono" on public.categorias for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.categorias from anon;
 grant select, insert, update, delete on public.categorias to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.categorias drop constraint if exists categorias_id_seguro;
+alter table public.categorias add constraint categorias_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.categorias;
 create trigger marcar_atualizado before update on public.categorias for each row execute function public.marcar_atualizado();
 
@@ -384,6 +417,9 @@ drop policy if exists "so o dono" on public.avisos;
 create policy "so o dono" on public.avisos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.avisos from anon;
 grant select, insert, update, delete on public.avisos to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.avisos drop constraint if exists avisos_id_seguro;
+alter table public.avisos add constraint avisos_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.avisos;
 create trigger marcar_atualizado before update on public.avisos for each row execute function public.marcar_atualizado();
 
@@ -408,8 +444,23 @@ drop policy if exists "so o dono" on public.aparelhos;
 create policy "so o dono" on public.aparelhos for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on public.aparelhos from anon;
 grant select, insert, update, delete on public.aparelhos to authenticated;
+-- o id nunca tem caracteres que viram código na tela (defesa extra: o app também limpa tudo que mostra)
+alter table public.aparelhos drop constraint if exists aparelhos_id_seguro;
+alter table public.aparelhos add constraint aparelhos_id_seguro check (char_length(id) between 1 and 120 and id !~ '[<>"''\`&\\]');
 drop trigger if exists marcar_atualizado on public.aparelhos;
 create trigger marcar_atualizado before update on public.aparelhos for each row execute function public.marcar_atualizado();
+
+-- arquivos: só "data:tipo;base64,..." (nada de link ou script escondido) e no máximo uns 9 MB de arquivo
+alter table public.anexos drop constraint if exists anexos_conteudo_seguro;
+alter table public.anexos add constraint anexos_conteudo_seguro check (conteudo is null or (char_length(conteudo) <= 12000000 and conteudo ~ '^data:[a-z]+/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+$'));
+alter table public.equipamentos drop constraint if exists equipamentos_foto_segura;
+alter table public.equipamentos add constraint equipamentos_foto_segura check (foto is null or foto = '' or (char_length(foto) <= 2000000 and foto ~ '^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$'));
+
+-- excluir um trabalho apaga junto os comprovantes e contratos dele (LGPD: não sobra documento de cliente esquecido)
+create or replace function public.apagar_anexos_do_trabalho() returns trigger language plpgsql set search_path = '' as $$
+begin delete from public.anexos where trabalho = old.id and user_id = old.user_id; return old; end $$;
+drop trigger if exists apagar_anexos on public.trabalhos;
+create trigger apagar_anexos after delete on public.trabalhos for each row execute function public.apagar_anexos_do_trabalho();
 
 -- sinal de vida: o lembrete automático chama isto a cada poucos dias para o projeto não "dormir"
 create table if not exists public.sinal_de_vida (id int primary key default 1, em timestamptz not null default now());
@@ -481,7 +532,7 @@ begin
 end $$;
 revoke all on function public.claude_dono(text) from public, anon, authenticated;
 
-create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable as $$
+create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable set search_path = '' as $$
   select p_tabela = any (array['extrato', 'contas', 'cartoes', 'parcelados', 'fixas', 'equipamentos', 'trabalhos', 'anexos', 'tarefas', 'metas', 'categorias', 'avisos']);
 $$;
 
@@ -499,9 +550,11 @@ end $$;
 create or replace function public.claude_gravar(p_chave text, p_ops jsonb) returns json language plpgsql security definer set search_path = '' as $$
 declare u uuid := public.claude_dono(p_chave); o jsonb; t text; l jsonb; cols text[]; c text; n int; feitos int := 0;
 begin
+  if jsonb_typeof(p_ops) <> 'array' or jsonb_array_length(p_ops) > 1000 then raise exception 'mande no máximo 1000 mudanças por vez'; end if;
   for o in select * from jsonb_array_elements(p_ops) loop
     t := o->>'tabela'; l := o->'linha';
     if not public.claude_tabela_ok(t) then raise exception 'tabela não permitida: %', t; end if;
+    if t = 'avisos' then raise exception 'a chave não grava avisos (só o app agenda os avisos)'; end if;
     if coalesce(l->>'id', '') = '' then raise exception 'linha sem id na tabela %', t; end if;
     if o->>'op' = 'apagar' then
       execute format('delete from public.%I where id = $1 and user_id = $2', t) using l->>'id', u;

@@ -89,6 +89,12 @@ do $$ declare j json; begin
     {"tabela":"extrato","op":"salvar","linha":{"id":"C2","valor":0}},{"tabela":"extrato","op":"apagar","linha":{"id":"C2"}}]');
   perform public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"apagar","linha":{"id":"C4"}}]');
 end $$;
+-- ataques que o banco recusa: id com código, arquivo que não é "data:", gravar avisos com a chave, lote gigante
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"salvar","linha":{"id":"x\" onfocus=\"alert(1)","valor":1}}]')$q$, 'aceitou id com código');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"anexos","op":"salvar","linha":{"id":"XBAD","conteudo":"javascript:alert(1)"}}]')$q$, 'aceitou arquivo que não é data:');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"equipamentos","op":"salvar","linha":{"id":"EBAD","foto":"https://site-falso/x.png"}}]')$q$, 'aceitou foto de fora');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"salvar","linha":{"id":"AVBAD","titulo":"golpe"}}]')$q$, 'a chave gravou um aviso');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', (select jsonb_agg(jsonb_build_object('tabela','extrato','op','apagar','linha',jsonb_build_object('id','Z'||g))) from generate_series(1,1001) g))$q$, 'aceitou lote gigante');
 -- anexos: o Claude grava o arquivo, mas ao ler a tabela o arquivo (pesado) não vem junto
 do $$ declare j json; begin
   perform public.claude_gravar('chave-do-joao', '[{"tabela":"anexos","op":"salvar","linha":{"id":"X1","trabalho":"J1","nome":"comprovante","conteudo":"data:image/jpeg;base64,AAAA"}}]');
@@ -98,6 +104,10 @@ end $$;
 reset role;
 do $$ begin
   if (select conteudo from public.anexos where id = 'X1') <> 'data:image/jpeg;base64,AAAA' then raise exception 'FALHOU: o arquivo do anexo não foi gravado'; end if;
+  -- excluir o trabalho leva junto os anexos dele
+  insert into public.trabalhos (id, user_id, cliente) values ('J1', 'aaaaaaaa-0000-0000-0000-000000000001', 'cliente');
+  delete from public.trabalhos where id = 'J1';
+  if exists (select 1 from public.anexos where id = 'X1') then raise exception 'FALHOU: excluir o trabalho deixou o anexo para trás'; end if;
   if (select categoria from public.extrato where id = 'C1') <> 'Transporte' or (select descricao from public.extrato where id = 'C1') <> 'do joao' or (select valor from public.extrato where id = 'C1') <> -10 then raise exception 'FALHOU: correção parcial'; end if;
   if (select user_id from public.extrato where id = 'C3') <> 'aaaaaaaa-0000-0000-0000-000000000001' then raise exception 'FALHOU: linha nova foi para outra pessoa'; end if;
   if (select valor from public.extrato where id = 'C2') <> -99 then raise exception 'FALHOU: mexeu na linha de outra pessoa'; end if;
