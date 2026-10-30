@@ -63,8 +63,9 @@ test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(lerItens(`${ITEM}, "${ITEM}"`), [{ banco: '', id: ITEM }, { banco: '', id: ITEM }], 'só os números, sem o nome do banco');
   assert.deepEqual(lerItens(`${ITEM} ${ITEM}`).length, 2, 'números separados por espaço');
   assert.deepEqual(conferirItens(`${ITEM},${ITEM}`), [], 'só os números está certo');
-  const pr = conferirItens('Nubank=xxxx,PicPay=,abc');
-  assert.ok(pr.length === 3 && /Nubank.*curto/.test(pr[0]) && /PicPay: falta o número/.test(pr[1]) && /parte 3.*curto/.test(pr[2]) && !pr.join().includes('xxxx') && !pr.join().includes('abc'), 'explica sem mostrar o conteúdo: ' + pr);
+  const pr = conferirItens('Nubank=xxxx,PicPay=,abc,os números dos 5 bancos');
+  assert.ok(pr.length === 4 && /Nubank.*curto/.test(pr[0]) && /PicPay: falta o número/.test(pr[1]) && /parte 3.*curto/.test(pr[2]) && /parte 4: isso é um texto com 5 palavras/.test(pr[3]) && !/xxxx|abc|números/.test(pr.join()), 'explica sem mostrar o conteúdo: ' + pr);
+  assert.deepEqual(lerItens(`Nubank ${ITEM}, https://meu.pluggy.ai/items/${ITEM}`), [{ banco: '', id: ITEM }, { banco: '', id: ITEM }], 'acha o número dentro de um texto ou link copiado');
   const app = ['Nubank', 'Inter', 'Mercado Pago', 'PicPay', 'Pan', 'C6'];
   assert.deepEqual(['Banco Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Banco Pan', 'C6 Bank', 'Itaú'].map(n => nomeBanco(n, app)), ['Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Pan', 'C6', 'Itaú'], 'nome do banco igual ao do app');
   assert.equal(faturaDe('2026-10-15', { fecha_dia: 31, vence_dia: 7 }), '2026-11');
@@ -92,10 +93,19 @@ test('segredo só com o número (sem "Banco="): o nome vem do banco e bate com o
   assert.ok(/OF /.test(ex.find(l => l.id === 'LMAO').obs), 'e conferiu o lançamento feito à mão (mesmo banco)');
 });
 
+test('segredos conferidos um por um: diz qual está errado sem mostrar o valor', async () => {
+  const { st, env, fim } = await preparar();
+  let r, n; try { r = await rodar(Object.assign({}, env, { MODO: 'importar', PLUGGY_ITEMS: 'os números dos 5 bancos, numa linha só', DF_CLAUDE_CHAVE: 'dfc_errada' })); n = st.linhas('extrato').length; } finally { await fim(); }
+  assert.notEqual(r.codigo, 0);
+  assert.match(r.saida, /✓ PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET/); assert.match(r.saida, /✗ DF_CLAUDE_CHAVE/); assert.match(r.saida, /✗ PLUGGY_ITEMS: 0 número/); assert.match(r.saida, /isso é um texto com 5 palavras/);
+  assert.ok(!/números|linha só|dfc_errada/.test(r.saida), 'não mostrou o conteúdo: ' + r.saida); assert.equal(n, 2);
+});
+
 test('credenciais erradas: avisa e para, sem gravar nada', async () => {
   const { st, env, fim } = await preparar();
   let r, n; try { r = await rodar(Object.assign({}, env, { MODO: 'importar', PLUGGY_CLIENT_SECRET: 'errado' })); n = st.linhas('extrato').length; } finally { await fim(); }
-  assert.notEqual(r.codigo, 0); assert.match(r.saida, /recusou as credenciais/); assert.equal(n, 2);
+  assert.notEqual(r.codigo, 0); assert.match(r.saida, /✗ PLUGGY_CLIENT_ID \/ PLUGGY_CLIENT_SECRET: a Pluggy recusou/); assert.equal(n, 2);
+  assert.match(r.saida, /✓ DF_CLAUDE_CHAVE/); assert.match(r.saida, /✓ PLUGGY_ITEMS/);
 });
 
 test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de novo não duplica', async () => {

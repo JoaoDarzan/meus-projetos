@@ -22,16 +22,22 @@ const gravar = async ops => { for (let i = 0; i < ops.length; i += 400) await rp
 const contar = (xs, f) => xs.reduce((o, x) => { const k = f(x); o[k] = (o[k] || 0) + 1; return o; }, {});
 
 async function principal() {
-  const itens = lerItens(process.env.PLUGGY_ITEMS);
-  if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET) throw new Error('faltam os segredos PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET');
-  const probs = conferirItens(process.env.PLUGGY_ITEMS);
-  if (probs.length) console.log('Problemas no segredo PLUGGY_ITEMS:\n' + probs.map(x => '  · ' + x).join('\n'));
-  if (!itens.length) throw new Error('o segredo PLUGGY_ITEMS está vazio ou fora do formato: cole os números das conexões separados por vírgula (ou "Nubank=número,PicPay=número")');
-  const pg = criarPluggy({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET, base: process.env.PLUGGY_URL || undefined });
-  console.log(`Modo: ${MODO} · ${itens.length} bancos · lançamentos desde ${DESDE}`);
-  await pg.entrar();
+  /* confere os 4 segredos, um por um, antes de tudo (✓/✗ sem mostrar nenhum valor) */
+  const itens = lerItens(process.env.PLUGGY_ITEMS), probs = conferirItens(process.env.PLUGGY_ITEMS);
+  console.log(`Modo: ${MODO} · lançamentos desde ${DESDE}\n\nConferindo os segredos:`);
+  let ok = true, pg = null, cartoes = [], bancosDoApp = [];
+  if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET) { ok = false; console.log('  ✗ PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET: falta um dos dois'); }
+  else {
+    pg = criarPluggy({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET, base: process.env.PLUGGY_URL || undefined });
+    try { await pg.entrar(); console.log('  ✓ PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET: a Pluggy aceitou'); }
+    catch (e) { ok = false; console.log(`  ✗ PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET: ${e.message}`); }
+  }
+  try { cartoes = await ler('cartoes'); bancosDoApp = (await ler('contas')).map(c => c.banco).concat(cartoes.map(k => k.cartao)); console.log('  ✓ DF_CLAUDE_CHAVE: o app aceitou'); }
+  catch (e) { ok = false; console.log(`  ✗ DF_CLAUDE_CHAVE: ${e.message}`); }
+  if (probs.length || !itens.length) { ok = false; console.log(`  ✗ PLUGGY_ITEMS: ${itens.length} número(s) de conexão certos${probs.length ? '; problemas:\n' + probs.map(x => '      · ' + x).join('\n') : ''}`); }
+  else console.log(`  ✓ PLUGGY_ITEMS: ${itens.length} número(s) de conexão no formato certo`);
+  if (!ok) throw new Error('arrume o segredo marcado com ✗ e rode de novo (nada foi gravado)');
   let abertos = 0;
-  const cartoes = await ler('cartoes'), bancosDoApp = (await ler('contas')).map(c => c.banco).concat(cartoes.map(k => k.cartao));
   const propostas = [];
   for (const [i, item] of itens.entries()) {
     const id = item.id;

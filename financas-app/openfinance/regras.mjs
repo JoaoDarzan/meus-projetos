@@ -14,16 +14,25 @@ const dataBR = d => { /* a data do lançamento no fuso de Brasília */
 
 /* PLUGGY_ITEMS = "Nubank=uuid,PicPay=uuid,..." ou só os números "uuid,uuid" (o nome vem do próprio banco) → [{ banco, id }] */
 const ID_OK = /^[A-Za-z0-9_-]{16,}$/;
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const tirarAspas = x => x.trim().replace(/^["']|["']$/g, '').trim();
-const partes = txt => String(txt || '').split(/[,\n;]/).flatMap(x => /[=:]/.test(x) ? [x] : x.split(/\s+/)).map(tirarAspas).filter(Boolean)
-  .map(x => { const m = x.match(/^(.*?)\s*[=:]\s*(.*)$/); return m ? { banco: tirarAspas(m[1]), id: tirarAspas(m[2]) } : { banco: '', id: x }; });
+/* cada parte: "Banco=número", só o número, ou um texto qualquer com o número dentro (ex.: um link copiado) */
+const partes = txt => String(txt || '').split(/[,\n;]/).map(tirarAspas).filter(Boolean).flatMap(x => {
+  const m = x.match(/^([^=:]*?)\s*[=:]\s*(.*)$/), banco = m && !/^https?$/i.test(m[1].trim()) ? tirarAspas(m[1]) : '', id = m && banco ? tirarAspas(m[2]) : x;
+  if (ID_OK.test(id)) return [{ banco, id }];
+  const achados = id.match(UUID) || (/\s/.test(id) ? id.split(/\s+/).filter(t => ID_OK.test(t) && /\d/.test(t)) : []);
+  return achados.length ? achados.map(u => ({ banco: achados.length === 1 ? banco : '', id: u })) : [{ banco, id }];
+});
 export const lerItens = txt => partes(txt).filter(x => ID_OK.test(x.id));
 /* o que está errado no segredo, sem mostrar o conteúdo (o registro do GitHub é público) */
 export const conferirItens = txt => {
   const ps = partes(txt);
   if (!ps.length) return ['o segredo está vazio'];
   const nome = (x, i) => x.banco || `parte ${i + 1}`;
-  return ps.map((x, i) => !x.id ? `${nome(x, i)}: falta o número depois do "="` : !ID_OK.test(x.id) ? `${nome(x, i)}: o número tem ${x.id.length} caracteres e ${/[^A-Za-z0-9_-]/.test(x.id) ? 'tem espaço ou símbolo estranho' : 'é curto demais'} (o itemId costuma ter 36, tipo 1a2b3c4d-...)` : null).filter(Boolean);
+  return ps.map((x, i) => !x.id ? `${nome(x, i)}: falta o número depois do "="`
+    : ID_OK.test(x.id) ? null
+    : /\s/.test(x.id) ? `${nome(x, i)}: isso é um texto com ${x.id.split(/\s+/).length} palavras, não o número da conexão (o itemId tem 36 caracteres, tipo 1a2b3c4d-1a2b-...)`
+    : `${nome(x, i)}: o número tem ${x.id.length} caracteres e ${/[^A-Za-z0-9_-]/.test(x.id) ? 'tem símbolo ou acento' : 'é curto demais'} (o itemId tem 36, tipo 1a2b3c4d-1a2b-...)`).filter(Boolean);
 };
 /* nome do banco no app a partir do nome que a Pluggy dá ("Banco Inter" → "Inter"): o mais parecido entre os bancos do app */
 export function nomeBanco(conector, bancosDoApp) {
