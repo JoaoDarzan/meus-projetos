@@ -38,6 +38,8 @@ jobs:
         run: npm install --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
       - name: Testes do app (dados de exemplo)
         run: node financas-app/testes/testar-app.js
+      - name: Robô do Open Finance (Pluggy e Supabase de mentira)
+        run: node --test --test-timeout=60000 financas-app/testes/openfinance.test.mjs
       - name: Fotos das telas
         if: always()
         uses: actions/upload-artifact@v4
