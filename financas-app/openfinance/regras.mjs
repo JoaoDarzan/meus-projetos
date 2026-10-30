@@ -12,16 +12,26 @@ const dataBR = d => { /* a data do lançamento no fuso de Brasília */
   return new Date(t.getTime() - 3 * 3600e3).toISOString().slice(0, 10);
 };
 
-/* PLUGGY_ITEMS = "Nubank=uuid,PicPay=uuid,..." → [{ banco, id }] */
+/* PLUGGY_ITEMS = "Nubank=uuid,PicPay=uuid,..." ou só os números "uuid,uuid" (o nome vem do próprio banco) → [{ banco, id }] */
 const ID_OK = /^[A-Za-z0-9_-]{16,}$/;
-const partes = txt => String(txt || '').split(/[,\n;]/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(.*?)\s*[=:]\s*(.*)$/); return m ? { banco: m[1].trim(), id: m[2].trim().replace(/^["']|["']$/g, '') } : { banco: '', id: x }; });
-export const lerItens = txt => partes(txt).filter(x => x.banco && ID_OK.test(x.id));
+const tirarAspas = x => x.trim().replace(/^["']|["']$/g, '').trim();
+const partes = txt => String(txt || '').split(/[,\n;]/).flatMap(x => /[=:]/.test(x) ? [x] : x.split(/\s+/)).map(tirarAspas).filter(Boolean)
+  .map(x => { const m = x.match(/^(.*?)\s*[=:]\s*(.*)$/); return m ? { banco: tirarAspas(m[1]), id: tirarAspas(m[2]) } : { banco: '', id: x }; });
+export const lerItens = txt => partes(txt).filter(x => ID_OK.test(x.id));
 /* o que está errado no segredo, sem mostrar o conteúdo (o registro do GitHub é público) */
 export const conferirItens = txt => {
   const ps = partes(txt);
   if (!ps.length) return ['o segredo está vazio'];
-  return ps.map((x, i) => !x.banco ? `parte ${i + 1}: falta o nome do banco e o "=" (exemplo: Nubank=número)` : !x.id ? `${x.banco}: falta o número depois do "="` : !ID_OK.test(x.id) ? `${x.banco}: o número tem ${x.id.length} caracteres e ${/[^A-Za-z0-9_-]/.test(x.id) ? 'tem espaço ou símbolo estranho' : 'é curto demais'} (o itemId costuma ter 36, tipo 1a2b3c4d-...)` : null).filter(Boolean);
+  const nome = (x, i) => x.banco || `parte ${i + 1}`;
+  return ps.map((x, i) => !x.id ? `${nome(x, i)}: falta o número depois do "="` : !ID_OK.test(x.id) ? `${nome(x, i)}: o número tem ${x.id.length} caracteres e ${/[^A-Za-z0-9_-]/.test(x.id) ? 'tem espaço ou símbolo estranho' : 'é curto demais'} (o itemId costuma ter 36, tipo 1a2b3c4d-...)` : null).filter(Boolean);
 };
+/* nome do banco no app a partir do nome que a Pluggy dá ("Banco Inter" → "Inter"): o mais parecido entre os bancos do app */
+export function nomeBanco(conector, bancosDoApp) {
+  const norm = t => sem(t).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), c = norm(conector);
+  if (!c) return '';
+  const achados = [...new Set(bancosDoApp.filter(Boolean))].filter(b => { const x = norm(b); return x && (` ${c} `.includes(` ${x} `) || ` ${x} `.includes(` ${c} `)); });
+  return achados.sort((a, b) => b.length - a.length)[0] || String(conector).trim();
+}
 
 /* mês da fatura em que a compra cai (igual ao app: a fatura tem o nome do mês em que vence) */
 export function faturaDe(data, cartao) {

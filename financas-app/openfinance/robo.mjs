@@ -2,9 +2,9 @@
    Modos (MODO): diagnostico (só confere a conexão e conta), previa (monta o que entraria, guardado escondido no app
    para conferir antes) e importar (grava de verdade).
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
-   Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..."), DF_CLAUDE_CHAVE. */
+   Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, conferirItens, paraApp, casar, memoria, linhaNova } from './regras.mjs';
+import { lerItens, conferirItens, nomeBanco, paraApp, casar, memoria, linhaNova } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -26,16 +26,19 @@ async function principal() {
   if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET) throw new Error('faltam os segredos PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET');
   const probs = conferirItens(process.env.PLUGGY_ITEMS);
   if (probs.length) console.log('Problemas no segredo PLUGGY_ITEMS:\n' + probs.map(x => '  · ' + x).join('\n'));
-  if (!itens.length) throw new Error('o segredo PLUGGY_ITEMS está vazio ou fora do formato "Nubank=id,PicPay=id"');
+  if (!itens.length) throw new Error('o segredo PLUGGY_ITEMS está vazio ou fora do formato: cole os números das conexões separados por vírgula (ou "Nubank=número,PicPay=número")');
   const pg = criarPluggy({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET, base: process.env.PLUGGY_URL || undefined });
   console.log(`Modo: ${MODO} · ${itens.length} bancos · lançamentos desde ${DESDE}`);
   await pg.entrar();
   let abertos = 0;
-  const cartoes = MODO === 'diagnostico' ? [] : await ler('cartoes');
+  const cartoes = await ler('cartoes'), bancosDoApp = (await ler('contas')).map(c => c.banco).concat(cartoes.map(k => k.cartao));
   const propostas = [];
-  for (const { banco, id } of itens) {
-    let it;
-    try { it = await pg.item(id); } catch (e) { console.log(`\n✗ ${banco}: não consegui abrir a conexão (${e.message}). Confira o itemId.`); continue; }
+  for (const [i, item] of itens.entries()) {
+    const id = item.id;
+    let it, banco = item.banco;
+    try { it = await pg.item(id); } catch (e) { console.log(`\n✗ ${banco || 'conexão ' + (i + 1)}: não consegui abrir a conexão (${e.message}). Confira o itemId.`); continue; }
+    /* sem nome no segredo: usa o nome do banco que a Pluggy informa, igual ao do app */
+    if (!banco) banco = nomeBanco(it.connector && it.connector.name, bancosDoApp) || `Banco ${i + 1}`;
     const contas = await pg.contas(id);
     abertos++;
     console.log(`\n${banco}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);

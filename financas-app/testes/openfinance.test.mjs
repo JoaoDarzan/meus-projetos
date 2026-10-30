@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, faturaDe, paraApp } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, faturaDe, paraApp } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -19,7 +19,7 @@ function pluggyFalsa(lancs) {
     const u = new URL(req.url, 'http://x'), json = (c, b) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(b)); };
     if (u.pathname === '/auth') { let b = ''; req.on('data', d => b += d); return req.on('end', () => JSON.parse(b).clientSecret === 'segredo-certo' ? json(200, { apiKey: 'k1' }) : json(401, { message: 'no' })); }
     if (req.headers['x-api-key'] !== 'k1') return json(403, {});
-    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z' });
+    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z', connector: { name: 'BancoTeste S.A.' } });
     if (u.pathname === '/accounts') return json(200, { results: [{ id: 'conta1', type: 'BANK', subtype: 'CHECKING_ACCOUNT', balance: 500 }, { id: 'cartao1', type: 'CREDIT', subtype: 'CREDIT_CARD', balance: 300 }] });
     if (u.pathname === '/bills') return json(200, { results: [{ id: 'fat-nov', dueDate: '2026-11-07T00:00:00Z' }] });
     if (u.pathname === '/v2/transactions') {
@@ -60,8 +60,13 @@ async function preparar() {
 test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(lerItens(`Nubank=${ITEM}, Mercado Pago=${ITEM}\nlixo,X=123`), [{ banco: 'Nubank', id: ITEM }, { banco: 'Mercado Pago', id: ITEM }]);
   assert.deepEqual(lerItens(`Inter: "${ITEM}"`), [{ banco: 'Inter', id: ITEM }], 'aceita ":" e aspas');
-  const pr = conferirItens('Nubank=xxxx,PicPay=,1234567890123456789');
-  assert.ok(pr.length === 3 && /curto/.test(pr[0]) && /falta o número/.test(pr[1]) && /falta o nome/.test(pr[2]) && !pr.join().includes('xxxx'), 'explica sem mostrar o conteúdo: ' + pr);
+  assert.deepEqual(lerItens(`${ITEM}, "${ITEM}"`), [{ banco: '', id: ITEM }, { banco: '', id: ITEM }], 'só os números, sem o nome do banco');
+  assert.deepEqual(lerItens(`${ITEM} ${ITEM}`).length, 2, 'números separados por espaço');
+  assert.deepEqual(conferirItens(`${ITEM},${ITEM}`), [], 'só os números está certo');
+  const pr = conferirItens('Nubank=xxxx,PicPay=,abc');
+  assert.ok(pr.length === 3 && /Nubank.*curto/.test(pr[0]) && /PicPay: falta o número/.test(pr[1]) && /parte 3.*curto/.test(pr[2]) && !pr.join().includes('xxxx') && !pr.join().includes('abc'), 'explica sem mostrar o conteúdo: ' + pr);
+  const app = ['Nubank', 'Inter', 'Mercado Pago', 'PicPay', 'Pan', 'C6'];
+  assert.deepEqual(['Banco Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Banco Pan', 'C6 Bank', 'Itaú'].map(n => nomeBanco(n, app)), ['Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Pan', 'C6', 'Itaú'], 'nome do banco igual ao do app');
   assert.equal(faturaDe('2026-10-15', { fecha_dia: 31, vence_dia: 7 }), '2026-11');
   assert.equal(faturaDe('2026-10-20', { fecha_dia: 18, vence_dia: 25 }), '2026-11');
   const p = paraApp(LANCS[3], { type: 'CREDIT' }, 'BancoTeste', [{ cartao: 'BancoTeste', fecha_dia: 31, vence_dia: 7 }], { 'fat-nov': '2026-11-07T00:00:00Z' });
@@ -75,6 +80,16 @@ test('diagnóstico: confere a conexão e só escreve contagens (o registro do Gi
   assert.equal(r.codigo, 0, r.saida);
   assert.match(r.saida, /conexão UPDATED/); assert.match(r.saida, /cartão de crédito: 2 lançamentos/);
   for (const proibido of ['42', '19,9', '19.9', 'Shell', 'Padaria', 'Cliente', 'LOJA', '300']) assert.ok(!r.saida.includes(proibido), `a saída mostrou "${proibido}": ${r.saida}`);
+});
+
+test('segredo só com o número (sem "Banco="): o nome vem do banco e bate com o do app', async () => {
+  const { st, env, fim } = await preparar();
+  let r, ex; try { r = await rodar(Object.assign({}, env, { MODO: 'importar', PLUGGY_ITEMS: ` "${ITEM}" ` })); ex = st.linhas('extrato'); } finally { await fim(); }
+  assert.equal(r.codigo, 0, r.saida);
+  assert.match(r.saida, /\nBancoTeste: conexão UPDATED/);
+  const novos = ex.filter(l => /^LOF-/.test(l.id));
+  assert.ok(novos.length === 3 && novos.every(l => l.banco === 'BancoTeste'), 'gravou com o nome do banco do app: ' + novos.map(l => l.banco));
+  assert.ok(/OF /.test(ex.find(l => l.id === 'LMAO').obs), 'e conferiu o lançamento feito à mão (mesmo banco)');
 });
 
 test('credenciais erradas: avisa e para, sem gravar nada', async () => {
