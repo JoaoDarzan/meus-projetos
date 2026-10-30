@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..."), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, paraApp, casar, memoria, linhaNova } from './regras.mjs';
+import { lerItens, conferirItens, paraApp, casar, memoria, linhaNova } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -24,6 +24,8 @@ const contar = (xs, f) => xs.reduce((o, x) => { const k = f(x); o[k] = (o[k] || 
 async function principal() {
   const itens = lerItens(process.env.PLUGGY_ITEMS);
   if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET) throw new Error('faltam os segredos PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET');
+  const probs = conferirItens(process.env.PLUGGY_ITEMS);
+  if (probs.length) console.log('Problemas no segredo PLUGGY_ITEMS:\n' + probs.map(x => '  · ' + x).join('\n'));
   if (!itens.length) throw new Error('o segredo PLUGGY_ITEMS está vazio ou fora do formato "Nubank=id,PicPay=id"');
   const pg = criarPluggy({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET, base: process.env.PLUGGY_URL || undefined });
   console.log(`Modo: ${MODO} · ${itens.length} bancos · lançamentos desde ${DESDE}`);

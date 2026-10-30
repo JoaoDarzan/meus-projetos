@@ -13,7 +13,15 @@ const dataBR = d => { /* a data do lançamento no fuso de Brasília */
 };
 
 /* PLUGGY_ITEMS = "Nubank=uuid,PicPay=uuid,..." → [{ banco, id }] */
-export const lerItens = txt => String(txt || '').split(/[,\n;]/).map(x => x.trim()).filter(Boolean).map(x => { const i = x.indexOf('='); return i < 0 ? null : { banco: x.slice(0, i).trim(), id: x.slice(i + 1).trim() }; }).filter(x => x && x.banco && /^[0-9a-f-]{20,}$/i.test(x.id));
+const ID_OK = /^[A-Za-z0-9_-]{16,}$/;
+const partes = txt => String(txt || '').split(/[,\n;]/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(.*?)\s*[=:]\s*(.*)$/); return m ? { banco: m[1].trim(), id: m[2].trim().replace(/^["']|["']$/g, '') } : { banco: '', id: x }; });
+export const lerItens = txt => partes(txt).filter(x => x.banco && ID_OK.test(x.id));
+/* o que está errado no segredo, sem mostrar o conteúdo (o registro do GitHub é público) */
+export const conferirItens = txt => {
+  const ps = partes(txt);
+  if (!ps.length) return ['o segredo está vazio'];
+  return ps.map((x, i) => !x.banco ? `parte ${i + 1}: falta o nome do banco e o "=" (exemplo: Nubank=número)` : !x.id ? `${x.banco}: falta o número depois do "="` : !ID_OK.test(x.id) ? `${x.banco}: o número tem ${x.id.length} caracteres e ${/[^A-Za-z0-9_-]/.test(x.id) ? 'tem espaço ou símbolo estranho' : 'é curto demais'} (o itemId costuma ter 36, tipo 1a2b3c4d-...)` : null).filter(Boolean);
+};
 
 /* mês da fatura em que a compra cai (igual ao app: a fatura tem o nome do mês em que vence) */
 export function faturaDe(data, cartao) {

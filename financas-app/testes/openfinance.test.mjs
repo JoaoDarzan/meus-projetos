@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, faturaDe, paraApp } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, faturaDe, paraApp } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -59,6 +59,9 @@ async function preparar() {
 
 test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(lerItens(`Nubank=${ITEM}, Mercado Pago=${ITEM}\nlixo,X=123`), [{ banco: 'Nubank', id: ITEM }, { banco: 'Mercado Pago', id: ITEM }]);
+  assert.deepEqual(lerItens(`Inter: "${ITEM}"`), [{ banco: 'Inter', id: ITEM }], 'aceita ":" e aspas');
+  const pr = conferirItens('Nubank=xxxx,PicPay=,1234567890123456789');
+  assert.ok(pr.length === 3 && /curto/.test(pr[0]) && /falta o número/.test(pr[1]) && /falta o nome/.test(pr[2]) && !pr.join().includes('xxxx'), 'explica sem mostrar o conteúdo: ' + pr);
   assert.equal(faturaDe('2026-10-15', { fecha_dia: 31, vence_dia: 7 }), '2026-11');
   assert.equal(faturaDe('2026-10-20', { fecha_dia: 18, vence_dia: 25 }), '2026-11');
   const p = paraApp(LANCS[3], { type: 'CREDIT' }, 'BancoTeste', [{ cartao: 'BancoTeste', fecha_dia: 31, vence_dia: 7 }], { 'fat-nov': '2026-11-07T00:00:00Z' });
