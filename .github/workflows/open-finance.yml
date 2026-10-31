@@ -1,12 +1,12 @@
 # Robô do Open Finance: traz os lançamentos dos bancos (Meu Pluggy) para o app de finanças.
 # Começa em 29/10/2026, o dia depois da conferência dos saldos (antes disso tudo foi lançado à mão).
-# Roda sozinho 2 vezes por dia (8h23 e 20h23 de Brasília) importando; à mão dá para escolher diagnóstico, prévia ou importar.
+# Roda sozinho a cada 4 horas importando (o GitHub costuma atrasar horários agendados em horas; rodar várias vezes garante pelo menos uma por dia, e o robô nunca duplica); à mão dá para escolher diagnóstico, prévia ou importar.
 # Se der erro, o GitHub manda e-mail.
 # O registro deste fluxo é público: o robô só escreve contagens, nunca valores ou descrições.
 name: Open Finance
 on:
   schedule:
-    - cron: '23 11,23 * * *'
+    - cron: '23 */4 * * *'
   workflow_dispatch:
     inputs:
       modo:
