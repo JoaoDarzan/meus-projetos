@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -98,6 +98,26 @@ test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(ln('Juros do rotativo', -2.8, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
   assert.deepEqual(ln('AJUSTE A CREDITO', 5.26, 'cartão'), ['Reembolso', 'Reembolso', 'Compra devolvida']);
   assert.deepEqual(ln('Padaria', -10), ['Desejos', '', ''], 'o resto vai para o Revisar');
+});
+
+test('estorno: compra e devolução ficam de fora (mesmo com a devolução um pouco menor); devolução de algo ignorado também', () => {
+  const N = (pid, valor, desc, data, extra) => Object.assign({ acao: 'novo', pid, banco: 'PicPay', tipo: 'conta', valor, desc, data }, extra);
+  const r = estornos([N('a', -58.84, 'PIX ENVIADO 99 FOOD', '2026-10-14'), N('b', 58.84, 'Devolução de recebimento via PIX', '2026-10-14'),
+    N('c', -34.92, 'PIX ENVIADO FULANA', '2026-10-29'), N('d', 32.92, 'Devolução de recebimento via PIX', '2026-10-31'),
+    N('e', 20, 'Devolução de recebimento via PIX', '2026-10-20'), N('f', -100, 'Mercado', '2026-10-20'), N('g', 100, 'PIX recebido', '2026-10-21'),
+    N('h', 9.5, 'Devolução de recebimento via PIX', '2026-11-03')],
+    [{ id: 'LOF-x', status: 'Cancelado', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000099 · ignorado', banco: 'PicPay', tipo: 'conta', valor: -9.5, data: '2026-11-01' }]);
+  const a = Object.fromEntries(r.map(x => [x.pid, x.acao]));
+  assert.deepEqual(a, { a: 'ignorar', b: 'ignorar', c: 'ignorar', d: 'ignorar', e: 'novo', f: 'novo', g: 'novo', h: 'ignorar' }, JSON.stringify(a));
+});
+
+test('o que o João mandou ignorar (cancelado com a marca OF) não volta', async () => {
+  const { st, env, fim } = await preparar();
+  st.tabelas.extrato.push({ id: 'LOF-aaaaaaaa-0000-0000-0000-000000000002', user_id: 'u-joao', data: '2026-10-21', banco: 'BancoTeste', descricao: 'Padaria Pão Quente', grupo: 'Desejos', tipo: 'conta', valor: -19.9, categoria: '', subcategoria: '', status: 'Cancelado', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000002 · ignorado' });
+  let r, ex; try { r = await rodar(Object.assign({}, env, { MODO: 'importar' })); ex = st.linhas('extrato'); } finally { await fim(); }
+  assert.equal(r.codigo, 0, r.saida);
+  assert.ok(!ex.some(l => l.id !== 'LOF-aaaaaaaa-0000-0000-0000-000000000002' && /Padaria Pão/.test(l.descricao)), 'a padaria ignorada não voltou');
+  assert.equal(ex.find(l => l.id === 'LOF-aaaaaaaa-0000-0000-0000-000000000002').status, 'Cancelado', 'e continua cancelada');
 });
 
 test('diagnóstico: confere a conexão e só escreve contagens (o registro do GitHub é público)', async () => {

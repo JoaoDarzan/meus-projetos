@@ -167,8 +167,11 @@ window.A = window.A || {};
   db.pendentes = () => db.fila.length;
 
   /* aplica na hora no app e põe na fila para o Supabase */
+  /* lançamento conferido pelo banco (Open Finance, marca "OF <id>"): apagado, o robô traria de novo; fica guardado como cancelado */
+  db.doBanco = id => { const r = db.achar('EXTRATO', id); return !!r && /\bOF [0-9a-f-]{20,}/i.test(r['OBS'] || ''); };
   db.lote = ops => {
     const lista = ops.map(o => {
+      if (o.op !== 'salvar' && o.aba === 'EXTRATO' && db.doBanco(o.id)) o = { op: 'salvar', aba: 'EXTRATO', registro: { ID: o.id, 'STATUS': 'Cancelado' } };
       if (o.op !== 'salvar') return { op: 'apagar', aba: o.aba, id: o.id };
       const registro = Object.assign({}, o.registro);
       if (!registro.ID) registro.ID = o.registro.ID = db.novoId(o.aba);

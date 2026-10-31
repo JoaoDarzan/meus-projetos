@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, memoria, linhaNova } from './regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -68,9 +68,9 @@ async function principal() {
   if (MODO === 'diagnostico') { console.log('\nDiagnóstico pronto: a conexão com os bancos funciona. Nada foi gravado.'); return; }
 
   const extrato = await ler('extrato'), mem = memoria(extrato);
-  const casados = casar(propostas.filter(p => !p.pendente), extrato);
+  const casados = estornos(casar(propostas.filter(p => !p.pendente), extrato), extrato);
   const resumo = contar(casados, p => p.acao);
-  console.log(`\nComparando com o app: ${resumo.conferir || 0} já estavam lá, ${resumo.novo || 0} novos, ${resumo['ja-importado'] || 0} já importados antes, ${resumo.ignorar || 0} pagamentos de fatura (ignorados), ${propostas.filter(p => p.pendente).length} pendentes (ficam para quando confirmarem).`);
+  console.log(`\nComparando com o app: ${resumo.conferir || 0} já estavam lá, ${resumo.novo || 0} novos, ${resumo['ja-importado'] || 0} já importados antes, ${resumo.ignorar || 0} ignorados (pagamento de fatura ou compra estornada), ${propostas.filter(p => p.pendente).length} pendentes (ficam para quando confirmarem).`);
   Object.entries(contar(casados.filter(p => p.acao === 'novo'), p => `${p.banco} (${p.tipo})`)).forEach(([k, n]) => console.log(`  · novos em ${k}: ${n}`));
 
   if (MODO === 'previa') {

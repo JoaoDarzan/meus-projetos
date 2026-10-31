@@ -1,8 +1,12 @@
 # Robô do Open Finance: traz os lançamentos dos bancos (Meu Pluggy) para o app de finanças.
-# Começa em 29/10/2026, o dia depois da conferência dos saldos (antes disso tudo foi lançado à mão). Por enquanto só roda quando é chamado (diagnóstico → prévia → importar); depois de aprovado, passa a rodar todo dia.
+# Começa em 29/10/2026, o dia depois da conferência dos saldos (antes disso tudo foi lançado à mão).
+# Roda sozinho 2 vezes por dia (8h23 e 20h23 de Brasília) importando; à mão dá para escolher diagnóstico, prévia ou importar.
+# Se der erro, o GitHub manda e-mail.
 # O registro deste fluxo é público: o robô só escreve contagens, nunca valores ou descrições.
 name: Open Finance
 on:
+  schedule:
+    - cron: '23 11,23 * * *'
   workflow_dispatch:
     inputs:
       modo:
@@ -15,6 +19,7 @@ on:
         default: '2026-10-29'
 permissions:
   contents: read
+concurrency: { group: open-finance, cancel-in-progress: false }
 jobs:
   robo:
     runs-on: ubuntu-latest
@@ -25,8 +30,8 @@ jobs:
         with: { node-version: 20 }
       - name: Robô do Open Finance
         env:
-          MODO: ${{ inputs.modo }}
-          DESDE: ${{ inputs.desde }}
+          MODO: ${{ inputs.modo || 'importar' }}
+          DESDE: ${{ inputs.desde || '2026-10-29' }}
           PLUGGY_CLIENT_ID: ${{ secrets.PLUGGY_CLIENT_ID }}
           PLUGGY_CLIENT_SECRET: ${{ secrets.PLUGGY_CLIENT_SECRET }}
           PLUGGY_ITEMS: ${{ secrets.PLUGGY_ITEMS }}

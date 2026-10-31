@@ -95,4 +95,18 @@ module.exports = { etapa: 'Contas certas (revisão)', testes: [
     const msg = await p.evaluate(() => { A.ui.oculto = true; const j = A.db.achar('TRABALHOS', 'JW'); return decodeURIComponent(A.c.linkWhats(j, 250, null)); });
     certo(/R\$ 250,00/.test(msg) && !/••/.test(msg), 'mensagem com o valor de verdade: ' + msg.slice(0, 120));
   }],
+  ['lançamento que veio do banco (Open Finance) e é excluído fica cancelado, para o robô não trazer de novo; o lançado à mão some de verdade', async (st, abrir) => {
+    st.tabelas.extrato.push(L('LOF-aaaaaaaa-0000-0000-0000-000000000077', { descricao: 'veio do banco', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000077' }),
+      L('LMAO-OF', { descricao: 'lançado à mão e conferido pelo banco', obs: 'gasolina · OF aaaaaaaa-0000-0000-0000-000000000078' }), L('LMAO-SO', { descricao: 'só à mão' }));
+    const p = await abrir(); await calmo(p);
+    await p.evaluate(() => { A.ui.view = 'fin'; A.ui.fseg = 'extrato'; A.render(false); });
+    for (const id of ['LOF-aaaaaaaa-0000-0000-0000-000000000077', 'LMAO-OF', 'LMAO-SO']) {
+      await clica(p, `#view [data-a=editL][data-id="${id}"]`);
+      await clica(p, '#s2 [data-a=apagarL]'); await clica(p, '#s2 [data-a=apagarL]'); await calmo(p);
+    }
+    const ex = st.linhas('extrato'), st_ = id => (ex.find(l => l.id === id) || {}).status;
+    certo(st_('LOF-aaaaaaaa-0000-0000-0000-000000000077') === 'Cancelado' && st_('LMAO-OF') === 'Cancelado', 'os do banco ficaram cancelados: ' + JSON.stringify(ex.filter(l => /LOF|LMAO/.test(l.id)).map(l => [l.id, l.status])));
+    certo(!ex.some(l => l.id === 'LMAO-SO'), 'o só à mão foi apagado de verdade');
+    certo(!(await p.evaluate(() => A.c.lancs().some(l => /LOF-|LMAO/.test(l.id)))), 'nenhum aparece no app');
+  }],
 ] };

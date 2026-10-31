@@ -603,7 +603,7 @@
     if (botao.dataset.certeza !== '1') { botao.dataset.certeza = '1'; botao.innerHTML = u.svg('trash-2') + 'Toque de novo para excluir'; return; }
     const r = db.achar('EXTRATO', id), copia = Object.assign({}, r);
     if (/^L(FX|JP)-/.test(id)) db.salvar('EXTRATO', { ID: id, 'STATUS': 'Cancelado' }); /* gerado pelo app: fica guardado como cancelado para não voltar sozinho */
-    else db.apagar('EXTRATO', id);
+    else db.apagar('EXTRATO', id); /* o que veio do banco também fica como cancelado (db.doBanco) */
     fechar(); render(false);
     toast('Lançamento excluído', () => { db.salvar('EXTRATO', copia); render(false); });
   }

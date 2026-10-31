@@ -116,8 +116,8 @@ export function regraFixa(p) {
 /* acha o lançamento do app que é o mesmo (mesmo banco e tipo, mesmo valor, data até 3 dias de diferença) */
 export function casar(propostas, extrato) {
   const usados = new Set(), porPid = new Map();
-  /* já importado = linha de verdade com a marca "OF <id>" (a prévia escondida não conta) */
-  extrato.forEach(l => { if (/^LOFP-/.test(l.id) || l.status === 'Cancelado') return; const m = String(l.obs || '').match(/OF ([0-9a-f-]{20,})/i); if (m) { porPid.set(m[1], l.id); usados.add(l.id); } });
+  /* já importado = linha de verdade com a marca "OF <id>" (a prévia escondida não conta; a cancelada conta: foi excluída ou ignorada de propósito) */
+  extrato.forEach(l => { if (/^LOFP-/.test(l.id)) return; const m = String(l.obs || '').match(/OF ([0-9a-f-]{20,})/i); if (m) { porPid.set(m[1], l.id); usados.add(l.id); } });
   return propostas.map(p => {
     if (porPid.has(p.pid)) return Object.assign({ acao: 'ja-importado', app: porPid.get(p.pid) }, p);
     const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-/.test(l.id) && sem(l.banco) === sem(p.banco)
@@ -128,6 +128,25 @@ export function casar(propostas, extrato) {
     if (cands.length) { usados.add(cands[0].id); return Object.assign({ acao: 'conferir', app: cands[0].id }, p); }
     return Object.assign({ acao: p.pagFatura ? 'ignorar' : 'novo' }, p);
   });
+}
+
+/* compra/Pix que voltou (estorno ou devolução): os dois ficam de fora, mesmo se a devolução vier um pouco menor.
+   Vale entre dois novos, ou quando a saída já foi ignorada de propósito no app (cancelada com a marca OF). */
+const ESTORNO = /estorno|devolu|reembolso|cancelamento|ajuste a credito/;
+export function estornos(casados, extrato = []) {
+  const ignoradas = extrato.filter(l => l.status === 'Cancelado' && !/^LOFP-/.test(l.id) && /\bOF [0-9a-f-]{20,}/i.test(l.obs || '') && +l.valor < 0)
+    .map(l => ({ banco: l.banco, tipo: /cart/i.test(l.tipo) ? 'cartão' : 'conta', valor: +l.valor, data: String(l.data).slice(0, 10), jaFora: true }));
+  const usadas = new Set();
+  casados.filter(p => p.acao === 'novo' && p.valor > 0 && ESTORNO.test(sem(p.desc))).forEach(volta => {
+    const ok = x => !usadas.has(x) && sem(x.banco) === sem(volta.banco) && x.tipo === volta.tipo && x.valor < 0
+      && volta.valor <= -x.valor + 0.01 && -x.valor - volta.valor <= Math.max(2.5, -x.valor * 0.1) && dias(x.data, volta.data) >= 0 && dias(x.data, volta.data) <= 10;
+    const ida = casados.filter(x => x.acao === 'novo' && ok(x)).concat(ignoradas.filter(ok))
+      .sort((a, b) => Math.abs(-a.valor - volta.valor) - Math.abs(-b.valor - volta.valor) || dias(a.data, volta.data) - dias(b.data, volta.data))[0];
+    if (!ida) return;
+    usadas.add(ida); volta.acao = 'ignorar'; volta.estorno = true;
+    if (!ida.jaFora) { ida.acao = 'ignorar'; ida.estorno = true; }
+  });
+  return casados;
 }
 
 /* memória de categorias, igual à do app: "PIX ENVIADO Posto Shell 123" e "posto shell" viram a mesma chave */
