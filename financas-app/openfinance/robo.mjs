@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova } from './regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -25,19 +25,20 @@ async function principal() {
   /* confere os 4 segredos, um por um, antes de tudo (✓/✗ sem mostrar nenhum valor) */
   const itens = lerItens(process.env.PLUGGY_ITEMS), probs = conferirItens(process.env.PLUGGY_ITEMS);
   console.log(`Modo: ${MODO} · lançamentos desde ${DESDE}\n\nConferindo os segredos:`);
-  let ok = true, pg = null, cartoes = [], bancosDoApp = [];
+  let ok = true, pg = null, cartoes = [], bancosDoApp = [], contasApp = [];
   if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET) { ok = false; console.log('  ✗ PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET: falta um dos dois'); }
   else {
     pg = criarPluggy({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET, base: process.env.PLUGGY_URL || undefined });
     try { await pg.entrar(); console.log('  ✓ PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET: a Pluggy aceitou'); }
     catch (e) { ok = false; console.log(`  ✗ PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET: ${e.message}`); }
   }
-  try { cartoes = await ler('cartoes'); bancosDoApp = (await ler('contas')).map(c => c.banco).concat(cartoes.map(k => k.cartao)); console.log('  ✓ DF_CLAUDE_CHAVE: o app aceitou'); }
+  try { cartoes = await ler('cartoes'); contasApp = await ler('contas'); bancosDoApp = contasApp.map(c => c.banco).concat(cartoes.map(k => k.cartao)); console.log('  ✓ DF_CLAUDE_CHAVE: o app aceitou'); }
   catch (e) { ok = false; console.log(`  ✗ DF_CLAUDE_CHAVE: ${e.message}`); }
   if (probs.length || !itens.length) { ok = false; console.log(`  ✗ PLUGGY_ITEMS: ${itens.length} número(s) de conexão certos${probs.length ? '; problemas:\n' + probs.map(x => '      · ' + x).join('\n') : ''}`); }
   else console.log(`  ✓ PLUGGY_ITEMS: ${itens.length} número(s) de conexão no formato certo`);
   if (!ok) throw new Error('arrume o segredo marcado com ✗ e rode de novo (nada foi gravado)');
   let abertos = 0, semNome = 0;
+  const saldos = [];
   const propostas = [];
   for (const [i, item] of itens.entries()) {
     const id = item.id;
@@ -55,6 +56,7 @@ async function principal() {
     abertos++;
     if (!como) semNome++;
     console.log(`\n${banco}${como ? ` (reconhecido pelo ${como})` : ' ✗ não reconheci qual banco é'}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);
+    contas.filter(c => c.type === 'BANK' && c.subtype !== 'SAVINGS_ACCOUNT').slice(0, 1).forEach(c => saldos.push({ banco, saldo: c.balance }));
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
@@ -72,6 +74,13 @@ async function principal() {
   const resumo = contar(casados, p => p.acao);
   console.log(`\nComparando com o app: ${resumo.conferir || 0} já estavam lá, ${resumo.novo || 0} novos, ${resumo['ja-importado'] || 0} já importados antes, ${resumo.ignorar || 0} ignorados (pagamento de fatura ou compra estornada), ${propostas.filter(p => p.pendente).length} pendentes (ficam para quando confirmarem).`);
   Object.entries(contar(casados.filter(p => p.acao === 'novo'), p => `${p.banco} (${p.tipo})`)).forEach(([k, n]) => console.log(`  · novos em ${k}: ${n}`));
+
+  /* o saldo de cada conta no app (depois desta importação) bate com o do banco? só diz sim ou não (o registro é público) */
+  const depois = extrato.map(l => { const p = casados.find(x => x.acao === 'conferir' && x.app === l.id); return p && l.status === 'Previsto' && p.data <= hoje ? Object.assign({}, l, { status: 'Pago', data: p.data }) : l; })
+    .concat(casados.filter(p => p.acao === 'novo').map(p => linhaNova(p, mem)));
+  console.log('\nSaldo das contas (o app depois desta importação × o banco):');
+  saldos.forEach(({ banco, saldo }) => { const b = saldoBate(saldo, contasApp.find(c => c.banco === banco && String(c.conta).toLowerCase() === 'conta'), depois);
+    console.log(`  · ${banco}: ${b == null ? 'sem saldo conferido no app' : b ? 'confere ✓' : '✗ diferente do banco (conferir)'}`); });
 
   if (MODO === 'previa') {
     /* a prévia fica no app como "cancelada" (escondida de todas as telas e contas), só para o Claude conferir; o modo importar apaga */

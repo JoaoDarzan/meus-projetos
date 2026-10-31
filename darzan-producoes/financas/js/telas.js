@@ -9,7 +9,7 @@
   /* ================= peças ================= */
   const pill = () => {
     const ms = c.meses(), i = ms.indexOf(ui.mes);
-    return `<div class="mpill"><button type="button" data-a="mes" data-d="-1" aria-label="Mês anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><span>${u.nomeMes(ui.mes)}${ui.mes.slice(0, 4) !== u.hoje().slice(0, 4) ? ' ' + ui.mes.slice(2, 4) : ''}</span><button type="button" data-a="mes" data-d="1" aria-label="Próximo mês" ${i >= ms.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>`;
+    return `<div class="mpill"><button type="button" data-a="mes" data-d="-1" aria-label="Mês anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><button type="button" class="mnome" data-a="escolherMes" aria-haspopup="dialog" aria-label="Escolher o mês (agora: ${u.esc(u.nomeMes(ui.mes))} de ${ui.mes.slice(0, 4)})">${u.nomeMes(ui.mes)}${ui.mes.slice(0, 4) !== u.hoje().slice(0, 4) ? ' ' + ui.mes.slice(2, 4) : ''}</button><button type="button" data-a="mes" data-d="1" aria-label="Próximo mês" ${i >= ms.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>`;
   };
   /* fora do início: voltar (um passo, até chegar no início) e a casinha (direto para o início). No início não tem nenhum dos dois */
   const bar = (titulo, voltar, comMes = true) => `<header class="bar">${ui.view !== 'inicio' ? `<span class="navb"><button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button><button class="back casa" type="button" data-a="go" data-v="inicio" aria-label="Ir para o início">${u.svg('house')}</button></span>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
@@ -29,13 +29,19 @@
     if (resto.length) fatias.push({ cat: 'Outras', valor: u.sum(resto, x => x.valor), n: u.sum(resto, x => x.n), cor: '#6b7591', outras: resto });
     let acc = 0;
     const R = 70, C = 2 * Math.PI * R, gap = fatias.length > 1 ? 1.6 : 0;
-    const arcos = fatias.map(f => { const len = Math.max(f.valor / tot * C - gap, .6), a = `<circle class="fatia" r="${R}" cx="90" cy="90" fill="none" stroke="${f.cor}" stroke-width="24" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(f.valor / tot)})</title></circle>`; acc += f.valor / tot * C; return a; }).join('');
+    const rotulos = [];
+    const arcos = fatias.map(f => { const len = Math.max(f.valor / tot * C - gap, .6), a = `<circle class="fatia" r="${R}" cx="90" cy="90" fill="none" stroke="${f.cor}" stroke-width="24" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(f.valor / tot)})</title></circle>`;
+      /* a porcentagem em cima da fatia (só nas que têm espaço: 6% ou mais) */
+      if (f.valor / tot >= .06) { const ang = (acc + f.valor / tot * C / 2) / C * 2 * Math.PI - Math.PI / 2; rotulos.push(`<text class="pf num" x="${(90 + R * Math.cos(ang)).toFixed(1)}" y="${(90 + R * Math.sin(ang)).toFixed(1)}" text-anchor="middle" dominant-baseline="central">${Math.round(f.valor / tot * 100)}%</text>`); }
+      acc += f.valor / tot * C; return a; }).join('');
     const aberta = ui.cexp && fatias.find(f => f.cat === ui.cexp);
+    /* no meio: o total; com uma categoria aberta, o valor dela */
+    const meio = aberta ? [u.k0(aberta.valor), `${u.esc(aberta.cat.length > 16 ? aberta.cat.slice(0, 15) + '…' : aberta.cat)} · ${u.pct(aberta.valor / tot)}`] : [u.k0(r.saiu), 'saiu no mês'];
     const subs = f => {
       if (f.outras) return f.outras.map(x => [x.cat, x.valor]);
       return Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
     };
-    return `<div class="ondefoi"><div class="rosca"><svg viewBox="0 0 180 180" role="img" aria-label="Gastos por categoria"><g transform="rotate(-90 90 90)">${arcos}</g><text x="90" y="86" text-anchor="middle" class="rv num">${u.k0(r.saiu)}</text><text x="90" y="106" text-anchor="middle" class="rl">saiu no mês</text></svg></div>
+    return `<div class="ondefoi"><div class="rosca"><svg viewBox="0 0 180 180" role="img" aria-label="Gastos por categoria"><g transform="rotate(-90 90 90)">${arcos}</g><g class="pfs" aria-hidden="true">${rotulos.join('')}</g><text x="90" y="86" text-anchor="middle" class="rv num">${meio[0]}</text><text x="90" y="106" text-anchor="middle" class="rl">${meio[1]}</text></svg></div>
       <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}<small>${f.n} ${f.n === 1 ? 'gasto' : 'gastos'}</small></span><b class="num">${u.brl(f.valor)}<small>${u.pct(f.valor / tot)}</small></b></button>${aberta === f ? (() => { const ss = subs(f), mx = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / mx * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : `<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button>`}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div>`;
   }
 
@@ -72,8 +78,9 @@
   /* ================= INÍCIO ================= */
   R.inicio = () => {
     const r = c.resumo(ui.mes), m = ui.mes;
-    const ult = r.L.slice().sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0);
-    const prox = c.tarefas().filter(t => !t.feita).slice(0, 3);
+    const ult = c.ordenar(r.L);
+    /* pra fazer só do mês escolhido (no mês atual, o que ficou atrasado de antes também aparece, para não esquecer) */
+    const doMesT = c.tarefas().filter(t => !t.feita && (u.mes(t.data) === m || (m === u.mes(u.hoje()) && t.data < u.hoje()))), prox = doMesT.slice(0, 3);
     const urg = c.urgentes();
     /* no início, só o que está na conta corrente de cada banco (caixinhas e cofrinhos ficam na aba Bancos) */
     const bancos = c.contas().filter(x => u.sem(x['CONTA']) === 'conta').map(x => ({ b: x['BANCO'], v: c.saldo(x), tem: c.saldo(x) != null }));
@@ -100,7 +107,7 @@
       <section class="sec"><div class="sec-h"><h2>Minhas rendas</h2></div><div class="incomes">
         ${[['Salário CLT', 'Salário CLT'], ['Darzan Produções', 'Darzan'], ['JPL SOM', 'JPL SOM']].map(([k, n]) => `<button class="inc" type="button" data-a="irRel" data-v="${u.esc(k === 'Darzan Produções' ? 'darzan' : k === 'JPL SOM' ? 'jpl' : 'mes')}">${u.ti(c.icone(k))}<span class="n">${n}</span><b class="v num">${u.k0(r.fonte[k])}</b>${dif(r.fonte[k], media(k))}</button>`).join('')}</div></section>
     </div><div class="col-r">
-      <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer</h2><button class="more" type="button" data-a="go" data-v="tarefas">Ver tudo</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], 'Nada pendente. Tudo em dia!')}</section>
+      <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer em ${u.nomeMes(m).toLowerCase()}</h2><button class="more" type="button" data-a="go" data-v="tarefas">${doMesT.length > 3 ? `Ver as ${doMesT.length}` : 'Ver tudo'}</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], `Nada pendente em ${u.nomeMes(m).toLowerCase()}. Tudo em dia!`)}</section>
       ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#ffd36b', '#c07a12'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
       <section class="sec"><div class="sec-h"><h2>Para onde foi</h2><span class="c-muted num" style="font-size:.86rem">${r.cats.length} categorias</span></div>
         <div class="panel">${r.cats.length ? ondeFoi(r) : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto neste mês.')}</div></section>
@@ -258,9 +265,10 @@
   const FIN = {};
   FIN.extrato = () => {
     const r = c.resumo(ui.mes), q = u.sem(ui.q), F = ui.filtro;
-    const L = r.L.filter(l => (F === 'tudo' || (F === 'entradas' && l.grupo === 'Renda') || (F === 'saidas' && c.ehGasto(l)) || (F === 'cartao' && l.tipo === 'cartão') || (F === 'previstos' && l.status === 'Previsto') || (F.startsWith('cat:') && l.cat === F.slice(4))) && (!q || u.sem(l.desc + ' ' + l.cat + ' ' + l.sub + ' ' + l.banco).indexOf(q) >= 0)).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0);
-    let html = '', dia = null;
-    L.forEach(l => { if (l.data !== dia) { dia = l.data; const q = u.quando(l.data), sem = new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); html += `<div class="day">${/^(Hoje|Ontem|Amanhã)$/.test(q) ? q : sem} · ${u.ddmmaa(l.data)}</div>`; } html += linhaL(l); });
+    const L = r.L.filter(l => (F === 'tudo' || (F === 'entradas' && l.grupo === 'Renda') || (F === 'saidas' && c.ehGasto(l)) || (F === 'cartao' && l.tipo === 'cartão') || (F === 'previstos' && l.status === 'Previsto') || (F.startsWith('cat:') && l.cat === F.slice(4))) && (!q || u.sem(l.desc + ' ' + l.cat + ' ' + l.sub + ' ' + l.banco).indexOf(q) >= 0));
+    let html = '', dia = null, futuro = false;
+    c.ordenar(L).forEach(l => { if (!futuro && l.data > u.hoje() && ui.mes <= u.mes(u.hoje())) { futuro = true; html += `<div class="day day-fut">${u.svg('calendar-clock')}Ainda vai acontecer</div>`; }
+      if (l.data !== dia) { dia = l.data; const q = u.quando(l.data), sem = new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); html += `<div class="day">${/^(Hoje|Ontem|Amanhã)$/.test(q) ? q : sem} · ${u.ddmmaa(l.data)}</div>`; } html += linhaL(l); });
     const chips = [['tudo', 'Tudo'], ['entradas', 'Entradas'], ['saidas', 'Saídas'], ['cartao', 'Cartão'], ['previstos', 'Previstos']].concat(F.startsWith('cat:') ? [[F, F.slice(4)]] : []);
     return `<section class="sec"><div class="kpis k4"><div class="kpi"><span>Entrou</span><b class="num c-in">${u.brl(r.entr)}</b>${r.aReceber ? `<small>+ ${u.brl(r.aReceber)} a receber (ainda não entrou)</small>` : ''}</div><div class="kpi"><span>Saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div><div class="kpi"><span>Guardou</span><b class="num c-sav">${u.brl(r.guardou)}</b></div><div class="kpi"><span>Sobrou</span><b class="num">${u.brl(r.sobra)}</b></div></div></section>
       <div class="sec" style="display:grid;gap:12px"><input class="search" id="busca" type="search" placeholder="Buscar: gasolina, cliente, iFood…" value="${u.esc(ui.q)}" aria-label="Buscar"><div class="chips">${chips.map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="filtro" data-v="${u.esc(k)}" aria-pressed="${F === k}">${u.esc(n)}</button>`).join('')}</div></div>
@@ -492,6 +500,17 @@
   let aoEnviar = null;
   function abrir(html, enviar, largo) { const f = $('s2'); f.className = 'sheet f2' + (largo ? ' wide' : ''); f.innerHTML = `<div class="grab"></div><button type="button" class="x2" data-a="fechar" aria-label="Fechar">${u.svg('x')}</button>` + html; aoEnviar = enviar; $('scrim2').hidden = false; f.scrollTop = 0; }
   function fechar() { $('scrim2').hidden = true; aoEnviar = null; }
+  /* escolher o mês direto (sem passar um por um): grade dos 12 meses de cada ano */
+  function seletorMes(ano) {
+    const ms = c.meses(), anos = [...new Set(ms.map(m => m.slice(0, 4)))].sort(), m0 = u.mes(u.hoje());
+    ano = anos.includes(ano) ? ano : ui.mes.slice(0, 4);
+    const i = anos.indexOf(ano);
+    abrir(`<h3 style="margin:0 0 12px">Escolher o mês</h3>
+      <div class="mpano"><button type="button" data-a="mpAno" data-v="${u.esc(anos[i - 1] || '')}" aria-label="Ano anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><b class="num">${u.esc(ano)}</b><button type="button" data-a="mpAno" data-v="${u.esc(anos[i + 1] || '')}" aria-label="Próximo ano" ${i >= anos.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>
+      <div class="mpgrid">${u.CURTO.map((n, k) => { const m = `${ano}-${String(k + 1).padStart(2, '0')}`, tem = ms.includes(m);
+        return `<button type="button" class="mpm${m === m0 ? ' hoje' : ''}" data-a="irMes" data-v="${m}" aria-pressed="${m === ui.mes}" aria-label="${u.esc(u.nomeMes(m))} de ${ano}" ${tem ? '' : 'disabled'}>${u.esc(n)}</button>`; }).join('')}</div>
+      ${ui.mes !== m0 ? `<button type="button" class="btn2" data-a="irMes" data-v="${m0}" style="margin-top:14px;width:100%">${u.svg('calendar')}Voltar para ${u.esc(u.nomeMes(m0).toLowerCase())} (mês atual)</button>` : ''}`);
+  }
   const val = id => { const e = $(id); return e ? e.value : ''; };
   const opts = (lista, atual) => lista.map(x => { const [v, n] = Array.isArray(x) ? x : [x, x]; return `<option value="${u.esc(v)}" ${String(v) === String(atual) ? 'selected' : ''}>${u.esc(n)}</option>`; }).join('');
   /* nome do campo + caixa ficam juntos num bloco (em linhas de 2 colunas, cada bloco é uma coluna) */
@@ -1141,6 +1160,9 @@
     go: b => go(b.dataset.v),
     voltar: () => A.voltar(),
     mes: b => { const ms = c.meses(), i = ms.indexOf(ui.mes) + +b.dataset.d; if (ms[i]) { ui.mes = ms[i]; render(); } },
+    escolherMes: () => seletorMes(ui.mes.slice(0, 4)),
+    mpAno: b => { if (b.dataset.v) seletorMes(b.dataset.v); },
+    irMes: b => { if (c.meses().includes(b.dataset.v)) { ui.mes = b.dataset.v; fechar(); render(); } },
     seg: b => { if (b.dataset.s === 'rvfil' && ui.rvfil !== b.dataset.v) ui.rvsel.clear(); ui[b.dataset.s] = b.dataset.v; render(!['filtro', 'tfil', 'rvfil'].includes(b.dataset.s)); },
     ocultar: () => { ui.oculto = !ui.oculto; try { localStorage.setItem('df-oculto', ui.oculto ? '1' : '0'); } catch (e) { /* sem armazenamento */ } render(false); },
     irBancos: () => { ui.fseg = 'bancos'; go('fin'); },

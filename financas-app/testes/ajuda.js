@@ -46,7 +46,10 @@ const clica = async (p, sel) => { await p.locator(sel).first().click(); await p.
 const resumo = (p, m) => p.evaluate(m => { const r = A.c.resumo(m); return { saiu: r.saiu, entr: r.entr, guardou: r.guardou, somaCats: r.cats.reduce((s, x) => s + x.valor, 0) }; }, m);
 const ir = async (p, v) => { await p.evaluate(v => { const b = document.querySelector(`#tabbar [data-a=go][data-v=${v}]`); const s = document.querySelector(`#snav [data-a=go][data-v=${v}]`); (b && b.offsetParent ? b : s).click(); }, v); await p.waitForTimeout(80); };
 const brl = t => +String(t).replace(/[^\d,−-]/g, '').replace(',', '.').replace('−', '-');
-const igual = (a, b, msg) => { if (Math.abs(a - b) > 0.005) throw new Error(`${msg}: esperava ${b}, veio ${a}`); };
+const igual = (a, b, msg) => {
+  if (typeof a !== 'number' || typeof b !== 'number' || isNaN(a) || isNaN(b)) throw new Error(`${msg}: igual() é só para números (veio ${typeof a} ${a} e ${typeof b} ${b}); para texto use certo(a === b)`);
+  if (Math.abs(a - b) > 0.005) throw new Error(`${msg}: esperava ${b}, veio ${a}`);
+};
 const certo = (x, msg) => { if (!x) throw new Error(msg); };
 /* coloca lançamentos prontos pelo próprio app (para o teste não depender dos dados de quem roda) */
 const preparar = (p, regs) => p.evaluate(regs => A.db.lote(regs.map(r => ({ op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ 'DATA': A.u.hoje(), 'BANCO': 'Nubank', 'GRUPO': 'Desejos', 'TIPO': 'conta', 'VALOR': -10, 'CATEGORIA': 'Outros', 'SUB-CATEGORIA': 'Outros', 'STATUS': 'Pago', 'PARCELA': '', 'OBS': '' }, r) }))), regs).then(() => calmo(p)).then(() => p.evaluate(() => A.render(false)));

@@ -276,6 +276,13 @@ window.A = window.A || {};
   c.l = r => ({ id: r.ID, data: String(r['DATA'] || ''), banco: r['BANCO'] || '', desc: String(r['DESCRIÇÃO'] || ''), grupo: r['GRUPO'] || '', tipo: /cart/i.test(r['TIPO']) ? 'cartão' : 'conta', valor: c.num(r['VALOR']), cat: r['CATEGORIA'] || '', sub: r['SUB-CATEGORIA'] || '', status: r['STATUS'] || 'Pago', parcela: r['PARCELA'] || '', obs: String(r['OBS'] || ''), r });
   c.lancs = () => c.L().filter(r => r['DATA'] && r['STATUS'] !== 'Cancelado').map(c.l); /* cancelado: some de tudo, mas fica guardado para a conta fixa/parcela não voltar sozinha */
   c.doMes = m => c.lancs().filter(l => u.mes(l.data) === m);
+  /* ordem do extrato: o que já aconteceu primeiro, do mais recente para o mais antigo (no mesmo dia, o último lançado em cima);
+     o que ainda vai acontecer (conta prevista, parcela do cartão com data mais para frente) vai para o fim, do mais perto para o mais longe */
+  c.ordenar = L => { const h = u.hoje();
+    return L.map((l, i) => [l, i]).sort(([a, i], [b, j]) => { const fa = a.data > h, fb = b.data > h;
+      if (fa !== fb) return fa ? 1 : -1;
+      if (a.data !== b.data) return (a.data < b.data ? 1 : -1) * (fa ? -1 : 1);
+      return j - i; }).map(x => x[0]); };
   c.ehGasto = l => l.grupo === 'Necessidades' || l.grupo === 'Desejos';
 
   c.resumo = m => {

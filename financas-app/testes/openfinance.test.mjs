@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -100,7 +100,7 @@ test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(ln('Padaria', -10), ['Desejos', '', ''], 'o resto vai para o Revisar');
 });
 
-test('estorno: compra e devolução ficam de fora (mesmo com a devolução um pouco menor); devolução de algo ignorado também', () => {
+test('estorno: devolução completa deixa os dois de fora; um pouco menor entra como reembolso (o saldo bate); devolução de algo ignorado fica de fora', () => {
   const N = (pid, valor, desc, data, extra) => Object.assign({ acao: 'novo', pid, banco: 'PicPay', tipo: 'conta', valor, desc, data }, extra);
   const r = estornos([N('a', -58.84, 'PIX ENVIADO 99 FOOD', '2026-10-14'), N('b', 58.84, 'Devolução de recebimento via PIX', '2026-10-14'),
     N('c', -34.92, 'PIX ENVIADO FULANA', '2026-10-29'), N('d', 32.92, 'Devolução de recebimento via PIX', '2026-10-31'),
@@ -108,7 +108,23 @@ test('estorno: compra e devolução ficam de fora (mesmo com a devolução um po
     N('h', 9.5, 'Devolução de recebimento via PIX', '2026-11-03')],
     [{ id: 'LOF-x', status: 'Cancelado', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000099 · ignorado', banco: 'PicPay', tipo: 'conta', valor: -9.5, data: '2026-11-01' }]);
   const a = Object.fromEntries(r.map(x => [x.pid, x.acao]));
-  assert.deepEqual(a, { a: 'ignorar', b: 'ignorar', c: 'ignorar', d: 'ignorar', e: 'novo', f: 'novo', g: 'novo', h: 'ignorar' }, JSON.stringify(a));
+  assert.deepEqual(a, { a: 'ignorar', b: 'ignorar', c: 'novo', d: 'novo', e: 'novo', f: 'novo', g: 'novo', h: 'ignorar' }, JSON.stringify(a));
+  const cd = r.filter(x => x.pid === 'c' || x.pid === 'd').map(x => { const l = linhaNova(x, new Map()); return [l.grupo, l.categoria, l.subcategoria, l.valor]; });
+  assert.deepEqual(cd, [['Reembolso', 'Reembolso', 'Compra devolvida', -34.92], ['Reembolso', 'Reembolso', 'Compra devolvida', 32.92]], 'os dois como reembolso: o saldo cai R$ 2, mas não vira gasto');
+  assert.ok(!r.find(x => x.pid === 'e').reembolso && !r.find(x => x.pid === 'f').reembolso, 'quem não tem par não vira reembolso');
+});
+
+test('conta prevista paga atrasada (o seguro venceu dia 27 e foi pago dia 31) é conferida, não repetida; saldo bate ou não com o banco', () => {
+  const ex = [{ id: 'LSEG', banco: 'PicPay', tipo: 'conta', valor: -115, data: '2026-10-27', status: 'Previsto', obs: '' }, { id: 'LPAGO', banco: 'PicPay', tipo: 'conta', valor: -115, data: '2026-10-01', status: 'Pago', obs: '' }];
+  const r = casar([{ pid: 'p1', banco: 'PicPay', tipo: 'conta', valor: -115, data: '2026-10-31', desc: 'Pagamento seguro' }], ex);
+  assert.deepEqual([r[0].acao, r[0].app], ['conferir', 'LSEG']);
+  assert.equal(casar([{ pid: 'p2', banco: 'PicPay', tipo: 'conta', valor: -115, data: '2026-10-08', desc: 'x' }], ex)[0].acao, 'novo', 'pago à mão 7 dias antes não casa (só a prevista tem prazo maior)');
+  const conta = { banco: 'PicPay', conta: 'Conta', saldo_conferido: 1000, data_da_conferencia: '2026-10-28' };
+  const mov = [{ id: 'A', banco: 'PicPay', tipo: 'conta', valor: -28.94, data: '2026-10-30', status: 'Pago' }, { id: 'B', banco: 'PicPay', tipo: 'conta', valor: -50, data: '2026-10-28', status: 'Pago' },
+    { id: 'C', banco: 'PicPay', tipo: 'conta', valor: -9, data: '2026-10-30', status: 'Cancelado' }, { id: 'D', banco: 'PicPay', tipo: 'conta', valor: -7, data: '2026-11-03', status: 'Previsto' }, { id: 'E', banco: 'PicPay', tipo: 'cartão', valor: -5, data: '2026-10-30', status: 'Pago' }];
+  assert.equal(saldoBate(971.06, conta, mov), true, 'só conta o que saiu depois da conferência, pago, da conta');
+  assert.equal(saldoBate(973.06, conta, mov), false);
+  assert.equal(saldoBate(1000, { banco: 'PicPay' }, mov), null, 'sem saldo conferido: não dá para dizer');
 });
 
 test('o que o João mandou ignorar (cancelado com a marca OF) não volta', async () => {
@@ -183,7 +199,12 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   assert.deepEqual([pad.categoria, pad.subcategoria, pad.grupo, pad.valor], ['Alimentação', 'Padaria', 'Necessidades', -19.9], 'categoria aprendida');
   assert.ok(cli.categoria === '' && /conferir/.test(cli.obs) && cli.valor === 300, 'sem categoria vai para o Revisar');
   assert.deepEqual([loja.tipo, loja.data, loja.valor, loja.parcela], ['cartão', '2026-11-25', -100, '1/3']);
+  assert.match(i.saida, /BancoTeste: sem saldo conferido no app/);
+  st.tabelas.contas.push({ id: 'CB', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Conta', saldo_conferido: 262.4, data_da_conferencia: '2026-10-01' });
   const de2 = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+  assert.match(de2.saida, /BancoTeste: confere ✓/, 'saldo do app (262,40 − 42,50 − 19,90 + 300) = banco (500)');
+  st.tabelas.contas.find(c => c.id === 'CB').saldo_conferido = 262;
+  assert.match((await rodar(Object.assign({}, env, { MODO: 'importar' }))).saida, /BancoTeste: ✗ diferente do banco/);
   assert.match(de2.saida, /Importado: 0 novos/);
   assert.equal(st.linhas('extrato').length, 5, 'rodar de novo não duplicou');
   } finally { await fim(); }

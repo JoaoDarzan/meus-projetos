@@ -109,11 +109,12 @@ export function regraFixa(p) {
   if (p.valor > 0 && /salario/.test(d)) return { grupo: 'Renda', categoria: 'Salário CLT', subcategoria: 'Salário' };
   if (p.valor > 0 && /rendimento/.test(d)) return { grupo: 'Renda', categoria: 'Outras rendas', subcategoria: 'Rendimentos' };
   if (p.valor < 0 && /\b(iof|juros|multa|encargos?|mora|rotativo)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Dívidas', subcategoria: 'Juros e multas' };
-  if (p.valor > 0 && p.tipo === 'cartão' && /estorno|ajuste a credito|devolu|reembolso|cancelamento/.test(d)) return { grupo: 'Reembolso', categoria: 'Reembolso', subcategoria: 'Compra devolvida' };
+  if (p.reembolso || (p.valor > 0 && (p.tipo === 'cartão' ? /estorno|ajuste a credito|devolu|reembolso|cancelamento/ : /estorno|devolu/).test(d))) return { grupo: 'Reembolso', categoria: 'Reembolso', subcategoria: 'Compra devolvida' };
   return null;
 }
 
-/* acha o lançamento do app que é o mesmo (mesmo banco e tipo, mesmo valor, data até 3 dias de diferença) */
+/* acha o lançamento do app que é o mesmo (mesmo banco e tipo, mesmo valor, data até 3 dias de diferença;
+   conta prevista: pago até 7 dias antes ou 20 dias depois do vencimento) */
 export function casar(propostas, extrato) {
   const usados = new Set(), porPid = new Map();
   /* já importado = linha de verdade com a marca "OF <id>" (a prévia escondida não conta; a cancelada conta: foi excluída ou ignorada de propósito) */
@@ -122,7 +123,7 @@ export function casar(propostas, extrato) {
     if (porPid.has(p.pid)) return Object.assign({ acao: 'ja-importado', app: porPid.get(p.pid) }, p);
     const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-/.test(l.id) && sem(l.banco) === sem(p.banco)
       && (/cart/i.test(l.tipo) ? 'cartão' : 'conta') === p.tipo && Math.abs((+l.valor || 0) - p.valor) < 0.011
-      && Math.abs(dias(String(l.data).slice(0, 10), p.data)) <= 3)
+      && (l.status === 'Previsto' ? dias(String(l.data).slice(0, 10), p.data) >= -7 && dias(String(l.data).slice(0, 10), p.data) <= 20 : Math.abs(dias(String(l.data).slice(0, 10), p.data)) <= 3))
       /* prefere a mesma parcela; depois a data mais perto */
       .sort((a, b) => ((a.parcela || '') !== p.parcela) - ((b.parcela || '') !== p.parcela) || Math.abs(dias(String(a.data).slice(0, 10), p.data)) - Math.abs(dias(String(b.data).slice(0, 10), p.data)));
     if (cands.length) { usados.add(cands[0].id); return Object.assign({ acao: 'conferir', app: cands[0].id }, p); }
@@ -130,7 +131,7 @@ export function casar(propostas, extrato) {
   });
 }
 
-/* compra/Pix que voltou (estorno ou devolução): os dois ficam de fora, mesmo se a devolução vier um pouco menor.
+/* compra/Pix que voltou (estorno ou devolução): devolução completa → os dois ficam de fora; um pouco menor → os dois entram como reembolso.
    Vale entre dois novos, ou quando a saída já foi ignorada de propósito no app (cancelada com a marca OF). */
 const ESTORNO = /estorno|devolu|reembolso|cancelamento|ajuste a credito/;
 export function estornos(casados, extrato = []) {
@@ -143,8 +144,11 @@ export function estornos(casados, extrato = []) {
     const ida = casados.filter(x => x.acao === 'novo' && ok(x)).concat(ignoradas.filter(ok))
       .sort((a, b) => Math.abs(-a.valor - volta.valor) - Math.abs(-b.valor - volta.valor) || dias(a.data, volta.data) - dias(b.data, volta.data))[0];
     if (!ida) return;
-    usadas.add(ida); volta.acao = 'ignorar'; volta.estorno = true;
-    if (!ida.jaFora) { ida.acao = 'ignorar'; ida.estorno = true; }
+    usadas.add(ida);
+    /* devolveu tudo: os dois ficam de fora (o saldo não muda). Devolveu menos: os dois entram como reembolso,
+       para o saldo bater com o banco sem contar como gasto */
+    if (ida.jaFora || Math.abs(-ida.valor - volta.valor) < 0.01) { volta.acao = 'ignorar'; volta.estorno = true; if (!ida.jaFora) { ida.acao = 'ignorar'; ida.estorno = true; } }
+    else { volta.reembolso = ida.reembolso = true; }
   });
   return casados;
 }
@@ -182,4 +186,13 @@ export function linhaNova(p, mem, prefixo = 'LOF-') {
   return { id: prefixo + p.pid, data: p.data, banco: p.banco, descricao: p.desc.slice(0, 120), grupo, tipo: p.tipo, valor: p.valor,
     categoria: s ? s.categoria : '', subcategoria: s ? s.subcategoria : '', status: 'Pago', parcela: p.parcela,
     obs: `Open Finance · OF ${p.pid}${s ? '' : ' · conferir'}` };
+}
+
+/* o saldo da conta no app (conferido + o que entrou e saiu depois) bate com o do banco? */
+export function saldoBate(saldoBanco, contaApp, extrato, novas = []) {
+  if (!contaApp || contaApp.saldo_conferido == null || contaApp.saldo_conferido === '' || !contaApp.data_da_conferencia || saldoBanco == null) return null;
+  const base = String(contaApp.data_da_conferencia).slice(0, 10);
+  const mov = extrato.concat(novas).filter(l => !/^LOFP-/.test(l.id) && sem(l.banco) === sem(contaApp.banco) && !/cart/i.test(l.tipo)
+    && l.status !== 'Cancelado' && l.status !== 'Previsto' && String(l.data).slice(0, 10) > base);
+  return Math.abs(r2(+contaApp.saldo_conferido + mov.reduce((t, l) => t + (+l.valor || 0), 0)) - r2(+saldoBanco)) < 0.011;
 }

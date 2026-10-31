@@ -49,7 +49,13 @@ svg.i{display:block;flex:none}
 .mpill{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--stroke);background:var(--glass);border-radius:999px;padding:3px;flex:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .mpill button{border:0;background:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center}
 .mpill button:disabled{opacity:.3;cursor:default}
-.mpill span{font-weight:700;font-size:.88rem;min-width:74px;text-align:center}
+.mpill .mnome{width:auto;min-width:74px;height:30px;border-radius:999px;padding:0 10px;font-weight:700;font-size:.88rem;color:inherit;font-family:inherit;cursor:pointer;text-decoration:underline dotted rgba(255,255,255,.35);text-underline-offset:4px}
+.mpill .mnome:hover{background:rgba(255,255,255,.08)}
+.mpano{display:flex;align-items:center;justify-content:center;gap:18px;margin:0 0 12px}.mpano b{font-size:1.2rem;min-width:64px;text-align:center}
+.mpano button{width:44px;height:44px;border-radius:50%;border:1px solid var(--stroke);background:var(--glass);display:grid;place-items:center;color:inherit}.mpano button:disabled{opacity:.3}
+.mpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mpm{min-height:48px;border-radius:14px;border:1px solid var(--stroke);background:var(--glass);color:var(--fg);font-weight:700;font-size:.95rem;font-family:inherit;text-transform:capitalize;cursor:pointer}
+.mpm.hoje{border-color:#f2c46d}.mpm[aria-pressed=true]{background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#2b1a00;border-color:transparent}.mpm:disabled{opacity:.28;cursor:default}
 
 /* herói */
 .hero{position:relative;background:var(--hero);border-radius:0 0 34px 34px;margin-left:calc(-1 * max(16px,var(--sa-l)));margin-right:calc(-1 * max(16px,var(--sa-r)));padding:calc(14px + var(--sa-t)) max(20px,var(--sa-r)) 24px max(20px,var(--sa-l));overflow:hidden;isolation:isolate}
@@ -201,6 +207,7 @@ svg.i{display:block;flex:none}
 .tag{font-size:.68rem;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.08);display:inline-flex;align-items:center;gap:5px}
 .tag::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--c,var(--faint))}
 .day{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:16px 0 2px}
+.day-fut{display:flex;align-items:center;gap:6px;color:var(--warn);border-top:1px dashed var(--stroke);margin-top:12px;padding-top:14px}.day-fut svg{width:14px;height:14px;flex:none}
 .prog{display:inline-block;width:52px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;vertical-align:middle}
 .prog i{display:block;height:100%;background:var(--blue-hi)}
 .insight{position:relative;overflow:hidden;background:linear-gradient(150deg,rgba(76,125,255,.28),rgba(76,125,255,.06) 60%),var(--glass)}
@@ -762,12 +769,14 @@ body.com-visor{overflow:hidden}
 .balj small{font-size:.76rem;color:var(--muted)}
 /* "Para onde foi": rosca + lista com subcategorias */
 .ondefoi{display:grid;gap:14px}
-.rosca{width:min(190px,60vw);margin:0 auto}
+.rosca{width:min(210px,64vw);margin:0 auto}
 .rosca svg{width:100%;height:auto;display:block}
 .rosca .fatia{cursor:pointer;transition:stroke-width .2s}
 .rosca .fatia:hover{stroke-width:28}
 .rosca .rv{fill:var(--fg);font-size:22px;font-weight:800;font-family:var(--font)}
 .rosca .rl{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.rosca .pfs{pointer-events:none}
+.rosca .pf{fill:#fff;font-size:10.5px;font-weight:800;font-family:var(--font);paint-order:stroke;stroke:rgba(10,14,30,.55);stroke-width:2.4px;stroke-linejoin:round}
 .ofl{display:grid}
 .catl{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:52px;border:0;border-top:1px solid rgba(255,255,255,.06);background:none;color:var(--fg);text-align:left;padding:8px 2px}
 .catl:first-child{border-top:0}
@@ -782,7 +791,7 @@ body.com-visor{overflow:hidden}
 .ofsubs .ofsub em{grid-column:1/-1;height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
 .ofsubs .ofsub em i{display:block;height:100%;border-radius:3px}
 .ofsubs .chip{justify-self:start;margin-top:4px}
-@media (min-width:700px){.ondefoi{grid-template-columns:190px minmax(0,1fr);align-items:start}.rosca{margin:0}}
+@media (min-width:700px){.ondefoi{grid-template-columns:210px minmax(0,1fr);align-items:start}.rosca{margin:0}}
 /* início: cores de Entrou / Saiu / Guardou e ícone de cada banco */
 .flow.f-in b,.flow.f-in svg{color:#7cf0a8}
 .flow.f-out b,.flow.f-out svg{color:#ffa3a3}
