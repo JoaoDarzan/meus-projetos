@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: Navegador de teste
-        run: npm install --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
+        run: npm install --no-save --no-package-lock playwright@1.63.0 && npx playwright install --with-deps chromium
       - name: Testes do app (dados de exemplo)
         run: node financas-app/testes/testar-app.js
       - name: Robô do Open Finance (Pluggy e Supabase de mentira)
