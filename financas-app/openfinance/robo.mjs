@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, conferirItens, nomeBanco, paraApp, casar, memoria, linhaNova } from './regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, memoria, linhaNova } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -37,17 +37,24 @@ async function principal() {
   if (probs.length || !itens.length) { ok = false; console.log(`  ✗ PLUGGY_ITEMS: ${itens.length} número(s) de conexão certos${probs.length ? '; problemas:\n' + probs.map(x => '      · ' + x).join('\n') : ''}`); }
   else console.log(`  ✓ PLUGGY_ITEMS: ${itens.length} número(s) de conexão no formato certo`);
   if (!ok) throw new Error('arrume o segredo marcado com ✗ e rode de novo (nada foi gravado)');
-  let abertos = 0;
+  let abertos = 0, semNome = 0;
   const propostas = [];
   for (const [i, item] of itens.entries()) {
     const id = item.id;
     let it, banco = item.banco;
     try { it = await pg.item(id); } catch (e) { console.log(`\n✗ ${banco || 'conexão ' + (i + 1)}: não consegui abrir a conexão (${e.message}). Confira o itemId.`); continue; }
-    /* sem nome no segredo: usa o nome do banco que a Pluggy informa, igual ao do app */
-    if (!banco) banco = nomeBanco(it.connector && it.connector.name, bancosDoApp) || `Banco ${i + 1}`;
     const contas = await pg.contas(id);
+    /* sem nome no segredo: descobre o banco (o Meu Pluggy chama todos de "MeuPluggy"), sempre com o nome do app */
+    let como = 'nome no segredo';
+    if (!banco) {
+      const ac = identificarBanco(it, contas, bancosDoApp, cartoes), doConector = nomeBanco(it.connector && it.connector.name, bancosDoApp);
+      if (ac.banco) { banco = ac.banco; como = ac.por; }
+      else if (bancosDoApp.includes(doConector)) { banco = doConector; como = 'nome da conexão'; }
+      else { banco = `Banco ${i + 1}`; como = ''; }
+    }
     abertos++;
-    console.log(`\n${banco}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);
+    if (!como) semNome++;
+    console.log(`\n${banco}${como ? ` (reconhecido pelo ${como})` : ' ✗ não reconheci qual banco é'}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
@@ -57,6 +64,7 @@ async function principal() {
     }
   }
   if (!abertos) throw new Error('nenhum banco abriu: confira o segredo PLUGGY_ITEMS');
+  if (semNome && MODO !== 'diagnostico') throw new Error(`${semNome} conexão(ões) sem banco reconhecido: escreva o nome no segredo PLUGGY_ITEMS (Nubank=número,...) e rode de novo (nada foi gravado)`);
   if (MODO === 'diagnostico') { console.log('\nDiagnóstico pronto: a conexão com os bancos funciona. Nada foi gravado.'); return; }
 
   const extrato = await ler('extrato'), mem = memoria(extrato);

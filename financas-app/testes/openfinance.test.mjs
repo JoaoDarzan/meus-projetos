@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, faturaDe, paraApp } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -14,13 +14,13 @@ const CHAVE = 'dfc_chave-de-teste-open-finance';
 
 /* Pluggy de mentira: 1 banco com conta e cartão */
 const ITEM = '11111111-2222-3333-4444-555555555555';
-function pluggyFalsa(lancs) {
+function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined } = {}) {
   const s = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), json = (c, b) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(b)); };
     if (u.pathname === '/auth') { let b = ''; req.on('data', d => b += d); return req.on('end', () => JSON.parse(b).clientSecret === 'segredo-certo' ? json(200, { apiKey: 'k1' }) : json(401, { message: 'no' })); }
     if (req.headers['x-api-key'] !== 'k1') return json(403, {});
-    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z', connector: { name: 'BancoTeste S.A.' } });
-    if (u.pathname === '/accounts') return json(200, { results: [{ id: 'conta1', type: 'BANK', subtype: 'CHECKING_ACCOUNT', balance: 500 }, { id: 'cartao1', type: 'CREDIT', subtype: 'CREDIT_CARD', balance: 300 }] });
+    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z', connector: { name: conector } });
+    if (u.pathname === '/accounts') return json(200, { results: [{ id: 'conta1', type: 'BANK', subtype: 'CHECKING_ACCOUNT', balance: 500, name: nomeConta }, { id: 'cartao1', type: 'CREDIT', subtype: 'CREDIT_CARD', balance: 300 }] });
     if (u.pathname === '/bills') return json(200, { results: [{ id: 'fat-nov', dueDate: '2026-11-07T00:00:00Z' }] });
     if (u.pathname === '/v2/transactions') {
       const conta = u.searchParams.get('accountId'), todos = lancs.filter(t => t.accountId === conta), depois = u.searchParams.get('after');
@@ -44,14 +44,14 @@ const LANCS = [
 function rodar(env) {
   return new Promise(ok => execFile('node', [ROBO], { env: Object.assign({ PATH: process.env.PATH }, env) }, (e, out, err) => ok({ codigo: e ? e.code : 0, saida: out + err })));
 }
-async function preparar() {
+async function preparar(opcoes) {
   const st = criar(); st.porta = await st.ligar();
   st.tabelas.acesso_claude.push({ id: 'u-joao', user_id: 'u-joao', hash: crypto.createHash('sha256').update(CHAVE).digest('hex') });
   st.tabelas.cartoes.push({ id: 'K1', user_id: 'u-joao', cartao: 'BancoTeste', fecha_dia: 31, vence_dia: 7 });
   st.tabelas.extrato.push(
     { id: 'LMAO', user_id: 'u-joao', data: '2026-10-19', banco: 'BancoTeste', descricao: 'gasolina', grupo: 'Necessidades', tipo: 'conta', valor: -42.5, categoria: 'Transporte', subcategoria: 'Gasolina', status: 'Pago', obs: '' },
     { id: 'LPAD', user_id: 'u-joao', data: '2026-09-02', banco: 'BancoTeste', descricao: 'padaria pao quente', grupo: 'Necessidades', tipo: 'conta', valor: -12, categoria: 'Alimentação', subcategoria: 'Padaria', status: 'Pago', obs: '' });
-  const pg = await pluggyFalsa(LANCS);
+  const pg = await pluggyFalsa(LANCS, opcoes);
   const env = { MODO: '', DESDE: '2026-09-01', PLUGGY_CLIENT_ID: 'id', PLUGGY_CLIENT_SECRET: 'segredo-certo', PLUGGY_ITEMS: `BancoTeste=${ITEM}`, DF_CLAUDE_CHAVE: CHAVE,
     PLUGGY_URL: `http://127.0.0.1:${pg.address().port}`, DF_SUPABASE_URL: `http://127.0.0.1:${st.porta}`, DF_SUPABASE_CHAVE: 'chave-de-teste' };
   return { st, pg, env, fim: async () => { pg.close(); await st.desligar().catch(() => { }); } };
@@ -66,6 +66,15 @@ test('regras: itens, fatura e formato do app', () => {
   const pr = conferirItens('Nubank=xxxx,PicPay=,abc,os números dos 5 bancos');
   assert.ok(pr.length === 4 && /Nubank.*curto/.test(pr[0]) && /PicPay: falta o número/.test(pr[1]) && /parte 3.*curto/.test(pr[2]) && /parte 4: isso é um texto com 5 palavras/.test(pr[3]) && !/xxxx|abc|números/.test(pr.join()), 'explica sem mostrar o conteúdo: ' + pr);
   assert.deepEqual(lerItens(`Nubank ${ITEM}, https://meu.pluggy.ai/items/${ITEM}`), [{ banco: '', id: ITEM }, { banco: '', id: ITEM }], 'acha o número dentro de um texto ou link copiado');
+  const bancos = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Banco Pan'], cartoes = [{ cartao: 'Nubank', vence_dia: 7 }, { cartao: 'Mercado Pago', vence_dia: 16 }, { cartao: 'Inter', vence_dia: 25 }];
+  const mp = { connector: { name: 'MeuPluggy' } }, ib = (contas) => identificarBanco(mp, contas, bancos, cartoes);
+  assert.deepEqual(ib([{ type: 'BANK', name: 'NU PAGAMENTOS S.A.' }]), { banco: 'Nubank', por: 'nome' }, 'Nubank pelo nome da conta');
+  assert.equal(ib([{ type: 'BANK', name: 'Conta' }, { type: 'CREDIT', marketingName: 'Cartão Mercado Pago' }]).banco, 'Mercado Pago');
+  assert.equal(ib([{ type: 'BANK', name: 'Banco Inter S.A.' }]).banco, 'Inter');
+  assert.equal(ib([{ type: 'BANK', name: 'BANCO PAN S.A.' }]).banco, 'Banco Pan');
+  assert.equal(ib([{ type: 'BANK', name: 'PicPay' }]).banco, 'PicPay');
+  assert.deepEqual(ib([{ type: 'BANK', name: 'Conta corrente' }, { type: 'CREDIT', creditData: { balanceDueDate: '2026-11-25T03:00:00Z' } }]), { banco: 'Inter', por: 'vencimento do cartão' }, 'pelo dia do vencimento');
+  assert.deepEqual(ib([{ type: 'BANK', name: 'Conta corrente', owner: 'Fulano Inter' }]), { banco: '', por: '' }, 'sem pista: não chuta (o nome do dono não conta)');
   const app = ['Nubank', 'Inter', 'Mercado Pago', 'PicPay', 'Pan', 'C6'];
   assert.deepEqual(['Banco Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Banco Pan', 'C6 Bank', 'Itaú'].map(n => nomeBanco(n, app)), ['Inter', 'Nu Pagamentos', 'Nubank', 'Mercado Pago', 'PicPay', 'Pan', 'C6', 'Itaú'], 'nome do banco igual ao do app');
   assert.equal(faturaDe('2026-10-15', { fecha_dia: 31, vence_dia: 7 }), '2026-11');
@@ -87,7 +96,7 @@ test('segredo só com o número (sem "Banco="): o nome vem do banco e bate com o
   const { st, env, fim } = await preparar();
   let r, ex; try { r = await rodar(Object.assign({}, env, { MODO: 'importar', PLUGGY_ITEMS: ` "${ITEM}" ` })); ex = st.linhas('extrato'); } finally { await fim(); }
   assert.equal(r.codigo, 0, r.saida);
-  assert.match(r.saida, /\nBancoTeste: conexão UPDATED/);
+  assert.match(r.saida, /\nBancoTeste \(reconhecido pelo nome da conexão\): conexão UPDATED/);
   const novos = ex.filter(l => /^LOF-/.test(l.id));
   assert.ok(novos.length === 3 && novos.every(l => l.banco === 'BancoTeste'), 'gravou com o nome do banco do app: ' + novos.map(l => l.banco));
   assert.ok(/OF /.test(ex.find(l => l.id === 'LMAO').obs), 'e conferiu o lançamento feito à mão (mesmo banco)');
@@ -99,6 +108,16 @@ test('segredos conferidos um por um: diz qual está errado sem mostrar o valor',
   assert.notEqual(r.codigo, 0);
   assert.match(r.saida, /✓ PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET/); assert.match(r.saida, /✗ DF_CLAUDE_CHAVE/); assert.match(r.saida, /✗ PLUGGY_ITEMS: 0 número/); assert.match(r.saida, /isso é um texto com 5 palavras/);
   assert.ok(!/números|linha só|dfc_errada/.test(r.saida), 'não mostrou o conteúdo: ' + r.saida); assert.equal(n, 2);
+});
+
+test('Meu Pluggy: descobre o banco pelo nome da conta; sem pista, o diagnóstico avisa e importar não grava', async () => {
+  let a = await preparar({ conector: 'MeuPluggy', nomeConta: 'BancoTeste S.A.' }), r;
+  try { r = await rodar(Object.assign({}, a.env, { MODO: 'diagnostico', PLUGGY_ITEMS: ITEM })); } finally { await a.fim(); }
+  assert.equal(r.codigo, 0, r.saida); assert.match(r.saida, /\nBancoTeste \(reconhecido pelo nome\): conexão UPDATED/);
+  a = await preparar({ conector: 'MeuPluggy' });
+  let d, n; try { d = await rodar(Object.assign({}, a.env, { MODO: 'diagnostico', PLUGGY_ITEMS: ITEM })); r = await rodar(Object.assign({}, a.env, { MODO: 'importar', PLUGGY_ITEMS: ITEM })); n = a.st.linhas('extrato').length; } finally { await a.fim(); }
+  assert.equal(d.codigo, 0); assert.match(d.saida, /Banco 1 ✗ não reconheci/);
+  assert.notEqual(r.codigo, 0); assert.match(r.saida, /sem banco reconhecido/); assert.equal(n, 2, 'nada gravado');
 });
 
 test('credenciais erradas: avisa e para, sem gravar nada', async () => {

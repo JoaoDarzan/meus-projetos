@@ -42,6 +42,27 @@ export function nomeBanco(conector, bancosDoApp) {
   return achados.sort((a, b) => b.length - a.length)[0] || String(conector).trim();
 }
 
+/* conexões pelo Meu Pluggy vêm com o nome "MeuPluggy": descobre o banco pelos dados das contas (nome da conta,
+   bandeira do cartão...) e, se não der, pelo dia de vencimento do cartão. Só devolve um banco que existe no app. */
+const APELIDOS = { nubank: ['nu pagamentos', 'nu financeira', 'nuconta', 'nu bank'], 'mercado pago': ['mercadopago', 'mercado livre'], inter: ['bancointer', 'inter co', 'inter s a'], 'banco pan': ['pan', 'bancopan'], picpay: ['pic pay'] };
+const textos = (o, fora = new Set(['id', 'itemId', 'accountId', 'number', 'taxNumber', 'owner', 'clientUserId', 'webhookUrl'])) => {
+  const r = []; const ir = (v, k) => { if (fora.has(k) || v == null) return; if (typeof v === 'string') r.push(v); else if (typeof v === 'object') Object.entries(v).forEach(([kk, vv]) => ir(vv, kk)); };
+  ir(o, ''); return r;
+};
+export function identificarBanco(item, contas, bancosDoApp, cartoes = []) {
+  const norm = t => sem(t).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const monte = ` ${norm(textos([item && Object.assign({}, item, { connector: null }), contas]).join(' '))} `;
+  const bancos = [...new Set(bancosDoApp.filter(Boolean))];
+  const pontos = bancos.map(b => { const x = norm(b), ap = [x, x.replace(/^banco /, '')].concat(APELIDOS[x] || []);
+    return [b, [...new Set(ap)].reduce((n, a) => n + (monte.split(` ${a} `).length - 1) * a.length, 0)]; }).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  if (pontos.length && (pontos.length === 1 || pontos[0][1] > pontos[1][1])) return { banco: pontos[0][0], por: 'nome' };
+  /* pelo dia de vencimento do cartão (cada cartão do app vence num dia) */
+  const dias = contas.filter(c => c.type === 'CREDIT' && c.creditData && c.creditData.balanceDueDate).map(c => +dataBR(c.creditData.balanceDueDate).slice(8, 10));
+  const porDia = cartoes.filter(k => dias.includes(+k.vence_dia));
+  if (porDia.length === 1 && cartoes.filter(k => +k.vence_dia === +porDia[0].vence_dia).length === 1) return { banco: porDia[0].cartao, por: 'vencimento do cartão' };
+  return { banco: '', por: '' };
+}
+
 /* mês da fatura em que a compra cai (igual ao app: a fatura tem o nome do mês em que vence) */
 export function faturaDe(data, cartao) {
   const fecha = parseInt(cartao && cartao.fecha_dia, 10) || 31;
