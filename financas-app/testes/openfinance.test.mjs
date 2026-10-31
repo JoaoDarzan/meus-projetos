@@ -203,9 +203,11 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   st.tabelas.contas.push({ id: 'CB', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Conta', saldo_conferido: 262.4, data_da_conferencia: '2026-10-01' });
   const de2 = await rodar(Object.assign({}, env, { MODO: 'importar' }));
   assert.match(de2.saida, /BancoTeste: confere ✓/, 'saldo do app (262,40 − 42,50 − 19,90 + 300) = banco (500)');
+  const sb = st.linhas('extrato').filter(l => /^LOFS-/.test(l.id));
+  assert.ok(sb.length === 1 && sb[0].id === 'LOFS-bancoteste' && sb[0].valor === 500 && sb[0].status === 'Cancelado', 'o saldo do banco fica guardado no app, escondido e um só por banco: ' + JSON.stringify(sb));
   st.tabelas.contas.find(c => c.id === 'CB').saldo_conferido = 262;
   assert.match((await rodar(Object.assign({}, env, { MODO: 'importar' }))).saida, /BancoTeste: ✗ diferente do banco/);
   assert.match(de2.saida, /Importado: 0 novos/);
-  assert.equal(st.linhas('extrato').length, 5, 'rodar de novo não duplicou');
+  assert.equal(st.linhas('extrato').filter(l => !/^LOFS-/.test(l.id)).length, 5, 'rodar de novo não duplicou');
   } finally { await fim(); }
 });

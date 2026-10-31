@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate } from './regras.mjs';
+import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -56,7 +56,7 @@ async function principal() {
     abertos++;
     if (!como) semNome++;
     console.log(`\n${banco}${como ? ` (reconhecido pelo ${como})` : ' ✗ não reconheci qual banco é'}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);
-    contas.filter(c => c.type === 'BANK' && c.subtype !== 'SAVINGS_ACCOUNT').slice(0, 1).forEach(c => saldos.push({ banco, saldo: c.balance }));
+    contas.filter(c => c.type === 'BANK' && c.subtype !== 'SAVINGS_ACCOUNT').slice(0, 1).forEach(c => saldos.push({ banco, saldo: c.balance, em: it.lastUpdatedAt || '' }));
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
@@ -81,6 +81,13 @@ async function principal() {
   console.log('\nSaldo das contas (o app depois desta importação × o banco):');
   saldos.forEach(({ banco, saldo }) => { const b = saldoBate(saldo, contasApp.find(c => c.banco === banco && String(c.conta).toLowerCase() === 'conta'), depois);
     console.log(`  · ${banco}: ${b == null ? 'sem saldo conferido no app' : b ? 'confere ✓' : '✗ diferente do banco (conferir)'}`); });
+
+  /* o saldo que o banco informou fica guardado no app, escondido (cancelado, fora de todas as contas), para o João e o Claude
+     conferirem a diferença sem o valor aparecer no registro público. Um por banco, trocado a cada execução. */
+  const opsSaldo = saldos.filter(x => x.saldo != null).map(({ banco, saldo, em }) => ({ tabela: 'extrato', op: 'salvar', linha: {
+    id: 'LOFS-' + sem(banco).replace(/[^a-z0-9]+/g, '-'), data: String(em).slice(0, 10) || hoje, banco, descricao: 'Saldo no banco (Open Finance)', grupo: 'Transferência', tipo: 'conta',
+    valor: Math.round(+saldo * 100) / 100, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: `Open Finance · saldo informado pelo banco em ${em || hoje} · só para conferência` } }));
+  if (opsSaldo.length) await gravar(opsSaldo);
 
   if (MODO === 'previa') {
     /* a prévia fica no app como "cancelada" (escondida de todas as telas e contas), só para o Claude conferir; o modo importar apaga */
