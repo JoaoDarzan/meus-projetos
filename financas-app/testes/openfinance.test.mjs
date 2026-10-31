@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -82,6 +82,22 @@ test('regras: itens, fatura e formato do app', () => {
   const p = paraApp(LANCS[3], { type: 'CREDIT' }, 'BancoTeste', [{ cartao: 'BancoTeste', fecha_dia: 31, vence_dia: 7 }], { 'fat-nov': '2026-11-07T00:00:00Z' });
   assert.deepEqual([p.tipo, p.valor, p.data, p.parcela], ['cartão', -100, '2026-11-25', '1/3'], 'compra no cartão: negativa, no mês da fatura, com a parcela');
   assert.equal(paraApp(LANCS[4], { type: 'CREDIT' }, 'BancoTeste', []).pagFatura, true);
+  /* banco que manda as 12 parcelas juntas, todas com a data da compra: cada uma na sua fatura */
+  const inter = [{ cartao: 'Inter', fecha_dia: 18, vence_dia: 25 }];
+  const parc = (k, data = '2026-09-10T15:00:00Z', billId) => paraApp(T('9' + k, 'cartao1', 'DEBIT', 30, 'LOJA X', data, { creditCardMetadata: { purchaseDate: '2026-09-10T15:00:00Z', billId, installmentNumber: k, totalInstallments: 12 } }), { type: 'CREDIT' }, 'Inter', inter, { f: '2026-12-25T00:00:00Z' });
+  assert.deepEqual([1, 2, 12].map(k => [parc(k).data, parc(k).parcela]), [['2026-09-10', '1/12'], ['2026-10-10', '2/12'], ['2027-08-10', '12/12']], 'parcelas mandadas juntas: cada uma na sua fatura');
+  assert.equal(parc(4, '2026-12-10T15:00:00Z', 'f').data, '2026-12-10', 'banco que já manda a parcela na data dela: usa a fatura dela');
+  /* regras fixas */
+  assert.ok(entreMinhas('Pix enviado  - Fulano Pereira Silva', 'FULANO PEREIRA SILVA') && entreMinhas('Transferência Recebida|FULANO PEREIR', 'Fulano Pereira Silva'), 'Pix para mim mesmo');
+  assert.ok(!entreMinhas('Pix recebido - Beltrano Pereira Silva', 'Fulano Pereira Silva') && !entreMinhas('Pix enviado', ''), 'outra pessoa da família não é "minhas contas"');
+  const ln = (desc, valor, tipo = 'conta', propria = false) => { const l = linhaNova({ pid: 'x', data: '2026-11-01', banco: 'B', tipo, valor, desc, parcela: '', propria }, new Map()); return [l.grupo, l.categoria, l.subcategoria]; };
+  assert.deepEqual(ln('Pix enviado - eu', -100, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas']);
+  assert.deepEqual(ln('Salário recebido - Portabilidade', 5000), ['Renda', 'Salário CLT', 'Salário']);
+  assert.deepEqual(ln('Rendimento de Conta de Pagamento', 3), ['Renda', 'Outras rendas', 'Rendimentos']);
+  assert.deepEqual(ln('IOF DIARIO DB PF', -0.2, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
+  assert.deepEqual(ln('Juros do rotativo', -2.8, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
+  assert.deepEqual(ln('AJUSTE A CREDITO', 5.26, 'cartão'), ['Reembolso', 'Reembolso', 'Compra devolvida']);
+  assert.deepEqual(ln('Padaria', -10), ['Desejos', '', ''], 'o resto vai para o Revisar');
 });
 
 test('diagnóstico: confere a conexão e só escreve contagens (o registro do GitHub é público)', async () => {

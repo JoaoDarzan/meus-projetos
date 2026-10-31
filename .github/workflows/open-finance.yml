@@ -1,5 +1,5 @@
 # Robô do Open Finance: traz os lançamentos dos bancos (Meu Pluggy) para o app de finanças.
-# Por enquanto só roda quando é chamado (diagnóstico → prévia → importar); depois de aprovado, passa a rodar todo dia.
+# Começa em 29/10/2026, o dia depois da conferência dos saldos (antes disso tudo foi lançado à mão). Por enquanto só roda quando é chamado (diagnóstico → prévia → importar); depois de aprovado, passa a rodar todo dia.
 # O registro deste fluxo é público: o robô só escreve contagens, nunca valores ou descrições.
 name: Open Finance
 on:
@@ -12,7 +12,7 @@ on:
       desde:
         description: 'lançamentos a partir de (AAAA-MM-DD)'
         required: false
-        default: '2026-09-01'
+        default: '2026-10-29'
 permissions:
   contents: read
 jobs:

@@ -9,7 +9,7 @@ import { lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, m
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
 const MODO = (process.env.MODO || process.argv[2] || 'diagnostico').toLowerCase();
-const DESDE = process.env.DESDE || '2026-09-01';
+const DESDE = process.env.DESDE || '2026-10-29'; /* dia depois da conferência dos saldos no app (antes disso foi tudo lançado à mão) */
 const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
 
 const rpc = async (fn, corpo) => {

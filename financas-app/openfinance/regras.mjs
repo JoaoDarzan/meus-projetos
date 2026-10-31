@@ -81,13 +81,36 @@ export function paraApp(t, conta, banco, cartoes, faturas = {}) {
     const cartao = cartoes.find(k => sem(k.cartao) === sem(banco)) || null;
     const compra = cm.purchaseDate ? dataBR(cm.purchaseDate) : data;
     const venc = cm.billId && faturas[cm.billId] ? dataBR(faturas[cm.billId]).slice(0, 7) : null;
-    const fm = venc || faturaDe(data, cartao);
+    /* alguns bancos mandam todas as parcelas de uma vez, com a data da compra: a parcela k cai k-1 faturas depois */
+    const todasJuntas = cm.installmentNumber > 1 && data === compra;
+    const fm = todasJuntas ? addMes(faturaDe(compra, cartao), cm.installmentNumber - 1) : venc || faturaDe(data, cartao);
     data = dataNoMes(fm, +compra.slice(8, 10));
     if (cm.totalInstallments > 1 && cm.installmentNumber) parcela = `${cm.installmentNumber}/${cm.totalInstallments}`;
   }
   /* pagamento da fatura que aparece dentro do cartão: o app já registra pelo lado da conta */
   const pagFatura = ehCartao && valor > 0 && /pagamento|pgto|payment|pag fatura/i.test(t.description || '');
-  return { pid: t.id, data, banco, tipo: ehCartao ? 'cartão' : 'conta', valor, desc: String(t.description || '').trim(), parcela, pendente: t.status === 'PENDING', pagFatura, categoriaPluggy: t.category || '' };
+  return { pid: t.id, data, banco, tipo: ehCartao ? 'cartão' : 'conta', valor, desc: String(t.description || '').trim(), parcela, pendente: t.status === 'PENDING', pagFatura,
+    propria: entreMinhas(t.description, conta.owner), categoriaPluggy: t.category || '' };
+}
+
+/* Pix/transferência para ou de mim mesmo: a descrição tem o nome do dono da conta (o banco às vezes corta o nome: "JOAO PEDRO PEREIR") */
+export function entreMinhas(desc, dono) {
+  const ps = sem(dono).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(x => x.length >= 3 && !['dos', 'das', 'de', 'da'].includes(x));
+  if (ps.length < 2) return false;
+  const ws = sem(desc).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
+  const tem = n => ws.some(w => w === n || (w.length >= 4 && n.startsWith(w)));
+  return tem(ps[0]) && ps.slice(1).some(tem);
+}
+
+/* regras fixas (valem mais que a memória): o que é sempre a mesma coisa em qualquer banco */
+export function regraFixa(p) {
+  const d = sem(p.desc);
+  if (p.propria) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
+  if (p.valor > 0 && /salario/.test(d)) return { grupo: 'Renda', categoria: 'Salário CLT', subcategoria: 'Salário' };
+  if (p.valor > 0 && /rendimento/.test(d)) return { grupo: 'Renda', categoria: 'Outras rendas', subcategoria: 'Rendimentos' };
+  if (p.valor < 0 && /\b(iof|juros|multa|encargos?|mora|rotativo)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Dívidas', subcategoria: 'Juros e multas' };
+  if (p.valor > 0 && p.tipo === 'cartão' && /estorno|ajuste a credito|devolu|reembolso|cancelamento/.test(d)) return { grupo: 'Reembolso', categoria: 'Reembolso', subcategoria: 'Compra devolvida' };
+  return null;
 }
 
 /* acha o lançamento do app que é o mesmo (mesmo banco e tipo, mesmo valor, data até 3 dias de diferença) */
@@ -100,7 +123,8 @@ export function casar(propostas, extrato) {
     const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-/.test(l.id) && sem(l.banco) === sem(p.banco)
       && (/cart/i.test(l.tipo) ? 'cartão' : 'conta') === p.tipo && Math.abs((+l.valor || 0) - p.valor) < 0.011
       && Math.abs(dias(String(l.data).slice(0, 10), p.data)) <= 3)
-      .sort((a, b) => Math.abs(dias(String(a.data).slice(0, 10), p.data)) - Math.abs(dias(String(b.data).slice(0, 10), p.data)));
+      /* prefere a mesma parcela; depois a data mais perto */
+      .sort((a, b) => ((a.parcela || '') !== p.parcela) - ((b.parcela || '') !== p.parcela) || Math.abs(dias(String(a.data).slice(0, 10), p.data)) - Math.abs(dias(String(b.data).slice(0, 10), p.data)));
     if (cands.length) { usados.add(cands[0].id); return Object.assign({ acao: 'conferir', app: cands[0].id }, p); }
     return Object.assign({ acao: p.pagFatura ? 'ignorar' : 'novo' }, p);
   });
@@ -134,7 +158,7 @@ export function sugerir(desc, mem) {
 
 /* linha nova do app (o que o banco tem e o app ainda não) */
 export function linhaNova(p, mem, prefixo = 'LOF-') {
-  const s = sugerir(p.desc, mem);
+  const s = regraFixa(p) || sugerir(p.desc, mem);
   const grupo = s ? s.grupo : p.valor > 0 ? 'Renda' : 'Desejos';
   return { id: prefixo + p.pid, data: p.data, banco: p.banco, descricao: p.desc.slice(0, 120), grupo, tipo: p.tipo, valor: p.valor,
     categoria: s ? s.categoria : '', subcategoria: s ? s.subcategoria : '', status: 'Pago', parcela: p.parcela,
