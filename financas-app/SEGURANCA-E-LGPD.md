@@ -65,7 +65,7 @@ O vigia de segredos (`ferramentas/vigia_segredos.py`) confere isso a cada mudan�
 
 ## O que só o João pode fazer (painel do Supabase e contas)
 
-1. Rodar `supabase/atualizacao-seguranca.sql` uma vez (SQL Editor → New query → colar → Run).
+1. Rodar `supabase/atualizacao-novembro.sql` uma vez (SQL Editor → New query → colar → Run). Ele traz as defesas de segurança e a tabela do calendário dos dias trabalhados.
 2. Supabase → Authentication → **Sign In / Providers** (ou "Policies"): ligar *Secure password change* e *Secure email change*.
 3. Supabase → Authentication → **Multi-Factor**: o app ainda não pede o segundo fator; próximo passo sugerido.
 4. Usar uma senha longa (12 ou mais caracteres) e única para o app, e bloqueio de tela no celular.

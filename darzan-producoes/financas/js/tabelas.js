@@ -33,6 +33,11 @@
     ANEXOS: { tabela: 'anexos', prefixo: 'X', opcional: true, extras: [['conteudo', 'text']], colunas: [
       ['TRABALHO', 'trabalho', 'text'], ['LANÇAMENTO', 'lancamento', 'text'], ['NOME', 'nome', 'text'], ['TIPO', 'tipo', 'text'], ['DATA', 'data', 'date'],
       ['VALOR', 'valor', 'numeric'], ['ARQUIVO', 'arquivo', 'text'], ['TAMANHO', 'tamanho', 'numeric']] },
+    /* calendário dos dias trabalhados (JPL SOM, Darzan, outros). PAGAMENTO = id do lançamento do extrato que pagou o dia:
+       um Pix pode pagar vários dias (o valor de cada dia fica em VALOR) */
+    DIAS: { tabela: 'dias', prefixo: 'W', opcional: true, colunas: [
+      ['DATA', 'data', 'date'], ['EMPRESA', 'empresa', 'text'], ['O QUE FOI', 'descricao', 'text'], ['VALOR', 'valor', 'numeric'],
+      ['PAGAMENTO', 'pagamento', 'text'], ['OBS', 'obs', 'text']] },
     TAREFAS: { tabela: 'tarefas', prefixo: 'T', colunas: [
       ['TAREFA', 'tarefa', 'text'], ['DATA', 'data', 'date'], ['VALOR', 'valor', 'numeric'], ['TIPO', 'tipo', 'text'], ['FEITA', 'feita', 'boolean'], ['OBS', 'obs', 'text']] },
     METAS: { tabela: 'metas', prefixo: 'M', colunas: [

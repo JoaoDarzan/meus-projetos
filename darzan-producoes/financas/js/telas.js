@@ -150,14 +150,119 @@
     const receber = u.sum(quadro.filter(j => j['ETAPA'] !== 'Orçamento'), j => Math.max(c.faltaReceber(j) || 0, 0)), /* inclui entregue que ainda deve */ orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
     const prox = quadro.filter(j => j['DATA DO EVENTO'] && u.ateHoje(String(j['DATA DO EVENTO'])) >= 0).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1)[0];
     const fat = c.resumo(ui.mes).fonte['Darzan Produções'], S = ui.jseg || 'quadro';
-    const corpo = S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
+    const corpo = S === 'calendario' ? calendario() : S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
         <p class="dica-q">${u.svg('hand-coins')}Segure um cartão e arraste para outra coluna para mudar a etapa.</p>
         <div class="board">${ETAPAS.map(([n, cor]) => { const l = quadro.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col" data-etapa="${u.esc(n)}"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted vaziocol">Nada aqui.</p>'}</div>`; }).join('')}</div>
         <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
-    return bar('Trabalhos', null, false) + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
+    return bar('Trabalhos', null, S === 'calendario') + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
       <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
-      <div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço']])}</div>` + corpo;
+      <div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço'], ['calendario', 'Calendário']])}</div>` + corpo;
   };
+  /* ---------- calendário dos dias trabalhados ---------- */
+  const SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  const semDias = () => db.faltando && db.faltando.has('DIAS');
+  const diaLongo = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  function calendario() {
+    if (semDias()) return `<section class="sec"><div class="panel" style="padding:18px"><h2 style="margin:0 0 8px">${u.svg('calendar-days')}Falta 1 passo para usar o calendário</h2>
+      <p class="c-muted" style="margin:0">O Supabase ainda não tem a “gaveta” dos dias. Abra o Supabase › SQL Editor › New query, cole o arquivo <b>atualizacao-novembro.sql</b> e toque em Run. Depois é só abrir o app de novo.</p></div></section>`;
+    const m = ui.mes, k = c.calendario(m), h = u.hoje(), sel = ui.calSel || (ui.calSel = new Set()), multi = !!ui.calMulti;
+    const pula = new Date(m + '-01T12:00:00').getDay(), nDias = new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate();
+    let cel = SEMANA.map(x => `<span class="cs">${x}</span>`).join('') + '<span class="cd vaz"></span>'.repeat(pula);
+    for (let d = 1; d <= nDias; d++) {
+      const data = `${m}-${String(d).padStart(2, '0')}`, x = k.porData[data];
+      const cores = x ? x.dias.map(z => c.corEmpresa(z.empresa)).concat(x.eventos.map(() => c.corEmpresa('Darzan Produções'))) : [];
+      const falta = !!x && x.dias.some(z => z.valor > 0 && !c.diaPago(z));
+      const rot = `${d} de ${u.nomeMes(m).toLowerCase()}: ${cores.length ? cores.length + (cores.length > 1 ? ' trabalhos' : ' trabalho') : 'sem trabalho'}${falta ? ', falta receber' : ''}`;
+      cel += `<button type="button" class="cd${data === h ? ' hoje' : ''}${cores.length ? ' tem' : ''}${falta ? ' falta' : ''}${sel.has(data) ? ' sel' : ''}${data > h ? ' fut' : ''}" data-a="calDia" data-v="${data}" aria-label="${u.esc(rot)}"${multi ? ` aria-pressed="${sel.has(data)}"` : ''}><b>${d}</b><span class="pts">${cores.slice(0, 3).map(cor => `<i style="background:${cor}"></i>`).join('')}</span></button>`;
+    }
+    const linhas = k.datas.flatMap(dt => k.porData[dt].dias.map(z => { const pg = c.diaPago(z);
+      return `<button type="button" class="it btn diai" data-a="editDia" data-id="${u.esc(z.id)}"><span class="pto" style="background:${c.corEmpresa(z.empresa)}"></span><div style="min-width:0"><div class="t">${u.esc(z.desc || z.empresa)}</div><div class="m"><span>${u.esc(u.dm(z.data))}</span><span>·</span><span>${u.esc(z.empresa)}</span>${z.valor ? (pg ? '<span class="pago">pago</span>' : '<span class="prev">a receber</span>') : ''}</div></div><div class="v num">${z.valor ? u.brl(z.valor) : ''}</div></button>`; })
+      .concat(k.porData[dt].eventos.map(j => `<button type="button" class="it btn diai" data-a="editJ" data-id="${u.esc(j.ID)}"><span class="pto" style="background:${c.corEmpresa('Darzan Produções')}"></span><div style="min-width:0"><div class="t">${u.esc(j['CLIENTE'])}</div><div class="m"><span>${u.esc(u.dm(dt))}</span><span>·</span><span>evento da Darzan</span></div></div><div class="v num"></div></button>`))).join('');
+    return `<section class="sec"><div class="kpis k4"><div class="kpi"><span>Dias trabalhados</span><b class="num">${k.trabalhados}</b><small>${k.agendados ? `+ ${k.agendados} marcado${k.agendados > 1 ? 's' : ''} para frente` : u.nomeMes(m).toLowerCase()}</small></div><div class="kpi"><span>Valor dos dias</span><b class="num c-in">${u.k0(k.valor)}</b><small>soma do mês</small></div><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(k.aReceber)}</b><small>dias ainda sem pagamento</small></div><div class="kpi"><span>Média por dia</span><b class="num">${u.k0(k.media)}</b><small>nos dias com valor</small></div></div></section>
+      <section class="sec"><div class="sec-h"><h2>${u.svg('calendar-days')}Calendário</h2><button class="chip" type="button" data-a="calMulti" aria-pressed="${multi}">${u.svg(multi ? 'x' : 'list-checks')}${multi ? 'Cancelar' : 'Marcar vários dias'}</button></div>
+        ${multi ? `<p class="dica-q">${u.svg('hand-coins')}Toque nos dias que você trabalhou e depois em “Marcar”.</p>` : ''}
+        <div class="panel cal" role="group" aria-label="Dias de ${u.esc(u.nomeMes(m).toLowerCase())}">${cel}</div>
+        ${multi ? `<button type="button" class="save" data-a="calMarcar" ${sel.size ? '' : 'disabled'} style="margin-top:12px">Marcar ${sel.size || ''} ${sel.size === 1 ? 'dia' : 'dias'}</button>` : ''}
+        <div class="leg">${c.empresasDias().map(e => `<span><i style="background:${c.corEmpresa(e)}"></i>${u.esc(e)}</span>`).join('')}<span><i class="lf"></i>falta receber</span></div></section>
+      ${k.empresas.length ? `<section class="sec"><div class="panel" style="padding:4px 14px">${k.empresas.map(x => `<div class="empd"><i class="pto" style="background:${x.cor}"></i><div style="min-width:0"><b>${u.esc(x.empresa)}</b><small>${x.n} ${x.n > 1 ? 'dias' : 'dia'}${x.aReceber ? ` · <span class="c-warn">${u.brl(x.aReceber)} a receber</span>` : ''}</small></div><b class="num">${x.valor ? u.brl(x.valor) : '—'}</b></div>`).join('')}</div></section>` : ''}
+      <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Dias de ${u.esc(u.nomeMes(m).toLowerCase())}</h2><button class="chip" type="button" data-a="ligarPag">${u.svg('link-2')}Ligar pagamento</button></div>
+        <div class="panel" style="padding:4px 10px">${linhas || vazio(['calendar-days', '#9cc6ff', '#2a62e0'], 'Nenhum dia marcado neste mês. Toque num dia do calendário.')}</div>
+        <p class="aviso">Recebeu um pagamento por vários dias (ex.: R$ 500 por sábado e domingo)? Toque em “Ligar pagamento”, escolha o Pix e os dias: o app divide o valor e conta cada dia como um trabalho.</p></section>`;
+  }
+  /* tocar num dia: sem nada marcado já abre para marcar; com algo, mostra o que tem e deixa marcar mais */
+  function abrirDia(data) {
+    const x = c.calendario(u.mes(data)).porData[data];
+    if (!x) return formDia([data]);
+    abrir(`<h3 style="margin:0 0 4px">${u.esc(u.cap(diaLongo(data)))}</h3><p class="c-muted" style="margin:0 0 12px">O que você fez neste dia</p>
+      <div class="panel" style="padding:4px 10px">${x.dias.map(z => `<button type="button" class="it btn diai" data-a="editDia" data-id="${u.esc(z.id)}"><span class="pto" style="background:${c.corEmpresa(z.empresa)}"></span><div style="min-width:0"><div class="t">${u.esc(z.desc || z.empresa)}</div><div class="m"><span>${u.esc(z.empresa)}</span>${z.valor ? (c.diaPago(z) ? '<span class="pago">pago</span>' : '<span class="prev">a receber</span>') : ''}</div></div><div class="v num">${z.valor ? u.brl(z.valor) : ''}</div></button>`).join('')}${x.eventos.map(j => `<button type="button" class="it btn diai" data-a="editJ" data-id="${u.esc(j.ID)}"><span class="pto" style="background:${c.corEmpresa('Darzan Produções')}"></span><div style="min-width:0"><div class="t">${u.esc(j['CLIENTE'])}</div><div class="m"><span>evento da Darzan</span></div></div><div class="v num"></div></button>`).join('')}</div>
+      <button type="button" class="btn2" data-a="novoDia" data-v="${u.esc(data)}" style="width:100%;margin-top:12px">${u.svg('plus')}Marcar outro trabalho neste dia</button>`);
+  }
+  /* entradas que podem ter pago dias: as dos últimos 4 meses, a mais nova primeiro */
+  const pagamentosRecentes = () => { const ini = u.addMes(u.mes(u.hoje()), -4) + '-01'; return c.lancs().filter(l => l.valor > 0 && l.grupo === 'Renda' && l.status !== 'Previsto' && l.data >= ini).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0); };
+  const rotPag = l => `${u.dm(l.data)} · ${l.desc} · ${u.brl(l.valor)}`;
+  function formDia(datas, z) {
+    if (semDias()) { toast('Falta rodar a atualização no Supabase para usar o calendário'); return; }
+    const emps = c.empresasDias(), emp0 = z ? z.empresa : 'JPL SOM', outro = !emps.includes(emp0);
+    abrir(`<h3 style="margin:0 0 4px">${z ? 'Editar dia trabalhado' : datas.length > 1 ? `Marcar ${datas.length} dias trabalhados` : 'Marcar dia trabalhado'}</h3>
+      <p class="c-muted" style="margin:0 0 12px">${u.esc(datas.map(d => u.cap(diaLongo(d))).join(' · '))}</p>
+      ${campo('Para quem', `<div class="rchips">${emps.map((e, i) => `<input type="radio" name="wE" id="wE${i}" value="${u.esc(e)}" ${e === emp0 ? 'checked' : ''}><label for="wE${i}">${u.esc(e)}</label>`).join('')}<input type="radio" name="wE" id="wEo" value="" ${outro ? 'checked' : ''}><label for="wEo">Outro</label></div>`)}
+      <div id="boxOutro" ${outro ? '' : 'hidden'}>${campo('Nome de quem', `<input class="txt" id="wEn" value="${u.esc(outro ? emp0 : '')}" placeholder="Ex.: Buffet Alegria">`)}</div>
+      ${campo('O que foi', `<input class="txt" id="wD" value="${u.esc(z ? z.desc : '')}" placeholder="Ex.: som no casamento, corrida, ensaio">`)}
+      ${campo(datas.length > 1 ? 'Valor de cada dia' : 'Valor do dia', `<input class="txt num" id="wV" inputmode="decimal" value="${u.esc(z && z.valor ? String(z.valor.toFixed(2)).replace('.', ',') : '')}" placeholder="Opcional. Ex.: 250,00">`)}
+      ${campo('Já recebeu?', `<select class="txt" id="wP">${opts([['', 'Ainda não (fica a receber)']].concat(pagamentosRecentes().map(l => [l.id, rotPag(l)])), z ? z.pag : '')}</select>`)}
+      <p class="aviso">Se escolher um pagamento e deixar o valor em branco, o app divide o pagamento entre ${datas.length > 1 ? 'esses dias' : 'os dias ligados a ele'}.</p>
+      ${z ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarDia" data-id="${u.esc(z.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Marcar</button>'}`,
+      () => salvarDia(datas, z));
+    document.querySelectorAll('#s2 input[name=wE]').forEach(r => r.addEventListener('change', () => { $('boxOutro').hidden = !$('wEo').checked; if ($('wEo').checked) $('wEn').focus(); }));
+  }
+  function salvarDia(datas, z) {
+    const r = document.querySelector('#s2 input[name=wE]:checked'), empresa = (r && r.value) || val('wEn').trim() || 'Outro';
+    const desc = val('wD').trim(), pag = val('wP'), v = u.num(val('wV'));
+    const regs = datas.map(d => ({ ID: z ? z.id : db.novoId('DIAS'), 'DATA': d, 'EMPRESA': empresa, 'O QUE FOI': desc, 'VALOR': v > 0 ? u.r2(v) : '', 'PAGAMENTO': pag }));
+    let ops = regs.map(x => ({ op: 'salvar', aba: 'DIAS', registro: x }));
+    /* pagamento sem valor: divide o pagamento igual entre todos os dias ligados a ele (os de antes e estes) */
+    if (pag && !(v > 0)) { const l = c.lancs().find(x => x.id === pag), ids = new Set(regs.map(x => x.ID)), todos = c.diasDoPagamento(pag).filter(d => !ids.has(d.id)).map(d => d.id).concat([...ids]);
+      if (l) { const partes = dividir(l.valor, todos.length); ops = ops.map(o => Object.assign(o, { registro: Object.assign(o.registro, { 'VALOR': partes[todos.indexOf(o.registro.ID)] }) }))
+        .concat(todos.filter(id => !ids.has(id)).map(id => ({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'VALOR': partes[todos.indexOf(id)] } }))); } }
+    db.lote(ops); fechar(); ui.calMulti = false; if (ui.calSel) ui.calSel.clear(); render(false);
+    toast(z ? 'Dia atualizado' : datas.length > 1 ? `${datas.length} dias marcados` : 'Dia marcado');
+  }
+  /* divide um valor em n partes de centavos certos (a última leva a sobra) */
+  const dividir = (v, n) => { if (!n) return []; const p = Math.floor(v / n * 100) / 100; return Array.from({ length: n }, (_, i) => i === n - 1 ? u.r2(v - p * (n - 1)) : p); };
+  /* ligar um pagamento a vários dias: escolhe o Pix, marca os dias, o app divide (dá para ajustar cada dia) */
+  function ligarPagamento(pag, empresa) {
+    if (semDias()) { toast('Falta rodar a atualização no Supabase para usar o calendário'); return; }
+    const pags = pagamentosRecentes();
+    if (!pag) { const doEmp = empresa && pags.find(l => u.sem(l.desc + ' ' + l.cat).includes(u.sem(empresa)) && !c.diasDoPagamento(l.id).length); pag = (doEmp || pags[0] || {}).id || ''; }
+    const l = c.lancs().find(x => x.id === pag);
+    const dias = c.dias().filter(d => d.pag === pag || !c.diaPago(d)).sort((a, b) => a.data < b.data ? -1 : 1);
+    abrir(`<h3 style="margin:0 0 12px">De quais dias é esse pagamento?</h3>
+      ${campo('Pagamento', `<select class="txt" id="lpP">${opts(pags.map(x => [x.id, rotPag(x)]), pag) || '<option value="">Nenhuma entrada nos últimos meses</option>'}</select>`)}
+      ${dias.length ? `<div class="panel lpdias" style="padding:4px 10px">${dias.map(d => `<div class="lpd"><input type="checkbox" id="lp-${u.esc(d.id)}" data-id="${u.esc(d.id)}" ${d.pag === pag && pag ? 'checked' : !pag || d.pag ? '' : empresa && d.empresa === empresa ? 'checked' : ''}><label for="lp-${u.esc(d.id)}"><b>${u.esc(u.cap(new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')))} ${u.esc(u.dm(d.data))}</b><span>${u.esc(d.empresa)}${d.desc ? ' · ' + u.esc(d.desc) : ''}</span></label><input class="txt num" inputmode="decimal" data-v="${u.esc(d.id)}" value="${d.valor ? String(d.valor.toFixed(2)).replace('.', ',') : ''}" aria-label="Valor de ${u.esc(u.dm(d.data))}" placeholder="0,00"></div>`).join('')}</div>
+      <button type="button" class="btn2" data-a="dividirPag" style="width:100%;margin-top:10px">${u.svg('sliders-horizontal')}Dividir igual entre os marcados</button>
+      <p class="aviso" id="lpTot"></p><button class="save" type="submit">Salvar</button>`
+      : `<p class="c-muted">Nenhum dia esperando pagamento. Marque os dias no calendário primeiro.</p>`}`,
+      () => salvarLigacao());
+    const tot = () => { const pv = (c.lancs().find(x => x.id === val('lpP')) || {}).valor || 0, s = u.r2(u.sum([...document.querySelectorAll('#s2 .lpd')].filter(x => x.querySelector('input[type=checkbox]').checked), x => u.num(x.querySelector('input[data-v]').value)));
+      const t = $('lpTot'); if (t) { t.textContent = `Dias marcados: ${u.brl(s)} de ${u.brl(pv)}${Math.abs(s - pv) > 0.009 ? ' (não bate com o pagamento)' : ' ✓'}`; t.classList.toggle('c-warn', Math.abs(s - pv) > 0.009); } };
+    const s2 = $('s2'); s2.oninput = tot; s2.onchange = e => { if (e.target.id === 'lpP') ligarPagamento(e.target.value); else tot(); };
+    if (pag && l && !c.diasDoPagamento(pag).length && document.querySelector('#s2 .lpd input[type=checkbox]:checked')) dividirMarcados(); else tot();
+  }
+  function dividirMarcados() {
+    const pv = (c.lancs().find(x => x.id === val('lpP')) || {}).valor || 0, marc = [...document.querySelectorAll('#s2 .lpd')].filter(x => x.querySelector('input[type=checkbox]').checked), p = dividir(pv, marc.length);
+    marc.forEach((x, i) => { x.querySelector('input[data-v]').value = p[i].toFixed(2).replace('.', ','); });
+    $('s2').oninput && $('s2').oninput();
+  }
+  function salvarLigacao() {
+    const pag = val('lpP'); if (!pag) return;
+    const ops = [];
+    document.querySelectorAll('#s2 .lpd').forEach(x => { const id = x.querySelector('input[type=checkbox]').dataset.id, d = c.dias().find(z => z.id === id), v = u.num(x.querySelector('input[data-v]').value);
+      if (x.querySelector('input[type=checkbox]').checked) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'PAGAMENTO': pag, 'VALOR': v > 0 ? u.r2(v) : '' } });
+      else if (d && d.pag === pag) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'PAGAMENTO': '' } }); });
+    db.lote(ops); const n = ops.filter(o => o.registro['PAGAMENTO']).length;
+    $('s2').oninput = null; $('s2').onchange = null; fechar(); render(false); toast(n ? `Pagamento ligado a ${n} ${n > 1 ? 'dias' : 'dia'}` : 'Pagamento sem dias');
+  }
+
   /* clientes que pagam todo mês: quanto rendeu cada mês, a média e o total */
   function recorrentes(rs) {
     const m0 = u.mes(u.hoje());
@@ -498,7 +603,7 @@
 
   /* ================= folha (formulários) ================= */
   let aoEnviar = null;
-  function abrir(html, enviar, largo) { const f = $('s2'); f.className = 'sheet f2' + (largo ? ' wide' : ''); f.innerHTML = `<div class="grab"></div><button type="button" class="x2" data-a="fechar" aria-label="Fechar">${u.svg('x')}</button>` + html; aoEnviar = enviar; $('scrim2').hidden = false; f.scrollTop = 0; }
+  function abrir(html, enviar, largo) { const f = $('s2'); f.oninput = f.onchange = null; f.className = 'sheet f2' + (largo ? ' wide' : ''); f.innerHTML = `<div class="grab"></div><button type="button" class="x2" data-a="fechar" aria-label="Fechar">${u.svg('x')}</button>` + html; aoEnviar = enviar; $('scrim2').hidden = false; f.scrollTop = 0; }
   function fechar() { $('scrim2').hidden = true; aoEnviar = null; }
   /* escolher o mês direto (sem passar um por um): grade dos 12 meses de cada ano */
   function seletorMes(ano) {
@@ -539,6 +644,7 @@
       ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0)) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0)) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? l.obs.replace(/Compra P[\w-]+\s*·?\s*/, '').replace(/^Para .+$/, '') : '')}" placeholder="opcional">`)}
+      ${ed && tipo === 'entrada' && l.status !== 'Previsto' && !semDias() ? (() => { const n = c.diasDoPagamento(l.id).length; return `<button type="button" class="btn2" data-a="ligarPag" data-id="${u.esc(l.id)}" style="width:100%">${u.svg('calendar-days')}${n ? `Pagou ${n} ${n > 1 ? 'dias trabalhados' : 'dia trabalhado'} · ver ou mudar` : 'De quais dias é esse pagamento?'}</button>`; })() : ''}
       ${compra ? `<p class="aviso">Esta é a parcela <b>${u.esc(l.parcela)}</b> de uma compra parcelada. Salvar muda só esta parcela.</p>` : ''}
       ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarL" data-id="${u.esc(l.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>${compra ? `<button type="button" class="btn2 perigo" data-a="apagarCompra" data-id="${u.esc(compra)}" style="width:100%;margin-top:10px">${u.svg('trash-2')}Excluir a compra inteira (todas as parcelas)</button>` : ''}` : '<button class="save" type="submit">Salvar</button>'}`,
       () => salvarLanc(tipo, l));
@@ -1028,6 +1134,7 @@
   function alternarTarefa(id, botao) {
     const t = c.tarefas().find(x => x.id === id); if (!t) return;
     const [tipo, a, b] = id.split(':');
+    if (tipo === 'w') { ligarPagamento('', a); return; } /* dias a receber: só fica feito quando liga o pagamento aos dias */
     const lv0 = c.nivel(c.xp()).n;
     if (tipo === 'l') {
       /* pagou/recebeu: a data passa a ser hoje (o saldo do banco conta a partir de quando o dinheiro mexeu) e o vencimento fica anotado */
@@ -1129,6 +1236,8 @@
     lembrarNav(); nav();
     const v = $('view');
     v.innerHTML = (R[ui.view] || R.inicio)();
+    /* fileira de abas mais larga que a tela: a aba escolhida fica à vista */
+    v.querySelectorAll('.seg').forEach(sg => { const b = sg.querySelector('[aria-pressed="true"]'); if (b && b.offsetLeft + b.offsetWidth > sg.clientWidth) sg.scrollLeft = b.offsetLeft + b.offsetWidth - sg.clientWidth + 6; });
     if (DEPOIS[ui.view]) DEPOIS[ui.view]();
     corDoTopo();
     if (anim) animar(document); else v.querySelectorAll('.rg').forEach(k => k.style.strokeDashoffset = k.dataset.off);
@@ -1161,6 +1270,14 @@
     voltar: () => A.voltar(),
     mes: b => { const ms = c.meses(), i = ms.indexOf(ui.mes) + +b.dataset.d; if (ms[i]) { ui.mes = ms[i]; render(); } },
     escolherMes: () => seletorMes(ui.mes.slice(0, 4)),
+    calDia: b => { if (ui.calMulti) { const s = ui.calSel || (ui.calSel = new Set()); s.has(b.dataset.v) ? s.delete(b.dataset.v) : s.add(b.dataset.v); render(false); } else abrirDia(b.dataset.v); },
+    calMulti: () => { ui.calMulti = !ui.calMulti; if (ui.calSel) ui.calSel.clear(); render(false); },
+    calMarcar: () => { if (ui.calSel && ui.calSel.size) formDia([...ui.calSel].sort()); },
+    novoDia: b => formDia([b.dataset.v]),
+    editDia: b => { const z = c.dias().find(d => d.id === b.dataset.id); if (z) formDia([z.data], z); },
+    apagarDia: b => { const r = db.achar('DIAS', b.dataset.id); if (!r) return; const copia = Object.assign({}, r); db.apagar('DIAS', b.dataset.id); fechar(); render(false); toast('Dia excluído', () => { db.salvar('DIAS', copia); render(false); }); },
+    ligarPag: b => ligarPagamento(b.dataset.id || ''),
+    dividirPag: () => dividirMarcados(),
     mpAno: b => { if (b.dataset.v) seletorMes(b.dataset.v); },
     irMes: b => { if (c.meses().includes(b.dataset.v)) { ui.mes = b.dataset.v; fechar(); render(); } },
     seg: b => { if (b.dataset.s === 'rvfil' && ui.rvfil !== b.dataset.v) ui.rvsel.clear(); ui[b.dataset.s] = b.dataset.v; render(!['filtro', 'tfil', 'rvfil'].includes(b.dataset.s)); },
@@ -1212,7 +1329,7 @@
     apagarX: b => apagarAnexo(b.dataset.id, b),
     tarefa: b => alternarTarefa(b.dataset.id, b),
     novoT: () => formTarefa(null),
-    editT: b => { const [tp, id] = b.dataset.id.split(':'); if (tp === 't') formTarefa(db.achar('TAREFAS', id)); else if (tp === 'l') { const r = db.achar('EXTRATO', id); if (r) formLanc(null, c.l(r)); } else { ui.fseg = 'cartoes'; ui.cartao = id; ui.mes = b.dataset.id.split(':')[2]; go('fin'); } },
+    editT: b => { const [tp, id] = b.dataset.id.split(':'); if (tp === 'w') { ui.jseg = 'calendario'; go('trabalhos'); return; } if (tp === 't') formTarefa(db.achar('TAREFAS', id)); else if (tp === 'l') { const r = db.achar('EXTRATO', id); if (r) formLanc(null, c.l(r)); } else { ui.fseg = 'cartoes'; ui.cartao = id; ui.mes = b.dataset.id.split(':')[2]; go('fin'); } },
     apagarT: b => apagarSimples('TAREFAS', b.dataset.id, b, 'Tarefa excluída'),
     conferir: b => formConferir(b.dataset.v),
     novaCx: b => formCaixinha(b.dataset.v),

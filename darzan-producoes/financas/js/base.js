@@ -413,6 +413,10 @@ window.A = window.A || {};
         T.push({ id: `f:${nome}:${m}`, grupo: 'conta', titulo: `Pagar fatura ${nome} de ${u.nomeMes(m).toLowerCase()}`, valor: pg ? Math.abs(pg.valor) : v, data: ven.data, estimado: ven.estimado, banco: c.contaQuePaga(nome), feita: !!pg, icone: ['credit-card', ...(c.CORBANCO[nome] || c.CORBANCO['Não informado'])], xp: c.XP.fatura });
       }
     });
+    /* dias trabalhados que ainda não foram pagos: uma tarefa "Receber" por empresa (marcar abre "de quais dias é o pagamento") */
+    const aRec = {};
+    c.diasAReceber().filter(d => d.valor > 0).forEach(d => { const x = aRec[d.empresa] || (aRec[d.empresa] = { n: 0, v: 0, data: d.data }); x.n++; x.v += d.valor; if (d.data < x.data) x.data = d.data; });
+    Object.entries(aRec).forEach(([e, x]) => T.push({ id: 'w:' + e, grupo: 'receber', titulo: `Receber ${e} · ${x.n} ${x.n > 1 ? 'dias trabalhados' : 'dia trabalhado'}`, valor: u.r2(x.v), data: x.data, feita: false, icone: ['calendar-days', '#9cc6ff', '#2a62e0'], xp: c.XP.receber }));
     const jaTem = (d, v) => v && T.some(x => x.data === d && Math.abs(x.valor - v) < 0.01);
     db.linhas('TAREFAS').filter(t => t['TAREFA']).forEach(t => {
       if (jaTem(String(t['DATA'] || ''), c.num(t['VALOR']))) return; /* a mesma conta já aparece pelo extrato */
@@ -454,6 +458,37 @@ window.A = window.A || {};
   c.textoEntregas = lista => lista.map(e => `[${e.feito ? 'x' : ' '}] ${e.nome}`).join('\n');
   /* cliente recorrente (ex.: social media todo mês): fica fora do quadro, com o que rende mês a mês */
   c.recorrente = j => j['ETAPA'] === 'Recorrente';
+
+  /* ---------- calendário dos dias trabalhados ---------- */
+  /* cada dia marcado (JPL SOM, Darzan, outro) com o valor dele; PAGAMENTO liga o dia ao lançamento que pagou.
+     Um Pix pode pagar vários dias: cada dia guarda a sua parte, então 1 pagamento de R$ 500 por 2 dias conta 2 trabalhos de R$ 250 */
+  c.EMPRESAS = ['JPL SOM', 'Darzan Produções'];
+  const COR_EMPRESA = Object.assign(Object.create(null), { 'JPL SOM': '#4fb3ff', 'Darzan Produções': '#f2c46d' });
+  c.corEmpresa = e => COR_EMPRESA[e] || '#c39bff';
+  c.dias = () => db.linhas('DIAS').filter(d => d['DATA']).map(d => ({ id: d.ID, data: String(d['DATA']).slice(0, 10), empresa: String(d['EMPRESA'] || 'Outro'), desc: String(d['O QUE FOI'] || ''),
+    valor: c.num(d['VALOR']) || 0, pag: String(d['PAGAMENTO'] || ''), obs: String(d['OBS'] || ''), r: d }));
+  c.empresasDias = () => [...new Set(c.EMPRESAS.concat(c.dias().map(d => d.empresa)))];
+  /* o dia está pago quando o lançamento ligado existe e já entrou (previsto não conta) */
+  c.pagamentoDoDia = d => d.pag ? c.lancs().find(l => l.id === d.pag && l.status !== 'Previsto') || null : null;
+  c.diaPago = d => !!c.pagamentoDoDia(d);
+  c.diasDoPagamento = id => c.dias().filter(d => d.pag === id);
+  c.diasAReceber = () => c.dias().filter(d => !c.diaPago(d) && d.data <= u.hoje());
+  /* eventos da Darzan (trabalho fechado com data) entram sozinhos no calendário */
+  c.eventosDoMes = m => c.trabalhos().filter(j => j['DATA DO EVENTO'] && u.mes(String(j['DATA DO EVENTO'])) === m && j['ETAPA'] && j['ETAPA'] !== 'Orçamento' && !c.recorrente(j));
+  c.calendario = m => {
+    const ds = c.dias().filter(d => u.mes(d.data) === m), evs = c.eventosDoMes(m), porData = {}, h = u.hoje();
+    const de = k => porData[k] || (porData[k] = { dias: [], eventos: [] });
+    ds.forEach(d => de(d.data).dias.push(d));
+    evs.forEach(j => de(String(j['DATA DO EVENTO']).slice(0, 10)).eventos.push(j));
+    const emp = {}, E = e => emp[e] || (emp[e] = { empresa: e, cor: c.corEmpresa(e), n: 0, valor: 0, aReceber: 0 });
+    ds.forEach(d => { const x = E(d.empresa); x.n++; x.valor += d.valor; if (!c.diaPago(d)) x.aReceber += d.valor; });
+    /* evento da Darzan conta como dia trabalhado (o valor fica no trabalho), a não ser que o dia já esteja marcado como Darzan */
+    Object.entries(porData).forEach(([k, x]) => { if (x.eventos.length && !x.dias.some(d => d.empresa === 'Darzan Produções')) E('Darzan Produções').n++; });
+    const datas = Object.keys(porData).sort(), comValor = ds.filter(d => d.valor > 0), valor = u.r2(u.sum(ds, d => d.valor));
+    return { m, porData, datas, trabalhados: datas.filter(k => k <= h).length, agendados: datas.filter(k => k > h).length,
+      empresas: Object.values(emp).map(x => Object.assign(x, { valor: u.r2(x.valor), aReceber: u.r2(x.aReceber) })).sort((a, b) => b.n - a.n),
+      valor, aReceber: u.r2(u.sum(ds.filter(d => !c.diaPago(d)), d => d.valor)), media: comValor.length ? u.r2(u.sum(comValor, d => d.valor) / comValor.length) : 0 };
+  };
   c.ganhosPorMes = j => { const o = {}; c.recebimentos(j).forEach(l => { const m = u.mes(l.data); o[m] = u.r2((o[m] || 0) + l.valor); }); return o; };
   /* balanço da Darzan num ano: por mês, o que faturou (trabalhos e recorrentes) e quais trabalhos aconteceram */
   c.anosDarzan = () => [...new Set(c.lancs().filter(l => l.cat === 'Darzan Produções').map(l => l.data.slice(0, 4)).concat(c.trabalhos().map(j => String(j['DATA DO EVENTO'] || '').slice(0, 4)).filter(a => a && a <= u.hoje().slice(0, 4))))].sort();

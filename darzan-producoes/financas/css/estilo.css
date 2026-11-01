@@ -808,3 +808,28 @@ body.com-visor{overflow:hidden}
 .whats.mini{min-height:36px;padding:6px 10px;font-size:.78rem;border-radius:10px}
 .whats.sem{background:var(--glass-2);color:var(--muted);border:1px dashed var(--stroke);font-weight:600}
 .whatsl{margin:-2px 0 10px 54px}
+/* calendário dos dias trabalhados */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:10px}
+.cal .cs{text-align:center;font-size:.7rem;font-weight:800;color:var(--faint);padding:2px 0 4px}
+.cal .cd{position:relative;min-height:52px;border-radius:12px;border:1px solid transparent;background:rgba(255,255,255,.03);color:var(--fg);font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:6px 0 4px;cursor:pointer}
+.cal .cd.vaz{background:none;cursor:default}
+.cal .cd b{font-size:.86rem;font-weight:700}
+.cal .cd.fut b{color:var(--muted)}
+.cal .cd.tem{background:rgba(255,255,255,.08)}
+.cal .cd.hoje{border-color:rgba(255,255,255,.45)}
+.cal .cd.falta{border-color:var(--warn);box-shadow:inset 0 0 0 1px rgba(255,200,107,.35)}
+.cal .cd.sel{background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#2b1a00}.cal .cd.sel b{color:#2b1a00}
+.cal .pts{display:flex;gap:3px;min-height:7px}.cal .pts i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px rgba(10,14,30,.6)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.78rem;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}.leg i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.leg i.lf{border-radius:3px;background:none;border:1.5px solid var(--warn)}
+.pto{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;margin-right:8px}
+.it.diai{grid-template-columns:18px minmax(0,1fr) auto}
+.it .pago{font-size:.66rem;font-weight:800;color:var(--in);background:rgba(95,224,161,.14);border-radius:6px;padding:0 6px}
+.lpd{display:grid;grid-template-columns:24px minmax(0,1fr) 104px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.lpd:last-child{border-bottom:0}
+.lpd input[type=checkbox]{width:22px;height:22px;accent-color:#f2c46d}
+.lpd label{display:grid;gap:2px;min-width:0}.lpd label span{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lpd .txt{text-align:right;padding:8px 10px}
+.empd{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:4px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}.empd:last-child{border-bottom:0}
+.empd>div{display:grid;gap:2px}.empd>div b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empd small{font-size:.78rem;color:var(--muted)}.empd>b{white-space:nowrap}

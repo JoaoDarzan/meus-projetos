@@ -18,6 +18,7 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   app só baixa quando você abre o anexo (não entra na cópia do aparelho nem no backup). Cliente que paga por mês
   (ex.: R$ 200 todo dia 26) vira um "a receber" previsto no mês atual e no próximo, com aviso, até completar o valor.
   A atualização do Supabase para isso está em `supabase/atualizacao-trabalhos.sql`; antes dela o app funciona e avisa.
+- **Calendário dos dias trabalhados** (Trabalhos › Calendário): marca os dias (JPL SOM, Darzan, outros) e liga um pagamento a vários dias (o app divide o valor). Precisa rodar uma vez `supabase/atualizacao-novembro.sql` no Supabase; antes disso o calendário mostra o passo a passo.
   No quadro, segurar e arrastar o cartão muda a etapa (ou pelos botões de etapa dentro do trabalho). Cliente recorrente
   (etapa "Recorrente", ex.: social media) sai do quadro e ganha a aba Recorrentes, com quanto rendeu em cada mês; a aba
   Balanço mostra os trabalhos e o faturamento da Darzan por mês e no ano. Anexo aceita qualquer arquivo (foto vira JPEG

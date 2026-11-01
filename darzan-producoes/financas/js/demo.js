@@ -21,7 +21,7 @@ window.A = window.A || {};
 
   A.demo.dados = hoje => {
     const u = A.u, m0 = u.mes(hoje), dHoje = +hoje.slice(8, 10);
-    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], ANEXOS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
+    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], ANEXOS: [], DIAS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
     let n = 0;
     const id = p => p + 'D' + String(++n).padStart(4, '0');
     const dia = (k, d) => u.dataNoMes(u.addMes(m0, k), d);
