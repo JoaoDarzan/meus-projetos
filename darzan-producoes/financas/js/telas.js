@@ -625,6 +625,8 @@
   /* nome do campo + caixa ficam juntos num bloco (em linhas de 2 colunas, cada bloco é uma coluna) */
   const campo = (rot, html) => `<div class="campo"><label class="fl">${rot}</label>${html}</div>`;
 
+  /* anotação sem as marcas técnicas (compra parcelada, caixinha, robô dos bancos, "conferir"): elas são guardadas à parte ao salvar */
+  const obsLivre = o => String(o || '').replace(/Compra P[\w-]+\s*·?\s*/, '').replace(/^Para .+$/, '').replace(/\bOpen Finance\b/g, '').replace(/\bOF [0-9a-f-]{20,}/ig, '').replace(/\bconferir\b/ig, '').split('·').map(x => x.trim()).filter(Boolean).join(' · ');
   /* ---------- lançamento ---------- */
   function formLanc(tipo, l) {
     const ed = !!l, hoje = u.hoje();
@@ -647,7 +649,8 @@
       ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), l ? l.sub : '')}</select>`)}</div>` : ''}
       ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0)) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0)) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
-      ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? l.obs.replace(/Compra P[\w-]+\s*·?\s*/, '').replace(/^Para .+$/, '') : '')}" placeholder="opcional">`)}
+      ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? obsLivre(l.obs) : '')}" placeholder="opcional">`)}
+      ${l && /conferir/i.test(l.obs) ? `<div class="checkline"><input type="checkbox" id="fOk" checked><label for="fOk">Já conferi (sai do Revisar)</label></div>` : ''}
       ${ed && tipo === 'entrada' && l.status !== 'Previsto' && !semDias() ? (() => { const n = c.diasDoPagamento(l.id).length; return `<button type="button" class="btn2" data-a="ligarPag" data-id="${u.esc(l.id)}" style="width:100%">${u.svg('calendar-days')}${n ? `Pagou ${n} ${n > 1 ? 'dias trabalhados' : 'dia trabalhado'} · ver ou mudar` : 'De quais dias é esse pagamento?'}</button>`; })() : ''}
       ${compra ? `<p class="aviso">Esta é a parcela <b>${u.esc(l.parcela)}</b> de uma compra parcelada. Salvar muda só esta parcela.</p>` : ''}
       ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarL" data-id="${u.esc(l.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>${compra ? `<button type="button" class="btn2 perigo" data-a="apagarCompra" data-id="${u.esc(compra)}" style="width:100%;margin-top:10px">${u.svg('trash-2')}Excluir a compra inteira (todas as parcelas)</button>` : ''}` : '<button class="save" type="submit">Salvar</button>'}`,
@@ -707,7 +710,9 @@
     const grupo = transf ? l.grupo : tipo === 'entrada' ? (c.grupoDe(val('fC')) === 'Reembolso' ? 'Reembolso' : 'Renda') : tipo === 'guardar' ? 'Guardado' : (document.querySelector('input[name=fG]:checked') || {}).value || 'Desejos';
     const cat = transf ? l.cat : tipo === 'guardar' ? 'Guardado' : val('fC'), sub = transf ? l.sub : tipo === 'guardar' ? (val('fX') ? 'Caixinha' : 'Reserva') : val('fS');
     const status = prev ? 'Previsto' : 'Pago';
-    const obsFinal = transf ? l.obs : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], obs].filter(Boolean).join(' · ');
+    /* as marcas do app ficam (Compra P…, "Open Finance · OF …" do robô dos bancos: sem ela o robô traria o lançamento de novo); "conferir" sai quando você confere */
+    const of = l && (l.obs.match(/\bOF [0-9a-f-]{20,}/i) || [])[0], ainda = l && /conferir/i.test(l.obs) && !($('fOk') && $('fOk').checked);
+    const obsFinal = transf ? (ainda ? l.obs : l.obs.replace(/\s*·?\s*conferir\b/ig, '').replace(/^\s*·\s*/, '')) : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], of ? 'Open Finance · ' + of : '', obs, ainda ? 'conferir' : ''].filter(Boolean).join(' · ');
     if (l) {
       db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': (transf || tipo === 'saida') && l.valor > 0 ? v : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
       fechar(); render(false);

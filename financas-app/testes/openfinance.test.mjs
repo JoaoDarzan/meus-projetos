@@ -197,6 +197,7 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   assert.equal(novos.length, 3, 'só os 3 novos (pagamento de fatura ignorado, pendente espera)');
   const pad = novos.find(l => /Padaria/.test(l.descricao)), cli = novos.find(l => /Cliente/.test(l.descricao)), loja = novos.find(l => /LOJA/.test(l.descricao));
   assert.deepEqual([pad.categoria, pad.subcategoria, pad.grupo, pad.valor], ['Alimentação', 'Padaria', 'Necessidades', -19.9], 'categoria aprendida');
+  assert.ok(novos.every(l => /conferir/.test(l.obs)), 'tudo que chega do banco vai para o Revisar, mesmo com a categoria sugerida');
   assert.ok(cli.categoria === '' && /conferir/.test(cli.obs) && cli.valor === 300, 'sem categoria vai para o Revisar');
   assert.deepEqual([loja.tipo, loja.data, loja.valor, loja.parcela], ['cartão', '2026-11-25', -100, '1/3']);
   assert.match(i.saida, /BancoTeste: sem saldo conferido no app/);

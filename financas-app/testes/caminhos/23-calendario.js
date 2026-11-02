@@ -106,6 +106,24 @@ module.exports = { etapa: 'Calendário dos dias trabalhados', testes: [
     await clica(p, `#view .anob [data-v="${ano}-03"]`);
     mesmo(await p.evaluate(() => A.ui.mes), ano + '-03', 'tocar no mês do gráfico vai para ele');
   }],
+  ['Pix que chegou pelo banco vai para o Revisar; conferir tira de lá, mas a marca do robô continua (senão ele traria de novo) e dá para ligar aos dias', async (st, abrir) => {
+    const OF = 'OF aaaaaaaa-1111-2222-3333-444444444444';
+    st.tabelas.extrato.push(L('LOF-PIX', { descricao: 'PIX recebido', categoria: '', subcategoria: '', obs: `Open Finance · ${OF} · conferir` }),
+      L('LOF-PIX2', { descricao: 'PIX recebido 2', valor: 80, categoria: '', subcategoria: '', obs: `Open Finance · ${OF.replace('4444', '5555')} · conferir` }));
+    const p = await abrir({ aparelho: 'iphone-15' });
+    certo(await p.evaluate(() => A.c.paraRevisar('conferir').some(l => l.id === 'LOF-PIX')), 'está no Revisar › Para conferir');
+    await p.evaluate(() => { A.ui.view = 'fin'; A.ui.fseg = 'extrato'; A.render(false); });
+    await clica(p, '#view [data-a=editL][data-id="LOF-PIX"]');
+    mesmo(await p.inputValue('#s2 #fO'), '', 'a anotação não mostra a marca do robô');
+    certo(await p.isChecked('#s2 #fOk') && await p.isVisible('#s2 [data-a=ligarPag]'), 'vem com "Já conferi" marcado e o botão dos dias');
+    await p.selectOption('#s2 #fC', 'JPL SOM'); await p.fill('#s2 #fO', 'fim de semana');
+    await clica(p, '#s2 .save'); await calmo(p);
+    const l = st.linhas('extrato').find(x => x.id === 'LOF-PIX');
+    certo(l.obs.includes(OF) && !/conferir/.test(l.obs) && /fim de semana/.test(l.obs) && l.categoria === 'JPL SOM', 'guardou a marca do robô e a anotação, e saiu do Revisar: ' + l.obs);
+    await clica(p, '#view [data-a=editL][data-id="LOF-PIX2"]');
+    await p.uncheck('#s2 #fOk'); await clica(p, '#s2 .save'); await calmo(p);
+    certo(/conferir/.test(st.linhas('extrato').find(x => x.id === 'LOF-PIX2').obs), 'sem marcar "Já conferi", continua no Revisar');
+  }],
   ['sem a tabela no Supabase (falta rodar a atualização): o calendário explica o passo e não deixa marcar (nada se perde)', async (st, abrir) => {
     delete st.tabelas.dias;
     const p = await abrir({ aparelho: 'iphone-15' });
