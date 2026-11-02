@@ -475,6 +475,17 @@ window.A = window.A || {};
   c.diasAReceber = () => c.dias().filter(d => !c.diaPago(d) && d.data <= u.hoje());
   /* eventos da Darzan (trabalho fechado com data) entram sozinhos no calendário */
   c.eventosDoMes = m => c.trabalhos().filter(j => j['DATA DO EVENTO'] && u.mes(String(j['DATA DO EVENTO'])) === m && j['ETAPA'] && j['ETAPA'] !== 'Orçamento' && !c.recorrente(j));
+  /* o que vem pela frente (dias marcados e eventos da Darzan), do mais perto ao mais longe */
+  c.proximosTrabalhos = (n = 5) => { const h = u.hoje();
+    return c.dias().filter(d => d.data > h).map(d => ({ data: d.data, empresa: d.empresa, titulo: d.desc || d.empresa, dia: d }))
+      .concat(c.trabalhos().filter(j => j['DATA DO EVENTO'] && String(j['DATA DO EVENTO']).slice(0, 10) > h && j['ETAPA'] && j['ETAPA'] !== 'Orçamento' && !c.recorrente(j)).map(j => ({ data: String(j['DATA DO EVENTO']).slice(0, 10), empresa: 'Darzan Produções', titulo: j['CLIENTE'], job: j })))
+      .sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0).slice(0, n); };
+  /* o ano: quantos dias trabalhou em cada mês (só o que já passou) e por empresa */
+  c.anoTrabalho = ano => {
+    const meses = Array.from({ length: 12 }, (_, i) => `${ano}-${String(i + 1).padStart(2, '0')}`).map(m => { const k = c.calendario(m); return { m, dias: k.trabalhados, agendados: k.agendados, empresas: k.empresas }; });
+    const emp = {}; meses.forEach(x => x.empresas.forEach(e => { const y = emp[e.empresa] || (emp[e.empresa] = { empresa: e.empresa, cor: e.cor, n: 0, valor: 0 }); y.n += e.n; y.valor = u.r2(y.valor + e.valor); }));
+    return { ano, meses, total: u.sum(meses, x => x.dias), agendados: u.sum(meses, x => x.agendados), empresas: Object.values(emp).sort((a, b) => b.n - a.n) };
+  };
   c.calendario = m => {
     const ds = c.dias().filter(d => u.mes(d.data) === m), evs = c.eventosDoMes(m), porData = {}, h = u.hoje();
     const de = k => porData[k] || (porData[k] = { dias: [], eventos: [] });

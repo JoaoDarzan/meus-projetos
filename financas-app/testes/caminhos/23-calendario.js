@@ -88,6 +88,24 @@ module.exports = { etapa: 'Calendário dos dias trabalhados', testes: [
     await clica(p, '#view [data-a=editDia][data-id="WED"]'); await clica(p, '#s2 [data-a=apagarDia]'); await calmo(p);
     certo(!st.linhas('dias').some(d => d.id === 'WED'), 'excluiu o dia');
   }],
+  ['o ano e os próximos: quantos dias trabalhou em cada mês (só o que já passou) e o que vem pela frente (dias marcados e eventos da Darzan)', async (st, abrir) => {
+    const ano = HOJE.slice(0, 4), D = (id, data, empresa) => ({ id, user_id: 'u-joao', data, empresa, descricao: 'x', valor: 100, pagamento: null, obs: null });
+    st.tabelas.dias.push(D('WA1', ano + '-03-07', 'JPL SOM'), D('WA2', ano + '-03-08', 'JPL SOM'), D('WA3', SAB, 'JPL SOM'), D('WFUT', addDias(HOJE, 3), 'JPL SOM'));
+    st.tabelas.trabalhos.push({ id: 'JPAS', user_id: 'u-joao', cliente: 'Noiva Passada', tipo_de_evento: 'Casamento', data_do_evento: ano + '-03-21', etapa: 'Entregue', valor_total: 1000 },
+      { id: 'JFUT', user_id: 'u-joao', cliente: 'Noiva Futura', tipo_de_evento: 'Casamento', data_do_evento: addDias(HOJE, 10), etapa: 'Fechado', valor_total: 1000 },
+      { id: 'JORC', user_id: 'u-joao', cliente: 'Só orçamento', tipo_de_evento: 'Casamento', data_do_evento: addDias(HOJE, 5), etapa: 'Orçamento', valor_total: 1000 });
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await irCalendario(p);
+    const a = await p.evaluate(ano => { const a = A.c.anoTrabalho(ano), h = A.u.hoje(), k = A.c.calendario(h.slice(0, 7)); return { mar: a.meses[2].dias, agora: a.meses[+h.slice(5, 7) - 1].dias, passados: k.datas.filter(d => d <= h).length, todos: k.datas.length, agendados: a.agendados }; }, ano);
+    certo(a.mar === 3, 'março: 2 dias JPL + 1 evento da Darzan = 3: ' + JSON.stringify(a));
+    certo(a.agora === a.passados && a.todos > a.passados && a.agendados >= 1, 'no mês de hoje só conta o que já passou; o dia marcado para frente fica em "agendados": ' + JSON.stringify(a));
+    const pr = await p.evaluate(() => A.c.proximosTrabalhos().map(x => x.titulo));
+    certo(pr[0] === 'x' && pr[1] === 'Noiva Futura' && !pr.includes('Só orçamento') && !pr.includes('Noiva Passada'), 'próximos, do mais perto ao mais longe: o dia marcado e o casamento fechado (orçamento e passado não): ' + pr);
+    certo(await p.isVisible('#view h2:has-text("Próximos trabalhos")') && await p.isVisible('#view .anob'), 'as duas partes aparecem na tela');
+    await conferirLayout(p, 'calendário com ano e próximos');
+    await clica(p, `#view .anob [data-v="${ano}-03"]`);
+    mesmo(await p.evaluate(() => A.ui.mes), ano + '-03', 'tocar no mês do gráfico vai para ele');
+  }],
   ['sem a tabela no Supabase (falta rodar a atualização): o calendário explica o passo e não deixa marcar (nada se perde)', async (st, abrir) => {
     delete st.tabelas.dias;
     const p = await abrir({ aparelho: 'iphone-15' });
