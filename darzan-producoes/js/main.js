@@ -21,6 +21,10 @@ const esc = (str = '') => String(str).replace(/[&<>"']/g, c => ({
 /* ---------- Identifica o tipo de vídeo pelo link ---------- */
 function parseVideo(url) {
   if (!url) return null;
+  if (typeof url === 'object' && url.fontes && url.fontes.length) {
+    const f = url.fontes;
+    return { tipo: 'arquivo', src: f[0].src, leve: f.length > 1 ? f[f.length - 1].src : null, fontes: f, thumb: url.capa || '' };
+  }
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);
   if (yt) {
     return {
@@ -425,8 +429,136 @@ function renderFeedbacks() {
   }
 }
 
+/* ---------- Vídeos automáticos da Cloudflare R2 ----------
+   O robô da Cloudflare (cloudflare/worker.js) devolve em /api/videos a lista do bucket.
+   Cada vídeo vira um cartão sozinho:
+   - nome-1080.mp4 + nome-720.mp4 (ou só nome.mp4) + nome.jpg (capa, opcional)
+   - o tipo sai do nome: teaser, cerimonia, motion, empresa/institucional; senão é "filme"
+   - nome com "story"/"stories"/"vertical"/"reels" vai para os stories
+   - "fundo" vira o vídeo de fundo do topo ("fundo-celular" ou "fundo-vertical": versão em pé)
+   - os mais novos aparecem primeiro. Títulos à mão: lista.json no bucket (opcional). */
+const TIPO_PELO_NOME = [
+  ['cerimonia', /cerim[oô]nia|[ií]ntegra/i],
+  ['teaser', /teaser|trailer/i],
+  ['motion', /motion|vinheta|anima[cç]/i],
+  ['empresa', /empresa|institucional|corporativ|comercial/i]
+];
+const EVENTO_PELO_NOME = [
+  ['Casamento', /casamento|wedding|noiv/i],
+  ['Aniversário', /anivers|15[-_ ]?anos|debutante/i],
+  ['Chá revelação', /ch[aá][-_ ]?(de[-_ ])?revela/i],
+  ['Empresa', /empresa|institucional|corporativ|comercial/i]
+];
+const PALAVRA_DE_TECNICA = /^(teaser|trailer|filme|film|cerim[oô]nia|[ií]ntegra|na|motion|vinheta|empresa|institucional|v[ií]deo|final|v\d+|\d{3,4}p?|4k|hd|sd|story|stories|reels?|completo|editado|export|render|casamento|wedding|anivers[aá]rio|aniver|ch[aá]|revela[cç][aã]o|revelacao)$/i;
+
+function tituloDoNome(stem) {
+  const palavras = stem.split('/').pop().split(/[-_\s.]+/).filter(p => p && !PALAVRA_DE_TECNICA.test(p));
+  return palavras.map((p, i) => (i > 0 && /^(e|de|da|do|das|dos)$/i.test(p))
+    ? p.toLowerCase()
+    : p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+const urlR2 = nome => `${SITE.videosBase.replace(/\/+$/, '')}/${nome.split('/').map(encodeURIComponent).join('/')}`;
+const rotuloQualidade = q => q >= 2160 ? '4K' : q ? `${q}p` : 'Original';
+
+async function carregarVideosDaNuvem() {
+  if (!SITE.videosBase || !/^https?:$/.test(location.protocol)) return;
+  let dados;
+  try {
+    const r = await fetch('api/videos');
+    if (!r.ok) return;
+    dados = await r.json();
+  } catch (e) { return; }
+  const info = dados.info || {};
+
+  /* junta as versões de cada vídeo (1080, 720, capa) pelo nome */
+  const grupos = new Map();
+  for (const a of dados.arquivos || []) {
+    if (!a || !a.nome || a.nome === 'lista.json') continue;
+    const ext = a.nome.match(/\.[^./]+$/);
+    if (!ext) continue;
+    let stem = a.nome.slice(0, -ext[0].length);
+    let q = 0;
+    const mq = stem.match(/[-_ ](2160p?|4k|1080p?|720p?|480p?)$/i);
+    if (mq) { stem = stem.slice(0, -mq[0].length); q = parseInt(mq[1], 10) || 2160; }
+    const g = grupos.get(stem) || { stem, videos: [], capa: '', enviado: '' };
+    if (/\.(mp4|m4v|mov|webm)$/i.test(a.nome)) {
+      g.videos.push({ q, nome: a.nome });
+      if (String(a.enviado) > g.enviado) g.enviado = String(a.enviado);
+    } else if (/\.(jpe?g|png|webp)$/i.test(a.nome)) {
+      g.capa = urlR2(a.nome);
+    }
+    grupos.set(stem, g);
+  }
+
+  const jaNoSite = new Set([...VIDEOS, ...STORIES].map(v => (typeof v.video === 'string' ? v.video : '')).filter(Boolean));
+  const filmes = [];
+  const stories = [];
+  let mudouFundo = false;
+  [...grupos.values()]
+    .filter(g => g.videos.length && !jaNoSite.has(g.stem))
+    .sort((a, b) => (a.enviado < b.enviado ? 1 : a.enviado > b.enviado ? -1 : 0))
+    .forEach(g => {
+      /* melhor qualidade até 1080p primeiro (4K pesa demais para o site); a mais leve por último */
+      const peso = v => (v.q === 0 ? 1500 : v.q);
+      let vs = g.videos.slice().sort((a, b) => peso(b) - peso(a));
+      const semPesado = vs.filter(v => !(v.q > 1080));
+      if (semPesado.length) vs = semPesado;
+      const escolhidos = vs.length > 1 ? [vs[0], vs[vs.length - 1]] : [vs[0]];
+      const video = { fontes: escolhidos.map(v => ({ rotulo: rotuloQualidade(v.q), src: urlR2(v.nome) })), capa: g.capa };
+
+      const nome = g.stem.split('/').pop();
+      const extra = info[g.stem] || info[nome] || {};
+      if (/^fundo/i.test(nome)) {
+        if (/celular|vertical|story|em[-_ ]?p[eé]/i.test(nome)) { if (!SITE.videoFundoCelular) { SITE.videoFundoCelular = video; mudouFundo = true; } }
+        else if (!SITE.videoFundo) { SITE.videoFundo = video; mudouFundo = true; }
+        return;
+      }
+      const tipo = TIPOS[extra.tipo] ? extra.tipo : (TIPO_PELO_NOME.find(([, re]) => re.test(nome)) || ['filme'])[0];
+      const evento = extra.evento || (EVENTO_PELO_NOME.find(([, re]) => re.test(nome)) || [''])[0];
+      const item = {
+        titulo: extra.titulo || tituloDoNome(g.stem) || TIPOS[tipo],
+        tipo, evento, video,
+        capa: extra.capa || '',
+        duracao: extra.duracao || ''
+      };
+      if (extra.lista === 'stories' || /story|stories|vertical|reels?/i.test(nome)) stories.push(item);
+      else filmes.push(item);
+    });
+
+  if (filmes.length) {
+    VIDEOS.splice(0, VIDEOS.length, ...VIDEOS.filter(v => v.video), ...filmes);
+    renderVideos();
+    arrumarFiltros();
+    observarReveal($('#videoGrid'));
+  }
+  if (stories.length) {
+    STORIES.splice(0, STORIES.length, ...STORIES.filter(v => v.video), ...stories);
+    renderStories();
+    observarReveal($('#storyGrid'));
+    if (!SITE.videoCelular) {
+      const p = parseVideo(stories[0].video);
+      SITE.videoCelular = p.leve || p.src;
+      setupMedia();
+    }
+  }
+  if (mudouFundo) { modoVideo = null; montarVideoFundo(); }
+}
+
+/* com vídeos de verdade, os filtros sem nenhum vídeo somem */
+function arrumarFiltros() {
+  const grupo = $('.filters[data-target="videoGrid"]');
+  if (!grupo) return;
+  const tipos = new Set(VIDEOS.filter(v => v.video).map(v => v.tipo));
+  $$('.filter', grupo).forEach(b => { if (b.dataset.filter !== 'todos') b.hidden = !tipos.has(b.dataset.filter); });
+  grupo.hidden = tipos.size < 2;
+  const ativo = $('.filter.is-active', grupo);
+  applyFilter(grupo, ativo ? ativo.dataset.filter : 'todos');
+}
+
 /* ---------- Filtros por categoria ---------- */
 function applyFilter(group, value) {
+  const pedido = $(`.filter[data-filter="${value}"]`, group);
+  if (!pedido || pedido.hidden) value = 'todos';
   $$('.filter', group).forEach(b => {
     const on = b.dataset.filter === value;
     b.classList.toggle('is-active', on);
@@ -503,19 +635,22 @@ function setupMenu() {
 /* ---------- Animação ao rolar ----------
    Os elementos aparecem ao entrar na tela e "resetam" ao sair,
    então a animação se repete sempre que você rola para cima ou para baixo. */
+let revelador = null;
+function observarReveal(raiz = document) {
+  const items = $$('.reveal', raiz);
+  if (!revelador) { items.forEach(el => el.classList.add('is-visible')); return; }
+  items.forEach(el => revelador.observe(el));
+}
 function setupReveal() {
-  const items = $$('.reveal');
-  if (!('IntersectionObserver' in window)) {
-    items.forEach(el => el.classList.add('is-visible'));
-    return;
+  if ('IntersectionObserver' in window) {
+    revelador = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.intersectionRatio >= 0.12) entry.target.classList.add('is-visible');
+        else if (!entry.isIntersecting) entry.target.classList.remove('is-visible');
+      });
+    }, { threshold: [0, 0.12] });
   }
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.intersectionRatio >= 0.12) entry.target.classList.add('is-visible');
-      else if (!entry.isIntersecting) entry.target.classList.remove('is-visible');
-    });
-  }, { threshold: [0, 0.12] });
-  items.forEach(el => io.observe(el));
+  observarReveal();
 }
 
 /* ---------- Início ---------- */
@@ -531,4 +666,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setupModal();
   setupMenu();
   setupReveal();
+  carregarVideosDaNuvem();
 });
