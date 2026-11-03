@@ -240,6 +240,7 @@ create table if not exists public.trabalhos (
   entregas text,
   parcela_mensal numeric,
   dia_da_parcela numeric,
+  crm text,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now()
 );
@@ -258,6 +259,7 @@ alter table public.trabalhos add column if not exists briefing text;
 alter table public.trabalhos add column if not exists entregas text;
 alter table public.trabalhos add column if not exists parcela_mensal numeric;
 alter table public.trabalhos add column if not exists dia_da_parcela numeric;
+alter table public.trabalhos add column if not exists crm text;
 create index if not exists trabalhos_user_id on public.trabalhos (user_id);
 alter table public.trabalhos enable row level security;
 drop policy if exists "so o dono" on public.trabalhos;

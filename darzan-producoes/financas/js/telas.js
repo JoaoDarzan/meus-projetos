@@ -60,7 +60,7 @@
     const q = u.ateHoje(t.data), chip = ok ? '<span class="due feito">Feito</span>' : q < 0 ? '<span class="due amanha">Atrasada</span>' : q === 0 ? '<span class="due hoje">Hoje</span>' : q === 1 ? '<span class="due amanha">Amanhã</span>' : `<span class="due breve">${u.dm(t.data)}</span>`;
     return `<div class="tk ${ok ? 'ok' : ''} ${urg ? 'urgent' : ''}"><button class="ck" type="button" data-a="tarefa" data-id="${u.esc(t.id)}" aria-pressed="${ok}" aria-label="${ok ? 'Desmarcar' : 'Marcar como feito'}">${u.svg('check')}</button>${u.ti(t.icone)}
       <button type="button" data-a="editT" data-id="${u.esc(t.id)}" style="min-width:0;border:0;background:none;padding:0;text-align:left;color:inherit"><div class="t">${u.esc(t.titulo)}</div><div class="m">${t.valor ? `<b class="num" style="color:var(--fg)">${u.brl(t.valor)}</b>` : ''}${chip}${t.estimado && !ok ? '<span class="estim">vencimento estimado</span>' : ''}${t.banco && t.valor && t.banco !== 'Não informado' ? `<span>${t.grupo === 'receber' ? 'entra no' : 'sai do'} ${u.esc(t.banco)}</span>` : ''}</div></button>
-      ${ok ? `<button class="undo" type="button" data-a="tarefa" data-id="${u.esc(t.id)}">${u.svg('undo-2')}Desfazer</button>` : t.grupo === 'receber' && t.id.startsWith('l:') ? botaoWhats(jobDoLanc(t.id.slice(2)), t.valor, t.data, true) || '<span></span>' : '<span></span>'}</div>`;
+      ${ok ? `<button class="undo" type="button" data-a="tarefa" data-id="${u.esc(t.id)}">${u.svg('undo-2')}Desfazer</button>` : t.grupo === 'receber' && t.id.startsWith('l:') ? botaoWhats(jobDoLanc(t.id.slice(2)), t.valor, t.data, true) || '<span></span>' : t.id.startsWith('v:') ? (() => { const j = db.achar('TRABALHOS', t.id.slice(2)), lk = j && c.linkConversa(j, c.msgRetorno(j)); return lk ? `<a class="whats mini" href="${u.esc(lk)}" target="_blank" rel="noopener noreferrer" data-a="chameiJ" data-id="${u.esc(j.ID)}">${u.svg('message-circle')}Chamar</a>` : '<span></span>'; })() : '<span></span>'}</div>`;
   }
 
   /* fatura que importa agora: a mais antiga ainda sem pagar (até 10 dias de atraso) ou a que está aberta */
@@ -132,7 +132,9 @@
   };
 
   /* ================= TRABALHOS ================= */
-  const ETAPAS = [['Orçamento', '#9eabcd'], ['Fechado', '#8fb0ff'], ['Em andamento', '#ffc86b'], ['Entregue', '#5fe0a1']];
+  const ETAPAS = [['Novo contato', '#7fd6ff'], ['Orçamento', '#9eabcd'], ['Fechado', '#8fb0ff'], ['Em andamento', '#ffc86b'], ['Entregue', '#5fe0a1']];
+  const MOTIVOS = ['Preço', 'Data ocupada', 'Não respondeu', 'Fechou com outro', 'Desistiu do evento', 'Outro'];
+  const ORIGENS = ['Instagram', 'Indicação', 'WhatsApp', 'Google', 'Outro'];
   const TIPOEV = { 'Casamento': ['heart', '#ff9cd0', '#d2257f'], '15 anos': ['cake', '#cf9cff', '#7a35e6'], 'Aniversário': ['cake', '#cf9cff', '#7a35e6'], 'Social media': ['smartphone', '#8fb6ff', '#2148d6'], 'Corporativo': ['building-2', '#5fe3f5', '#0a8bb0'], 'Palestra': ['speaker', '#d79bf0', '#8a3fb0'], 'Formatura': ['graduation-cap', '#9cc6ff', '#2a62e0'], 'Evento': ['party-popper', '#ffd97a', '#c07a0a'] };
   function cardJob(j) {
     const s = TIPOEV[j['TIPO DE EVENTO']] || TIPOEV.Evento, tot = c.num(j['VALOR TOTAL']), rec = c.recebido(j), falta = c.faltaReceber(j), d = String(j['DATA DO EVENTO'] || '');
@@ -140,24 +142,120 @@
     return `<button type="button" class="job" data-a="editJ" data-id="${u.esc(j.ID)}" style="--a:${s[1]};--b:${s[2]}"><div class="cov"></div><div class="in">
       <div class="tp"><span>${u.esc(j['TIPO DE EVENTO'] || 'Trabalho')}</span>${j['ETAPA'] === 'Entregue' ? '<span class="c-in">✓</span>' : ''}</div><div class="nm">${u.esc(j['CLIENTE'])}</div>
       <div class="meta">${d ? `<span>${u.svg('calendar-days')}${u.dm(d)}${u.ateHoje(d) >= 0 && u.ateHoje(d) <= 60 ? ` · em ${u.ateHoje(d)} dias` : ''}</span>` : ''}${j['LOCAL'] ? `<span>${u.svg('map-pin')}${u.esc(j['LOCAL'])}</span>` : ''}</div>
-      ${tot ? `<div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span class="c-muted">${u.k0(rec)} de ${u.k0(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.k0(falta)}</b>` : '<b class="c-in">pago</b>'}</div>` : `<div class="mrow num"><span class="c-muted">Recebido ${u.k0(rec)}</span><span class="estim">sem valor total</span></div>`}
+      ${c.naoFechado(j) ? (tot ? `<div class="mrow num"><span class="c-muted">orçamento</span><b>${u.k0(tot)}</b></div>` : '') : tot ? `<div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span class="c-muted">${u.k0(rec)} de ${u.k0(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.k0(falta)}</b>` : '<b class="c-in">pago</b>'}</div>` : `<div class="mrow num"><span class="c-muted">Recebido ${u.k0(rec)}</span><span class="estim">sem valor total</span></div>`}
       ${j['O QUE FOI FECHADO'] ? `<div class="ft"><span>${u.svg('package')}${u.esc(j['O QUE FOI FECHADO'])}</span></div>` : ''}
+      ${(() => { const n = c.semResposta(j), o = c.crm(j).origem; return n != null || o ? `<div class="meta">${n != null ? `<span class="${n >= c.DIAS_RESPOSTA ? 'c-warn' : ''}">${u.svg('message-circle')}${n ? `sem resposta há ${n} ${n > 1 ? 'dias' : 'dia'}` : 'falou hoje'}</span>` : ''}${o ? `<span>${u.svg('user')}${u.esc(o)}</span>` : ''}</div>` : ''; })()}
       ${vs.length || nx ? `<div class="meta">${vs.length ? `<span class="${ok < vs.length ? 'c-warn' : ''}">${u.svg('clapperboard')}${ok} de ${vs.length} vídeos</span>` : ''}${nx ? `<span>${u.svg('paperclip')}${nx} ${nx > 1 ? 'arquivos' : 'arquivo'}</span>` : ''}</div>` : ''}</div></button>`;
   }
   const BAL_COR = [['trab', 'Trabalhos e outros', '--clt-sal'], ['rec', 'Recorrentes', '--clt-bon']];
   R.trabalhos = () => {
-    const js = c.trabalhos(), quadro = js.filter(j => !c.recorrente(j)), abertos = quadro.filter(j => j['ETAPA'] !== 'Entregue' && j['ETAPA'] !== 'Orçamento');
-    const receber = u.sum(quadro.filter(j => j['ETAPA'] !== 'Orçamento'), j => Math.max(c.faltaReceber(j) || 0, 0)), /* inclui entregue que ainda deve */ orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
+    const js = c.trabalhos(), quadro = js.filter(j => !c.recorrente(j) && j['ETAPA'] !== 'Perdido'), perdidos = js.filter(j => j['ETAPA'] === 'Perdido'), abertos = quadro.filter(j => j['ETAPA'] !== 'Entregue' && !c.naoFechado(j));
+    const receber = u.sum(quadro.filter(j => !c.naoFechado(j)), j => Math.max(c.faltaReceber(j) || 0, 0)), /* inclui entregue que ainda deve */ orc = u.sum(quadro.filter(j => j['ETAPA'] === 'Orçamento'), j => c.num(j['VALOR TOTAL']));
     const prox = quadro.filter(j => j['DATA DO EVENTO'] && u.ateHoje(String(j['DATA DO EVENTO'])) >= 0).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1)[0];
     const fat = c.resumo(ui.mes).fonte['Darzan Produções'], S = ui.jseg || 'quadro';
-    const corpo = S === 'calendario' ? calendario() : S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></div>
+    const corpo = S === 'calendario' ? calendario() : S === 'recorrentes' ? recorrentes(js.filter(c.recorrente)) : S === 'balanco' ? balanco() : `${vendas()}<section class="sec"><div class="sec-h"><h2>${u.svg('layers')}Quadro</h2><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="chip" type="button" data-a="novoLead" style="border-color:#7fd6ff;color:#bfeaff">${u.svg('user')} Novo cliente</button><button class="chip" type="button" data-a="novoJ" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Novo trabalho</button></span></div>
         <p class="dica-q">${u.svg('hand-coins')}Segure um cartão e arraste para outra coluna para mudar a etapa.</p>
         <div class="board">${ETAPAS.map(([n, cor]) => { const l = quadro.filter(j => (j['ETAPA'] || 'Orçamento') === n); return `<div class="col" data-etapa="${u.esc(n)}"><div class="col-h"><span><i style="--c:${cor}"></i>${n}</span><em>${l.length}</em></div>${l.map(cardJob).join('') || '<p class="c-muted vaziocol">Nada aqui.</p>'}</div>`; }).join('')}</div>
+        ${perdidos.length ? `<details class="perd"><summary>${u.svg('x')}Não fecharam (${perdidos.length})</summary>${perdidos.sort((a, b) => String(c.crm(b).perdido || '') < String(c.crm(a).perdido || '') ? -1 : 1).map(j => `<button type="button" class="it btn diai" data-a="editJ" data-id="${u.esc(j.ID)}"><span class="pto" style="background:#ff8f8f"></span><div style="min-width:0"><div class="t">${u.esc(j['CLIENTE'])}</div><div class="m"><span>${u.esc(j['TIPO DE EVENTO'] || '')}</span>${c.crm(j).motivo ? `<span>·</span><span>${u.esc(c.crm(j).motivo)}</span>` : ''}${c.crm(j).perdido ? `<span>·</span><span>${u.esc(u.dm(c.crm(j).perdido))}</span>` : ''}</div></div><div class="v num">${c.num(j['VALOR TOTAL']) ? u.k0(c.num(j['VALOR TOTAL'])) : ''}</div></button>`).join('')}</details>` : ''}
         <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
     return bar('Trabalhos', null, S === 'calendario') + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
       <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => j['ETAPA'] === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
       <div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço'], ['calendario', 'Calendário']])}</div>` + corpo;
   };
+  /* ---------- vendas: como foi o mês e quem está esperando resposta ---------- */
+  function vendas() {
+    const m0 = u.mes(u.hoje()), f = c.funil(m0), tx = f.fechados + f.perdidos ? Math.round(f.fechados / (f.fechados + f.perdidos) * 100) : null;
+    if (c.semCrm()) return `<section class="sec"><div class="panel" style="padding:16px"><h2 style="margin:0 0 6px">${u.svg('user')}Falta 1 passo para usar as vendas (CRM)</h2><p class="c-muted" style="margin:0">Abra o Supabase › SQL Editor › New query, cole o arquivo <b>atualizacao-crm.sql</b> e toque em Run. Depois é só abrir o app de novo.</p></div></section>`;
+    return `<section class="sec"><div class="sec-h"><h2>${u.svg('trending-up')}Vendas de ${u.esc(u.nomeMes(m0).toLowerCase())}</h2></div><div class="kpis k4">
+      <div class="kpi"><span>Clientes novos</span><b class="num">${f.novos}</b><small>chamaram no mês</small></div>
+      <div class="kpi"><span>Orçamentos</span><b class="num">${f.enviados}</b><small>enviados no mês</small></div>
+      <div class="kpi"><span>Fecharam</span><b class="num c-in">${f.fechados}</b><small>${tx == null ? 'no mês' : `${tx}% dos que decidiram`}</small></div>
+      <div class="kpi"><span>Esperando resposta</span><b class="num ${f.esperando ? 'c-warn' : ''}">${f.esperando}</b><small>há ${c.DIAS_RESPOSTA} dias ou mais</small></div></div></section>`;
+  }
+  /* cliente novo: o mínimo para começar (o resto vai na ficha) */
+  function formLead() {
+    if (c.semCrm()) { toast('Falta rodar a atualização do CRM no Supabase'); return; }
+    abrir(`<h3 style="margin:0 0 12px">Novo cliente</h3>
+      ${campo('Nome', `<input class="txt" id="nN" required placeholder="Ex.: Ana e Pedro">`)}
+      ${campo('WhatsApp', `<input class="txt" id="nW" inputmode="tel" placeholder="(19) 9…">`)}
+      <div class="grid2">${campo('Tipo de evento', `<select class="txt" id="nT">${opts(Object.keys(TIPOEV), 'Casamento')}</select>`)}${campo('Data do evento', `<input class="txt" id="nD" type="date">`)}</div>
+      ${campo('De onde veio', `<div class="rchips">${ORIGENS.map((o, i) => `<input type="radio" name="nO" id="nO${i}" value="${u.esc(o)}" ${!i ? 'checked' : ''}><label for="nO${i}">${u.esc(o)}</label>`).join('')}</div>`)}
+      ${campo('O que pediu', `<textarea class="txt" id="nB" rows="3" placeholder="Ex.: filme do casamento, igreja e festa, uns 200 convidados"></textarea>`)}
+      <button class="save" type="submit">Criar cliente</button>`, () => {
+      const nome = val('nN').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
+      const o = document.querySelector('#s2 input[name=nO]:checked'), h = u.hoje(), id = db.novoId('TRABALHOS');
+      db.salvar('TRABALHOS', { ID: id, 'CLIENTE': nome, 'TIPO DE EVENTO': val('nT'), 'DATA DO EVENTO': val('nD'), 'TELEFONE': val('nW').trim(), 'BRIEFING': val('nB'), 'ETAPA': 'Novo contato', 'CRM': JSON.stringify({ origem: o ? o.value : '', criado: h, contato: h }) });
+      fechar(); render(false); toast(`${nome} entrou em “Novo contato”`, () => { db.apagar('TRABALHOS', id); render(false); }, 'Desfazer');
+    });
+  }
+  /* orçamento dentro da ficha: itens, condições e validade; vira PDF com a marca */
+  const COND_PADRAO = 'Entrada para reservar a data. O restante pode ser parcelado mês a mês, quitado até 7 dias antes do evento.';
+  const ultimaCond = () => { const js = c.trabalhos().map(c.crm).filter(x => x.cond); return js.length ? js[js.length - 1].cond : COND_PADRAO; };
+  const itemOrc = (it = {}) => `<div class="oit"><input class="txt" data-oi="d" value="${u.esc(it.d || '')}" placeholder="O que está incluso" aria-label="Item do orçamento"><input class="txt num" data-oi="v" inputmode="decimal" value="${it.v ? String((+it.v).toFixed(2)).replace('.', ',') : ''}" placeholder="R$" aria-label="Valor do item"><button type="button" class="oix" data-a="rmItemOrc" aria-label="Tirar item">${u.svg('x')}</button></div>`;
+  function blocoOrcamento(j) {
+    const k = j ? c.crm(j) : {}, itens = k.itens && k.itens.length ? k.itens : [{ d: j && j['O QUE FOI FECHADO'] || '', v: j ? c.num(j['VALOR TOTAL']) : '' }];
+    if (c.semCrm()) return '';
+    const lead = j && c.naoFechado(j);
+    return `<div class="jsec" id="jOrc"><h4>${u.svg('file-text')} Orçamento</h4>
+      <div id="oItens">${itens.map(itemOrc).join('')}</div>
+      <button type="button" class="btn2" data-a="addItemOrc" style="width:100%;margin-top:6px">${u.svg('plus')}Mais um item</button>
+      <p class="tot-row" style="margin:10px 2px"><span>Total do orçamento</span><b class="num" id="oTot"></b></p>
+      ${campo('Condições de pagamento', `<textarea class="txt" id="oC" rows="3">${u.esc(k.cond || ultimaCond())}</textarea>`)}
+      <div class="grid2">${campo('Válido por (dias)', `<input class="txt num" id="oVd" inputmode="numeric" value="${u.esc(String(k.validade || 15))}">`)}${campo('De onde veio', `<select class="txt" id="oOg">${opts([['', '—']].concat(ORIGENS), k.origem || '')}</select>`)}</div>
+      ${j ? `<button type="button" class="btn2 pri" data-a="mandarOrc" data-id="${u.esc(j.ID)}" style="margin-top:6px;width:100%">${u.svg('message-circle')}Gerar PDF e mandar no WhatsApp</button>
+      ${k.enviado ? `<p class="c-muted" style="font-size:.8rem;margin:6px 2px 0">Último orçamento enviado em ${u.esc(u.ddmmaa(k.enviado))}.</p>` : ''}
+      ${lead ? `<div class="grid2" style="margin-top:10px">${j['ETAPA'] === 'Perdido' ? `<button type="button" class="btn2" data-a="reabrirJ" data-id="${u.esc(j.ID)}" style="grid-column:1/-1">${u.svg('undo-2')}Voltar a negociar</button>` : `<button type="button" class="btn2 ok" data-a="fechouJ" data-id="${u.esc(j.ID)}">${u.svg('check')}Fechou!</button><button type="button" class="btn2 perigo" data-a="perdeuJ" data-id="${u.esc(j.ID)}">${u.svg('x')}Não fechou</button>`}</div>
+      ${(() => { const lk = c.linkConversa(j, c.msgRetorno(j)); return lk && j['ETAPA'] !== 'Perdido' ? `<a class="whats" href="${u.esc(lk)}" target="_blank" rel="noopener noreferrer" data-a="chameiJ" data-id="${u.esc(j.ID)}" style="margin-top:10px;width:100%;justify-content:center">${u.svg('message-circle')}Perguntar se viu o orçamento</a>` : ''; })()}
+      ${j['ETAPA'] === 'Perdido' && k.motivo ? `<p class="aviso">Não fechou: <b>${u.esc(k.motivo)}</b>${k.perdido ? ` (${u.esc(u.ddmmaa(k.perdido))})` : ''}.</p>` : ''}` : ''}` : ''}</div>`;
+  }
+  /* lê o orçamento da ficha */
+  function lerOrcamento() {
+    const itens = [...document.querySelectorAll('#s2 .oit')].map(x => ({ d: x.querySelector('[data-oi=d]').value.trim(), v: u.r2(u.num(x.querySelector('[data-oi=v]').value)) || 0 })).filter(i => i.d || i.v);
+    return { itens, cond: val('oC').trim(), validade: Math.min(Math.max(parseInt(val('oVd'), 10) || 15, 1), 365), origem: val('oOg'), total: u.r2(u.sum(itens, i => i.v)) };
+  }
+  const somaOrc = () => { const t = $('oTot'); if (t) t.textContent = u.brl(lerOrcamento().total); };
+  /* logo do PDF: carregada antes (o iPhone só deixa compartilhar logo depois do toque, sem esperar nada) */
+  let logoOrc = null;
+  const carregarLogo = () => { if (!logoOrc) fetch('img/logo-orcamento.jpg').then(r => r.ok ? r.arrayBuffer() : null).then(b => { if (b) logoOrc = new Uint8Array(b); }).catch(() => { }); };
+  function crmSalvar(id, mudar, extra) {
+    const j = db.achar('TRABALHOS', id); if (!j) return;
+    db.salvar('TRABALHOS', Object.assign({ ID: id, 'CRM': JSON.stringify(Object.assign(c.crm(j), mudar)) }, extra || {}));
+  }
+  function mandarOrcamento(id) {
+    const j = db.achar('TRABALHOS', id); if (!j) return;
+    const o = lerOrcamento();
+    if (!o.itens.length) { toast('Coloque pelo menos um item no orçamento'); return; }
+    const h = u.hoje(), nome = val('jC').trim() || j['CLIENTE'];
+    const dados = { cliente: nome, tipo: val('jT') || j['TIPO DE EVENTO'], data: val('jD') || j['DATA DO EVENTO'], local: val('jL') || j['LOCAL'], itens: o.itens, cond: o.cond, validade: o.validade, emitido: h };
+    const pdf = A.orcamentoPdf(dados, logoOrc), arq = 'Orcamento-Darzan-' + u.sem(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
+    /* guarda o que foi mandado: itens, total, data; quem era "Novo contato" passa para "Orçamento" */
+    const de = j['ETAPA'] || 'Orçamento';
+    crmSalvar(id, { itens: o.itens, cond: o.cond, validade: o.validade, origem: o.origem || c.crm(j).origem || '', enviado: h, contato: h, criado: c.crm(j).criado || h },
+      Object.assign({ 'VALOR TOTAL': o.total || j['VALOR TOTAL'] }, de === 'Novo contato' ? { 'ETAPA': 'Orçamento' } : {}));
+    A.ultimoOrcamento = { nome: arq, bytes: pdf }; /* para os testes conferirem o PDF */
+    const texto = c.msgOrcamento(Object.assign({}, j, { 'CLIENTE': nome, 'TIPO DE EVENTO': dados.tipo, 'DATA DO EVENTO': dados.data }));
+    let file = null; try { file = new File([pdf], arq, { type: 'application/pdf' }); } catch (e) { /* navegador antigo */ }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], text: texto }).catch(() => { });
+    else {
+      const url = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' })), a = document.createElement('a');
+      a.href = url; a.download = arq; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+      const lk = c.linkConversa(Object.assign({}, j, { 'TELEFONE': val('jW') || j['TELEFONE'] }), texto); if (lk) window.open(lk, '_blank', 'noopener');
+    }
+    /* uma cópia do PDF fica nos arquivos do trabalho */
+    if (!semAnexos()) { let b = ''; pdf.forEach(x => { b += String.fromCharCode(x); });
+      const ax = db.novoId('ANEXOS'), dado = 'data:application/pdf;base64,' + btoa(b);
+      N.guardarArquivo(ax, dado).then(() => { arquivos[ax] = dado; db.salvar('ANEXOS', { ID: ax, 'TRABALHO': id, 'NOME': `Orçamento ${u.ddmmaa(h)}`, 'TIPO': 'Orçamento', 'DATA': h, 'VALOR': o.total || '', 'ARQUIVO': 'application/pdf', 'TAMANHO': dado.length }); render(false); }).catch(() => { /* sem internet: o PDF já foi mandado; só a cópia não ficou */ }); }
+    fechar(); render(false); toast(`Orçamento de ${u.brl(o.total)} pronto para ${c.primeiroNome(j)}`);
+  }
+  function perdeu(id) {
+    const j = db.achar('TRABALHOS', id); if (!j) return;
+    abrir(`<h3 style="margin:0 0 12px">${u.esc(j['CLIENTE'])} não fechou</h3>${campo('Por quê?', `<div class="rchips">${MOTIVOS.map((m, i) => `<input type="radio" name="pM" id="pM${i}" value="${u.esc(m)}" ${!i ? 'checked' : ''}><label for="pM${i}">${u.esc(m)}</label>`).join('')}</div>`)}
+      <p class="aviso">Fica guardado em “Não fecharam”, para você ver no fim do mês o que mais faz perder cliente. Dá para voltar a negociar depois.</p><button class="save" type="submit">Salvar</button>`, () => {
+      const m = document.querySelector('#s2 input[name=pM]:checked');
+      moverJob(id, 'Perdido', true); crmSalvar(id, { motivo: m ? m.value : '', perdido: u.hoje() }); fechar(); render(false); toast(`${j['CLIENTE']}: não fechou`);
+    });
+  }
+
   /* ---------- calendário dos dias trabalhados ---------- */
   const SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   const semDias = () => db.faltando && db.faltando.has('DIAS');
@@ -313,7 +411,10 @@
       /* a coluna é escolhida pela posição na horizontal: dá para soltar em qualquer altura, mesmo com a coluna curta */
       const bd = s.card.closest('.board'), b = bd && bd.getBoundingClientRect(), dentro = b && s.y >= b.top - 60 && s.y <= Math.max(b.bottom, innerHeight - 90);
       let col = null, perto = Infinity;
-      if (dentro) document.querySelectorAll('#view .board .col').forEach(x => { const r = x.getBoundingClientRect(), d = s.x < r.left ? r.left - s.x : s.x > r.right ? s.x - r.right : 0; if (d < perto && d < 40) { perto = d; col = x; } });
+      /* se o quadro quebrar em duas fileiras (tela estreita), vale a fileira em que o dedo está */
+      if (dentro) { const cs = [...document.querySelectorAll('#view .board .col')].map(x => { const r = x.getBoundingClientRect(); return { x, top: r.top, d: s.x < r.left ? r.left - s.x : s.x > r.right ? s.x - r.right : 0 }; });
+        const fil = cs.filter(c0 => c0.top <= s.y + 20).reduce((m, c0) => Math.max(m, c0.top), -Infinity), naFila = cs.filter(c0 => fil === -Infinity ? c0.top === Math.min(...cs.map(z => z.top)) : Math.abs(c0.top - fil) < 4);
+        naFila.forEach(c0 => { if (c0.d < perto && c0.d < 40) { perto = c0.d; col = c0.x; } }); }
       document.querySelectorAll('#view .board .col').forEach(x => x.classList.toggle('alvo', x === col && x.dataset.etapa !== s.de));
       s.alvo = col;
     };
@@ -934,8 +1035,9 @@
     const sem = TAB.falta.TRABALHOS || new Set();
     const et0 = (j && j['ETAPA']) || (novo && novo['ETAPA']) || 'Orçamento';
     abrir(`<h3 style="margin:0 0 10px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
-      <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${u.esc(j.ID)}"` : ''} data-v="${u.esc(n)}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
+      <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff'], ['Perdido', '#ff8f8f']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${u.esc(j.ID)}"` : ''} data-v="${u.esc(n)}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
       ${ed && tot ? `<div class="jres"><div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span>${u.brl(rec)} de ${u.brl(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.brl(falta)}</b>` : '<b class="c-in">pago</b>'}</div>${prox ? `<small>Próxima parcela: ${u.brl(prox.valor)} em ${u.dm(prox.data)}</small>` : ''}</div>` : ''}
+      ${ed && c.naoFechado(j) ? blocoOrcamento(j) : ''}
       ${ed ? `<div class="jsec" id="jVid">${videosJob(j)}</div><div class="jsec" id="jAnx">${anexosJob(j)}</div><div class="jsec" id="jRec">${recebimentosJob(j)}</div><div class="jsec"><h4>${u.svg('pencil')} Dados do trabalho</h4></div>` : ''}
       ${campo('Cliente ou casal', `<input class="txt" id="jC" required value="${u.esc(j ? j['CLIENTE'] : '')}" placeholder="Ex.: Ana e Pedro">`)}
       ${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : (novo && novo['TIPO DE EVENTO']) || 'Casamento')}</select>`)}
@@ -946,23 +1048,29 @@
       ${campo('Briefing / orçamento', `<textarea class="txt" id="jBr" rows="5" placeholder="Horário, equipe, o que está incluso, adicionais…">${u.esc(j ? j['BRIEFING'] || '' : '')}</textarea>`)}
       <div class="grid2">${campo('WhatsApp', `<input class="txt" id="jW" inputmode="tel" value="${u.esc(j ? j['TELEFONE'] || '' : '')}" placeholder="(19) 9…">`)}${campo('Contrato (link)', `<input class="txt" id="jK" value="${u.esc(j ? j['CONTRATO'] || '' : '')}" placeholder="ou anexe o PDF acima">`)}</div>
       ${campo('Anotações', `<textarea class="txt" id="jO">${u.esc(j ? j['OBS'] || '' : '')}</textarea>`)}
+      ${ed && !c.naoFechado(j) ? blocoOrcamento(j) : ''}
       ${sem.has('briefing') ? '<p class="aviso">Briefing, vídeos e parcela mensal só ficam salvos depois de rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : ''}
       ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${u.esc(j.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
       () => {
         const nome = val('jC').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
-        const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10);
-        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE') || 'Orçamento', 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
+        const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10), orc = $('oItens') ? lerOrcamento() : null;
+        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE') || 'Orçamento', 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), ...(orc && !c.semCrm() ? { 'CRM': JSON.stringify(Object.assign(c.crm(j), { itens: orc.itens, cond: orc.cond, validade: orc.validade, origem: orc.origem })) } : {}), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
         db.garantirFixas(); fechar(); render(false); toast(j ? 'Trabalho atualizado' : 'Trabalho criado');
       }, true);
     if (ed) ligarArquivosJob(j);
+    /* orçamento: soma ao vivo e leva o total para o "Valor total" (se você não mexeu nele à mão) */
+    if ($('oItens')) { carregarLogo(); const jv = $('jV'); jv.addEventListener('input', () => { jv.dataset.mexeu = '1'; });
+      $('s2').oninput = e => { if (!e.target.closest('#jOrc')) return; somaOrc(); const t = lerOrcamento().total; if (t && !jv.dataset.mexeu) jv.value = t.toFixed(2).replace('.', ','); }; somaOrc(); }
   }
   /* muda a etapa (pelo arrastar do quadro ou pelos botões da ficha), com "Desfazer" */
   const semParcelas = j => c.parcelasPrevistas(j).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id }));
   function moverJob(id, etapa, quieto) {
     const j = db.achar('TRABALHOS', id); if (!j || j['ETAPA'] === etapa) return;
-    const de = j['ETAPA'] || 'Orçamento';
-    db.lote([{ op: 'salvar', aba: 'TRABALHOS', registro: { ID: id, 'ETAPA': etapa } }].concat(etapa === 'Orçamento' ? semParcelas(j) : []));
-    if (etapa !== 'Orçamento') db.garantirFixas();
+    const de = j['ETAPA'] || 'Orçamento', k = c.crm(j), h = u.hoje(), aVenda = c.ETAPAS_VENDA.includes(etapa);
+    /* o CRM anota quando fechou (vindo de uma etapa de venda) e limpa "perdido" ao voltar a negociar */
+    const crm = c.semCrm() ? null : Object.assign({}, k, c.ETAPAS_VENDA.includes(de) && !aVenda ? { fechado: h } : {}, etapa !== 'Perdido' ? { perdido: '', motivo: '' } : {}, aVenda && etapa !== 'Perdido' ? { contato: k.contato || h } : {});
+    db.lote([{ op: 'salvar', aba: 'TRABALHOS', registro: Object.assign({ ID: id, 'ETAPA': etapa }, crm ? { 'CRM': JSON.stringify(crm) } : {}) }].concat(aVenda ? semParcelas(j) : []));
+    if (!aVenda) db.garantirFixas();
     render(false);
     if (!quieto) toast(`${j['CLIENTE']}: ${etapa}`, () => moverJob(id, de, true));
   }
@@ -1143,7 +1251,9 @@
   function alternarTarefa(id, botao) {
     const t = c.tarefas().find(x => x.id === id); if (!t) return;
     const [tipo, a, b] = id.split(':');
-    if (tipo === 'w') { ligarPagamento('', a); return; } /* dias a receber: só fica feito quando liga o pagamento aos dias */
+    if (tipo === 'w') { ligarPagamento('', a); return; }
+    if (tipo === 'v') { const j = db.achar('TRABALHOS', a), antes = c.crm(j).contato; crmSalvar(a, { contato: u.hoje() }); if (botao) { const r = botao.getBoundingClientRect(); confete(r.left + r.width / 2, r.top + r.height / 2); }
+      setTimeout(() => render(false), 300); toast(`Anotado: você chamou ${c.primeiroNome(j)} hoje`, () => { crmSalvar(a, { contato: antes }); render(false); }); return; } /* dias a receber: só fica feito quando liga o pagamento aos dias */
     const lv0 = c.nivel(c.xp()).n;
     if (tipo === 'l') {
       /* pagou/recebeu: a data passa a ser hoje (o saldo do banco conta a partir de quando o dinheiro mexeu) e o vencimento fica anotado */
@@ -1321,6 +1431,14 @@
     editE: b => formEquip(db.achar('EQUIPAMENTOS', b.dataset.id)),
     apagarE: b => apagarEquip(b.dataset.id, b),
     novoJ: () => formJob(null),
+    novoLead: () => formLead(),
+    addItemOrc: () => { $('oItens').insertAdjacentHTML('beforeend', itemOrc()); const ls = document.querySelectorAll('#s2 .oit [data-oi=d]'); ls[ls.length - 1].focus(); },
+    rmItemOrc: b => { const r = b.closest('.oit'); if (document.querySelectorAll('#s2 .oit').length > 1) r.remove(); else r.querySelectorAll('input').forEach(i => { i.value = ''; }); somaOrc(); },
+    mandarOrc: b => mandarOrcamento(b.dataset.id),
+    fechouJ: b => { const j = db.achar('TRABALHOS', b.dataset.id); moverJob(b.dataset.id, 'Fechado'); fechar(); const r = b.getBoundingClientRect(); confete(r.left + r.width / 2, r.top); toast(`${j ? j['CLIENTE'] : 'Cliente'} fechou! Agora está no quadro, em “Fechado”`); },
+    perdeuJ: b => perdeu(b.dataset.id),
+    reabrirJ: b => { moverJob(b.dataset.id, 'Orçamento'); fechar(); render(false); },
+    chameiJ: b => { crmSalvar(b.dataset.id, { contato: u.hoje() }); render(false); return true; },
     editJ: b => { formJob(db.achar('TRABALHOS', b.dataset.id)); const f = b.dataset.foco && $(b.dataset.foco); if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); } },
     apagarJ: b => apagarJob(b.dataset.id, b),
     receber: b => receber(b.dataset.id, b.dataset.sub),
@@ -1338,7 +1456,7 @@
     apagarX: b => apagarAnexo(b.dataset.id, b),
     tarefa: b => alternarTarefa(b.dataset.id, b),
     novoT: () => formTarefa(null),
-    editT: b => { const [tp, id] = b.dataset.id.split(':'); if (tp === 'w') { ui.jseg = 'calendario'; go('trabalhos'); return; } if (tp === 't') formTarefa(db.achar('TAREFAS', id)); else if (tp === 'l') { const r = db.achar('EXTRATO', id); if (r) formLanc(null, c.l(r)); } else { ui.fseg = 'cartoes'; ui.cartao = id; ui.mes = b.dataset.id.split(':')[2]; go('fin'); } },
+    editT: b => { const [tp, id] = b.dataset.id.split(':'); if (tp === 'w') { ui.jseg = 'calendario'; go('trabalhos'); return; } if (tp === 'v') { const j = db.achar('TRABALHOS', id); if (j) formJob(j); return; } if (tp === 't') formTarefa(db.achar('TAREFAS', id)); else if (tp === 'l') { const r = db.achar('EXTRATO', id); if (r) formLanc(null, c.l(r)); } else { ui.fseg = 'cartoes'; ui.cartao = id; ui.mes = b.dataset.id.split(':')[2]; go('fin'); } },
     apagarT: b => apagarSimples('TAREFAS', b.dataset.id, b, 'Tarefa excluída'),
     conferir: b => formConferir(b.dataset.v),
     novaCx: b => formCaixinha(b.dataset.v),
@@ -1352,7 +1470,8 @@
     fechar: () => fechar(),
     fab: () => ui.view === 'equip' ? formEquip(null) : ui.view === 'trabalhos' ? formJob(null) : ui.view === 'tarefas' ? formTarefa(null) : formLanc('saida'),
   };
-  document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const f = ACOES[b.dataset.a]; if (f) { e.preventDefault(); f(b, e); } });
+  /* a ação que devolve true deixa o clique seguir (ex.: link do WhatsApp que também anota "chamei hoje") */
+  document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const f = ACOES[b.dataset.a]; if (f && f(b, e) !== true) e.preventDefault(); });
   document.addEventListener('submit', e => { if (e.target.id !== 's2') return; e.preventDefault(); if (aoEnviar) aoEnviar(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
   document.addEventListener('pointermove', e => { const k = e.target.closest && e.target.closest('.tilt'); if (!k || RM || e.pointerType !== 'mouse') return; const r = k.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; k.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 8}deg) translateY(-3px)`; });

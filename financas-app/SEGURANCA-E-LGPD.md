@@ -58,6 +58,7 @@ O vigia de segredos (`ferramentas/vigia_segredos.py`) confere isso a cada mudan�
   impostos) e depois excluir o trabalho (os anexos vão junto).
 - **Direitos do cliente** (art. 18): se um cliente pedir, dá para mostrar o que existe dele (a ficha do trabalho) e
   excluir (excluir o trabalho). "Baixar uma cópia" em *Sua conta* exporta todos os dados do app.
+- **Clientes que não fecharam** (Vendas › "Não fecharam"): o app guarda nome, WhatsApp e o orçamento. Sugestão: excluir depois de 1 ano sem contato (não há contrato que justifique guardar mais).
 - **Avisar os clientes**: vale pôr no contrato uma frase como "Os dados deste contrato são usados só para a prestação do
   serviço e guardados com segurança por até 5 anos." (o modelo de contrato fica com o João).
 - **Se algo vazar** (art. 48): trocar a senha, desligar o Acesso do Claude no app, conferir no Supabase quem entrou e,

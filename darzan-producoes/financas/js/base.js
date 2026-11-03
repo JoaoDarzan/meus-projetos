@@ -215,7 +215,7 @@ window.A = window.A || {};
     const ops = [];
     A.c.trabalhos().forEach(j => {
       const mensal = A.c.num(j['PARCELA MENSAL']), total = A.c.num(j['VALOR TOTAL']);
-      if (!(mensal > 0) || !(total > 0) || (j['ETAPA'] || 'Orçamento') === 'Orçamento' || j['ETAPA'] === 'Recorrente') return; /* orçamento ainda não cobra */
+      if (!(mensal > 0) || !(total > 0) || c.naoFechado(j) || j['ETAPA'] === 'Recorrente') return; /* orçamento (e contato novo, e quem não fechou) ainda não cobra */
       const recs = A.c.recebimentos(j), dia = parseInt(j['DIA DA PARCELA'], 10) || 1;
       /* o que faltar é pago até a semana do evento: no mês do evento a parcela é o saldo, até 7 dias antes */
       const ev = /^\d{4}-\d{2}-\d{2}$/.test(String(j['DATA DO EVENTO'])) ? u.addDias(String(j['DATA DO EVENTO']), -7) : null;
@@ -417,6 +417,9 @@ window.A = window.A || {};
     const aRec = {};
     c.diasAReceber().filter(d => d.valor > 0).forEach(d => { const x = aRec[d.empresa] || (aRec[d.empresa] = { n: 0, v: 0, data: d.data }); x.n++; x.v += d.valor; if (d.data < x.data) x.data = d.data; });
     Object.entries(aRec).forEach(([e, x]) => T.push({ id: 'w:' + e, grupo: 'receber', titulo: `Receber ${e} · ${x.n} ${x.n > 1 ? 'dias trabalhados' : 'dia trabalhado'}`, valor: u.r2(x.v), data: x.data, feita: false, icone: ['calendar-days', '#9cc6ff', '#2a62e0'], xp: c.XP.receber }));
+    /* cliente sem responder há 3 dias ou mais: lembrar de chamar de novo (marcar = "chamei hoje") */
+    c.trabalhos().forEach(j => { const n = c.semResposta(j); if (n == null || n < c.DIAS_RESPOSTA) return;
+      T.push({ id: 'v:' + j.ID, grupo: 'darzan', titulo: `Chamar ${c.primeiroNome(j)} de novo`, nota: `${j['ETAPA'] === 'Novo contato' ? 'sem orçamento' : 'orçamento sem resposta'} há ${n} dias`, valor: 0, data: u.addDias(String(c.crm(j).contato), c.DIAS_RESPOSTA), feita: false, icone: ['message-circle', '#7cf0a8', '#15a352'], xp: c.XP.darzan }); });
     const jaTem = (d, v) => v && T.some(x => x.data === d && Math.abs(x.valor - v) < 0.01);
     db.linhas('TAREFAS').filter(t => t['TAREFA']).forEach(t => {
       if (jaTem(String(t['DATA'] || ''), c.num(t['VALOR']))) return; /* a mesma conta já aparece pelo extrato */
@@ -459,6 +462,23 @@ window.A = window.A || {};
   /* cliente recorrente (ex.: social media todo mês): fica fora do quadro, com o que rende mês a mês */
   c.recorrente = j => j['ETAPA'] === 'Recorrente';
 
+  /* ---------- vendas (CRM): do primeiro contato até fechar ---------- */
+  /* etapas antes de fechar: o cliente chamou ("Novo contato"), recebeu o orçamento ("Orçamento") ou não fechou ("Perdido") */
+  c.ETAPAS_VENDA = ['Novo contato', 'Orçamento', 'Perdido'];
+  c.naoFechado = j => c.ETAPAS_VENDA.includes(j['ETAPA'] || 'Orçamento');
+  c.crm = j => { try { const o = JSON.parse((j && j['CRM']) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } };
+  c.semCrm = () => !!(TAB.falta.TRABALHOS && TAB.falta.TRABALHOS.has('crm')); /* falta rodar a atualização no Supabase */
+  /* há quantos dias o cliente não responde (só de quem ainda está decidindo) */
+  c.semResposta = j => { if (!['Novo contato', 'Orçamento'].includes(j['ETAPA'] || 'Orçamento')) return null; const k = String(c.crm(j).contato || ''); return /^\d{4}-\d{2}-\d{2}$/.test(k) ? Math.max(0, -u.ateHoje(k)) : null; };
+  c.DIAS_RESPOSTA = 3;
+  /* números do mês: quantos clientes chamaram, quantos orçamentos foram, quantos fecharam e quantos não */
+  c.funil = m => { const js = c.trabalhos(), em = k => js.filter(j => String(c.crm(j)[k] || '').slice(0, 7) === m).length;
+    return { novos: em('criado'), enviados: em('enviado'), fechados: em('fechado'), perdidos: em('perdido'), esperando: js.filter(j => (c.semResposta(j) || 0) >= c.DIAS_RESPOSTA).length }; };
+  c.primeiroNome = j => { const n = String(j['CLIENTE'] || '').replace(/\s*\(.*?\)\s*/g, ' ').trim(); return / e /i.test(n) ? n : n.split(' ')[0]; };
+  c.linkConversa = (j, texto) => { const f = c.foneWhats(j['TELEFONE']); return f ? `https://wa.me/${f}?text=${encodeURIComponent(texto)}` : null; };
+  c.msgOrcamento = j => `Olá, ${c.primeiroNome(j)}! Tudo bem? Segue o orçamento da Darzan Produções${j['TIPO DE EVENTO'] ? ` para o seu ${String(j['TIPO DE EVENTO']).toLowerCase()}` : ''}${/^\d{4}-\d{2}-\d{2}/.test(String(j['DATA DO EVENTO'] || '')) ? ` (${u.ddmmaa(String(j['DATA DO EVENTO']))})` : ''}. Qualquer dúvida, estou à disposição. Para confirmar, é só me responder por aqui.`;
+  c.msgRetorno = j => `Oi, ${c.primeiroNome(j)}! Tudo bem? Passando para saber se você conseguiu ver o orçamento que te mandei. Se quiser, posso ajustar alguma coisa para caber certinho no que você imaginou.`;
+
   /* ---------- calendário dos dias trabalhados ---------- */
   /* cada dia marcado (JPL SOM, Darzan, outro) com o valor dele; PAGAMENTO liga o dia ao lançamento que pagou.
      Um Pix pode pagar vários dias: cada dia guarda a sua parte, então 1 pagamento de R$ 500 por 2 dias conta 2 trabalhos de R$ 250 */
@@ -474,11 +494,11 @@ window.A = window.A || {};
   c.diasDoPagamento = id => c.dias().filter(d => d.pag === id);
   c.diasAReceber = () => c.dias().filter(d => !c.diaPago(d) && d.data <= u.hoje());
   /* eventos da Darzan (trabalho fechado com data) entram sozinhos no calendário */
-  c.eventosDoMes = m => c.trabalhos().filter(j => j['DATA DO EVENTO'] && u.mes(String(j['DATA DO EVENTO'])) === m && j['ETAPA'] && j['ETAPA'] !== 'Orçamento' && !c.recorrente(j));
+  c.eventosDoMes = m => c.trabalhos().filter(j => j['DATA DO EVENTO'] && u.mes(String(j['DATA DO EVENTO'])) === m && !c.naoFechado(j) && !c.recorrente(j));
   /* o que vem pela frente (dias marcados e eventos da Darzan), do mais perto ao mais longe */
   c.proximosTrabalhos = (n = 5) => { const h = u.hoje();
     return c.dias().filter(d => d.data > h).map(d => ({ data: d.data, empresa: d.empresa, titulo: d.desc || d.empresa, dia: d }))
-      .concat(c.trabalhos().filter(j => j['DATA DO EVENTO'] && String(j['DATA DO EVENTO']).slice(0, 10) > h && j['ETAPA'] && j['ETAPA'] !== 'Orçamento' && !c.recorrente(j)).map(j => ({ data: String(j['DATA DO EVENTO']).slice(0, 10), empresa: 'Darzan Produções', titulo: j['CLIENTE'], job: j })))
+      .concat(c.trabalhos().filter(j => j['DATA DO EVENTO'] && String(j['DATA DO EVENTO']).slice(0, 10) > h && !c.naoFechado(j) && !c.recorrente(j)).map(j => ({ data: String(j['DATA DO EVENTO']).slice(0, 10), empresa: 'Darzan Produções', titulo: j['CLIENTE'], job: j })))
       .sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0).slice(0, n); };
   /* o ano: quantos dias trabalhou em cada mês (só o que já passou) e por empresa */
   c.anoTrabalho = ano => {
@@ -509,7 +529,7 @@ window.A = window.A || {};
     const out = [];
     for (let m = ano + '-01'; m <= fim; m = u.addMes(m, 1)) {
       const fat = u.r2(u.sum(c.lancs().filter(l => l.cat === 'Darzan Produções' && l.grupo === 'Renda' && l.status !== 'Previsto' && u.mes(l.data) === m)));
-      const jobs = c.trabalhos().filter(j => !c.recorrente(j) && (j['ETAPA'] || 'Orçamento') !== 'Orçamento' && String(j['DATA DO EVENTO'] || '').slice(0, 7) === m).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1);
+      const jobs = c.trabalhos().filter(j => !c.recorrente(j) && !c.naoFechado(j) && String(j['DATA DO EVENTO'] || '').slice(0, 7) === m).sort((a, b) => String(a['DATA DO EVENTO']) < String(b['DATA DO EVENTO']) ? -1 : 1);
       out.push({ m, fat, rec: rec[m] || 0, trab: u.r2(fat - (rec[m] || 0)), jobs });
     }
     return out;
@@ -601,7 +621,7 @@ window.A = window.A || {};
       else if (tp === 'l') add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.banco && t.banco !== 'Não informado' ? (t.grupo === 'receber' ? `entra no ${t.banco}` : `sai do ${t.banco}`) : ''].filter(Boolean).join(' · '), t.grupo === 'receber' ? 'receber' : 'conta');
       else add(t.id, t.data, t.titulo.charAt(0).toLowerCase() + t.titulo.slice(1), [valor, t.nota].filter(Boolean).join(' · '), 'tarefa');
     });
-    c.trabalhos().filter(j => j['ETAPA'] !== 'Entregue').forEach(j => {
+    c.trabalhos().filter(j => j['ETAPA'] !== 'Entregue' && !c.naoFechado(j)).forEach(j => {
       const quem = j['CLIENTE'], ev = j['TIPO DE EVENTO'] || 'evento';
       add(`J-ev-${j.ID}`, String(j['DATA DO EVENTO'] || ''), `${ev.toLowerCase()} ${quem}`, [j['LOCAL'], j['O QUE FOI FECHADO']].filter(Boolean).join(' · ') || 'Trabalho da Darzan', 'trabalho');
       add(`J-en-${j.ID}`, String(j['ENTREGA'] || ''), `entregar o trabalho de ${quem}`, j['O QUE FOI FECHADO'] || ev, 'trabalho');

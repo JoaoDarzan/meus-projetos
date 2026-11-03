@@ -27,7 +27,9 @@
       ['O QUE FOI FECHADO', 'o_que_foi_fechado', 'text'], ['VALOR TOTAL', 'valor_total', 'numeric'], ['ENTREGA', 'entrega', 'date'], ['ETAPA', 'etapa', 'text'],
       ['TELEFONE', 'telefone', 'text'], ['CONTRATO', 'contrato', 'text'], ['OBS', 'obs', 'text'],
       /* briefing do orçamento; vídeos a entregar, um por linha ("[x] teaser" = pronto); parcela que o cliente paga todo mês */
-      ['BRIEFING', 'briefing', 'text'], ['ENTREGAS', 'entregas', 'text'], ['PARCELA MENSAL', 'parcela_mensal', 'numeric'], ['DIA DA PARCELA', 'dia_da_parcela', 'numeric']] },
+      ['BRIEFING', 'briefing', 'text'], ['ENTREGAS', 'entregas', 'text'], ['PARCELA MENSAL', 'parcela_mensal', 'numeric'], ['DIA DA PARCELA', 'dia_da_parcela', 'numeric'],
+      /* vendas (CRM), em JSON: de onde veio, último contato, quando entrou/mandou orçamento/fechou/perdeu, motivo e o orçamento (itens, condições, validade) */
+      ['CRM', 'crm', 'text']] },
     /* comprovantes, contratos e orçamentos dos trabalhos. O arquivo (conteudo) não vem junto com o resto:
        é pesado, então o app só busca quando você abre o anexo */
     ANEXOS: { tabela: 'anexos', prefixo: 'X', opcional: true, extras: [['conteudo', 'text']], colunas: [
