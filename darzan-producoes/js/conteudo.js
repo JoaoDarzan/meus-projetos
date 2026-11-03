@@ -27,7 +27,13 @@ const SITE = {
   // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
   // Melhor qualidade: um arquivo seu ('videos/fundo.mp4', 1920x1080, até ~15 MB).
   // Também aceita link do YouTube ou Vimeo (o YouTube começa com qualidade baixa).
-  videoFundo: '',
+  videoFundo: {
+    fontes: [
+      { rotulo: '1080p', src: 'videos/topo-1080.mp4' },
+      { rotulo: '720p', src: 'videos/topo-720.mp4' }
+    ],
+    capa: 'videos/topo.jpg'   // 1ª imagem do vídeo: aparece na hora, sem tela preta
+  },
 
   // OPCIONAL: versão VERTICAL (em pé) do vídeo de fundo, para celular.
   // Com ela, o celular mostra o vídeo em tela cheia. Sem ela, mostra o vídeo
@@ -60,15 +66,8 @@ const SITE = {
    Deixe video: '' para manter o espaço reservado.
 */
 const VIDEOS = [
-  { titulo: 'Filme de casamento',       tipo: 'filme',     evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Teaser de casamento',      tipo: 'teaser',    evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Vídeo institucional',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Vinheta animada',          tipo: 'motion',    evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Teaser de aniversário',    tipo: 'teaser',    evento: 'Aniversário',   video: '', capa: '' },
-  { titulo: 'Filme do chá revelação',   tipo: 'filme',     evento: 'Chá revelação', video: '', capa: '' },
-  { titulo: 'Conteúdo para redes',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Convite animado',          tipo: 'motion',    evento: 'Casamento',     video: '', capa: '' }
+  // Os vídeos da Cloudflare entram aqui sozinhos (os mais novos primeiro).
+  // Para fixar um vídeo à mão: { titulo: 'Ana & Pedro', tipo: 'filme', evento: 'Casamento', video: 'nome-no-bucket' },
 ];
 
 /* ---------- STORIES (vídeos verticais do storymaker) ----------
@@ -77,28 +76,15 @@ const VIDEOS = [
    Deixe video: '' para manter o espaço reservado.
 */
 const STORIES = [
-  { titulo: 'Making of da noiva',  evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Entrada dos noivos',  evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Bastidores',          evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'A revelação',         evento: 'Chá revelação', video: '', capa: '' }
+  // Os stories da Cloudflare entram aqui sozinhos (nome com "story" ou "reels").
+  // Enquanto não houver, o site mostra 4 espaços vazios.
 ];
 
 /* ---------- FOTOS ----------
-   arquivo: caminho da foto. Ex: 'fotos/casamento-01.jpg'
-   categoria: 'casamentos' | 'empresas' | 'aniversarios' | 'cha-revelacao'
-   Deixe arquivo: '' para manter o espaço reservado.
+   Galeria simples, sem categorias. As fotos da pasta "fotos/" do bucket da Cloudflare
+   entram sozinhas. Para colocar à mão: { arquivo: 'fotos/foto-01.jpg', legenda: '' }
 */
-const FOTOS = [
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'empresas',      legenda: 'Evento corporativo' },
-  { arquivo: '', categoria: 'aniversarios',  legenda: 'Aniversário' },
-  { arquivo: '', categoria: 'cha-revelacao', legenda: 'Chá revelação' },
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'aniversarios',  legenda: 'Aniversário' },
-  { arquivo: '', categoria: 'empresas',      legenda: 'Evento corporativo' },
-  { arquivo: '', categoria: 'cha-revelacao', legenda: 'Chá revelação' }
-];
+const FOTOS = [];
 
 /* ---------- FEEDBACKS ----------
    texto:  o depoimento do cliente

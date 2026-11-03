@@ -11,6 +11,9 @@ const TIPOS = {
   'empresa': 'Vídeo para empresa'
 };
 
+/* recarregou a página: volta sempre para o começo (não para onde estava) */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
@@ -107,8 +110,10 @@ function montarVideoFundo() {
   if (fonte.tipo === 'arquivo') {
     /* celular: versão 720p (carrega mais rápido); computador: 1080p */
     const src = celular && fonte.leve ? fonte.leve : fonte.src;
-    media.innerHTML = `<video src="${esc(src)}" muted loop playsinline autoplay preload="auto"></video>`;
+    const capa = fonte.thumb ? ` poster="${esc(fonte.thumb)}"` : '';
+    media.innerHTML = `<video src="${esc(src)}"${capa} muted loop playsinline autoplay preload="auto"></video>`;
     const v = $('video', media);
+    if (fonte.thumb) v.classList.add('is-on'); /* com capa, nada de tela preta enquanto carrega */
     v.addEventListener('playing', () => v.classList.add('is-on'), { once: true });
     v.play().catch(() => v.classList.add('is-on'));
   } else if (fonte.fundo) {
@@ -222,7 +227,7 @@ function videoCard(v, i, { lista, classe, tag, vazio }) {
     media = `
       <div class="placeholder">
         <svg viewBox="0 0 24 24"><use href="#i-play"/></svg>
-        <span>${vazio}</span>
+        ${vazio ? `<span>${vazio}</span>` : ''}
       </div>`;
   } else if (v.capa || info.thumb) {
     media = `<img src="${esc(v.capa || info.thumb)}" alt="${esc(v.titulo)}" loading="lazy">`;
@@ -241,10 +246,10 @@ function videoCard(v, i, { lista, classe, tag, vazio }) {
       <div class="media-card__media">${media}</div>
       ${info ? '<span class="media-card__play"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>' : ''}
       ${info && v.duracao ? `<span class="media-card__tempo">${esc(v.duracao)}</span>` : ''}
-      <div class="media-card__info">
-        <span class="media-card__cat">${esc(tag)}</span>
+      ${info || v.titulo ? `<div class="media-card__info">
+        ${tag ? `<span class="media-card__cat">${esc(tag)}</span>` : ''}
         <strong>${esc(v.titulo)}</strong>
-      </div>
+      </div>` : ''}
     </${el}>`;
 }
 
@@ -291,25 +296,40 @@ function bindCards(grid) {
   });
 }
 
+/* espaços vazios para completar a última fileira (mínimo de uma fileira) */
+const vagas = (qtd, fileira) => Math.max(fileira, Math.ceil(qtd / fileira) * fileira) - qtd;
+const cartaoVazio = (classe, texto) => `
+    <div class="${classe} reveal is-empty" aria-hidden="true">
+      <div class="media-card__media"><div class="placeholder">
+        <svg viewBox="0 0 24 24"><use href="#i-play"/></svg>
+        ${texto ? `<span>${texto}</span>` : ''}
+      </div></div>
+    </div>`;
+
 function renderVideos() {
   const grid = $('#videoGrid');
+  const reais = VIDEOS.filter(v => v.video);
+  VIDEOS.splice(0, VIDEOS.length, ...reais);
   grid.innerHTML = VIDEOS.map((v, i) => videoCard(v, i, {
     lista: 'filmes',
-    classe: `media-card film-card${i === 0 ? ' film-card--featured' : ''}`,
+    classe: 'media-card film-card',
     tag: [TIPOS[v.tipo], v.evento].filter(Boolean).join(' · '),
-    vazio: `Espaço para ${v.tipo === 'filme' || v.tipo === 'teaser' ? (TIPOS[v.tipo] || 'vídeo').toLowerCase() : 'vídeo'}`
-  })).join('');
+    vazio: ''
+  })).join('') + cartaoVazio('media-card film-card', 'Em breve').repeat(vagas(reais.length, 3));
   bindCards(grid);
+  arrumarFiltros();
 }
 
 function renderStories() {
   const grid = $('#storyGrid');
+  const reais = STORIES.filter(v => v.video);
+  STORIES.splice(0, STORIES.length, ...reais);
   grid.innerHTML = STORIES.map((v, i) => videoCard(v, i, {
     lista: 'stories',
     classe: 'media-card story-card',
-    tag: v.evento || 'Stories',
-    vazio: 'Espaço para story'
-  })).join('');
+    tag: v.evento || '',
+    vazio: ''
+  })).join('') + cartaoVazio('media-card story-card', '').repeat(vagas(reais.length, 4));
   bindCards(grid);
 }
 
@@ -335,18 +355,19 @@ function openVideo(v, vertical) {
 /* ---------- Fotos ---------- */
 function renderFotos() {
   const grid = $('#photoGrid');
+  const reais = FOTOS.filter(f => f.arquivo);
+  FOTOS.splice(0, FOTOS.length, ...reais, ...Array.from({ length: vagas(reais.length, 6) }, () => ({ arquivo: '' })));
   grid.innerHTML = FOTOS.map((f, i) => {
     if (!f.arquivo) {
       return `
-        <div class="photo reveal is-empty" data-cat="${esc(f.categoria)}">
+        <div class="photo reveal is-empty">
           <div class="placeholder">
             <svg viewBox="0 0 24 24"><use href="#i-camera"/></svg>
-            <span>Espaço para foto</span>
           </div>
         </div>`;
     }
     return `
-      <button type="button" class="photo reveal" data-cat="${esc(f.categoria)}" data-photo="${i}" aria-label="Ampliar foto: ${esc(f.legenda)}">
+      <button type="button" class="photo reveal" data-photo="${i}" aria-label="Ampliar foto${f.legenda ? ': ' + esc(f.legenda) : ''}">
         <img src="${esc(f.arquivo)}" alt="${esc(f.legenda)}" loading="lazy">
         ${f.legenda ? `<span class="photo__caption">${esc(f.legenda)}</span>` : ''}
       </button>`;
@@ -472,8 +493,13 @@ async function carregarVideosDaNuvem() {
 
   /* junta as versões de cada vídeo (1080, 720, capa) pelo nome */
   const grupos = new Map();
+  const fotos = [];
   for (const a of dados.arquivos || []) {
     if (!a || !a.nome || a.nome === 'lista.json') continue;
+    if (/^fotos\//i.test(a.nome)) {
+      if (/\.(jpe?g|png|webp)$/i.test(a.nome)) fotos.push(a);
+      continue;
+    }
     const ext = a.nome.match(/\.[^./]+$/);
     if (!ext) continue;
     let stem = a.nome.slice(0, -ext[0].length);
@@ -528,7 +554,6 @@ async function carregarVideosDaNuvem() {
   if (filmes.length) {
     VIDEOS.splice(0, VIDEOS.length, ...VIDEOS.filter(v => v.video), ...filmes);
     renderVideos();
-    arrumarFiltros();
     observarReveal($('#videoGrid'));
   }
   if (stories.length) {
@@ -542,6 +567,16 @@ async function carregarVideosDaNuvem() {
     }
   }
   if (mudouFundo) { modoVideo = null; montarVideoFundo(); }
+  if (fotos.length) {
+    const jaTem = new Set(FOTOS.map(f => f.arquivo));
+    const novas = fotos
+      .sort((a, b) => (String(a.enviado) < String(b.enviado) ? 1 : -1))
+      .map(a => ({ arquivo: urlR2(a.nome), legenda: '' }))
+      .filter(f => !jaTem.has(f.arquivo));
+    FOTOS.splice(0, FOTOS.length, ...FOTOS.filter(f => f.arquivo), ...novas);
+    renderFotos();
+    observarReveal($('#photoGrid'));
+  }
 }
 
 /* com vídeos de verdade, os filtros sem nenhum vídeo somem */
@@ -655,6 +690,8 @@ function setupReveal() {
 
 /* ---------- Início ---------- */
 document.addEventListener('DOMContentLoaded', () => {
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  window.scrollTo(0, 0);
   $('#year').textContent = new Date().getFullYear();
   setupWhatsApp();
   setupMedia();

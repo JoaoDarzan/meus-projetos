@@ -1440,3 +1440,23 @@ p { margin: 0; }
 @media (hover: none) {
   .player__linha::-webkit-slider-thumb { transform: scale(1); }
 }
+
+/* =====================================================================
+   PORTFÓLIO EM MINIATURAS (todos do mesmo tamanho, mais novos primeiro)
+   ===================================================================== */
+.film-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.film-card .media-card__info { left: 18px; right: 18px; bottom: 14px; }
+.film-card .media-card__info strong { font-family: var(--font-display); font-size: 1.35rem; font-weight: 500; }
+.film-card .media-card__play { width: 54px; height: 54px; }
+.film-card .media-card__play svg { width: 20px; height: 20px; }
+.media-card.is-empty .placeholder { padding-bottom: 0; }
+.media-card.is-empty .placeholder span { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+@media (max-width: 900px) {
+  .film-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .film-grid { grid-template-columns: 1fr; }
+  .media-card.is-empty .placeholder { padding-bottom: 0; }
+  /* no celular, com vídeos de verdade, não mostra os espaços "Em breve" */
+  .film-grid > .media-card:not(.is-empty) ~ .is-empty { display: none; }
+}
