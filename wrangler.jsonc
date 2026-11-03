@@ -1,0 +1,9 @@
+// Cloudflare (Workers): publica só a pasta do site, igual ao GitHub Pages.
+// Endereço provisório: https://darzanproducoes.joaodarzan10.workers.dev
+{
+  "name": "darzanproducoes",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./darzan-producoes"
+  }
+}
