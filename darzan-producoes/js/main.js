@@ -43,7 +43,17 @@ function parseVideo(url) {
   if (ig) {
     return { tipo: 'instagram', embed: `https://www.instagram.com/reel/${ig[1]}/embed` };
   }
-  return { tipo: 'arquivo', src: url };
+  /* só o nome (ex: 'casamento-ana'): vídeo guardado na Cloudflare R2,
+     em duas qualidades (nome-1080.mp4 e nome-720.mp4) e com capa (nome.jpg) */
+  if (/^[a-z0-9][\w-]*$/i.test(url) && SITE.videosBase) {
+    const base = `${SITE.videosBase.replace(/\/+$/, '')}/${url}`;
+    const fontes = [
+      { rotulo: '1080p', src: `${base}-1080.mp4` },
+      { rotulo: '720p', src: `${base}-720.mp4` }
+    ];
+    return { tipo: 'arquivo', src: fontes[0].src, leve: fontes[1].src, fontes, thumb: `${base}.jpg` };
+  }
+  return { tipo: 'arquivo', src: url, fontes: [{ rotulo: 'Original', src: url }] };
 }
 
 /* ---------- Links de WhatsApp ---------- */
@@ -91,7 +101,9 @@ function montarVideoFundo() {
   if (aviso) aviso.remove();
   media.classList.remove('is-empty');
   if (fonte.tipo === 'arquivo') {
-    media.innerHTML = `<video src="${esc(fonte.src)}" muted loop playsinline autoplay preload="auto"></video>`;
+    /* celular: versão 720p (carrega mais rápido); computador: 1080p */
+    const src = celular && fonte.leve ? fonte.leve : fonte.src;
+    media.innerHTML = `<video src="${esc(src)}" muted loop playsinline autoplay preload="auto"></video>`;
     const v = $('video', media);
     v.addEventListener('playing', () => v.classList.add('is-on'), { once: true });
     v.play().catch(() => v.classList.add('is-on'));
@@ -224,6 +236,7 @@ function videoCard(v, i, { lista, classe, tag, vazio }) {
     <${el} class="${classe} reveal${info ? '' : ' is-empty'}" ${cat} ${attrs}>
       <div class="media-card__media">${media}</div>
       ${info ? '<span class="media-card__play"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>' : ''}
+      ${info && v.duracao ? `<span class="media-card__tempo">${esc(v.duracao)}</span>` : ''}
       <div class="media-card__info">
         <span class="media-card__cat">${esc(tag)}</span>
         <strong>${esc(v.titulo)}</strong>
@@ -237,6 +250,33 @@ function bindCards(grid) {
     const card = video.closest('[data-index]') || video.parentElement;
     card.addEventListener('mouseenter', () => video.play().catch(() => {}));
     card.addEventListener('mouseleave', () => video.pause());
+  });
+  // prévia ao passar o mouse (vídeos da Cloudflare R2): carrega a versão leve só nessa hora
+  const temMouse = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  $$('[data-index]', grid).forEach(card => {
+    const lista = card.dataset.lista === 'stories' ? STORIES : VIDEOS;
+    const info = parseVideo(lista[card.dataset.index].video);
+    if (!temMouse || !info || !info.leve) return;
+    const media = $('.media-card__media', card);
+    let previa = null;
+    card.addEventListener('mouseenter', () => {
+      if (previa) return;
+      previa = document.createElement('video');
+      Object.assign(previa, { muted: true, loop: true, playsInline: true, preload: 'auto', src: info.leve });
+      previa.className = 'media-card__previa';
+      previa.addEventListener('loadedmetadata', () => { previa && (previa.currentTime = Math.min(8, previa.duration * 0.2)); }, { once: true });
+      previa.addEventListener('playing', () => previa && previa.classList.add('is-on'), { once: true });
+      media.append(previa);
+      previa.play().catch(() => { });
+    });
+    card.addEventListener('mouseleave', () => {
+      if (!previa) return;
+      previa.pause();
+      previa.removeAttribute('src');
+      previa.load();
+      previa.remove();
+      previa = null;
+    });
   });
   $$('[data-index]', grid).forEach(card => {
     card.addEventListener('click', () => {
@@ -272,13 +312,19 @@ function renderStories() {
 function openVideo(v, vertical) {
   const info = parseVideo(v.video);
   if (!info) return;
-  let html;
-  if (info.tipo === 'arquivo') {
-    html = `<video src="${esc(info.src)}" controls autoplay playsinline></video>`;
-  } else {
-    html = `<iframe src="${esc(info.embed)}" title="${esc(v.titulo)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
-  }
   const formato = vertical || info.tipo === 'instagram' ? 'vertical' : 'horizontal';
+  if (info.tipo === 'arquivo') {
+    openModal(`<div class="modal__video modal__video--${formato} modal__video--arquivo"></div>`);
+    const msg = `Olá! Vi o vídeo "${v.titulo}" no seu site e quero um orçamento.`;
+    Player.criar($('#modalContent .modal__video'), {
+      fontes: info.fontes,
+      capa: v.capa || info.thumb || '',
+      titulo: v.titulo,
+      whatsapp: SITE.whatsapp ? `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(msg)}` : ''
+    });
+    return;
+  }
+  const html = `<iframe src="${esc(info.embed)}" title="${esc(v.titulo)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
   openModal(`<div class="modal__video modal__video--${formato} modal__video--${info.tipo}">${html}</div>`);
 }
 
