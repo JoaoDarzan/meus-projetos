@@ -435,7 +435,7 @@ function renderFeedbacks() {
    - nome-1080.mp4 + nome-720.mp4 (ou só nome.mp4) + nome.jpg (capa, opcional)
    - o tipo sai do nome: teaser, cerimonia, motion, empresa/institucional; senão é "filme"
    - nome com "story"/"stories"/"vertical"/"reels" vai para os stories
-   - "fundo" vira o vídeo de fundo do topo ("fundo-celular" ou "fundo-vertical": versão em pé)
+   - nome com "fundo" ou "topo" vira o vídeo de fundo do topo ("fundo-celular"/"topo-vertical": versão em pé)
    - os mais novos aparecem primeiro. Títulos à mão: lista.json no bucket (opcional). */
 const TIPO_PELO_NOME = [
   ['cerimonia', /cerim[oô]nia|[ií]ntegra/i],
@@ -449,7 +449,7 @@ const EVENTO_PELO_NOME = [
   ['Chá revelação', /ch[aá][-_ ]?(de[-_ ])?revela/i],
   ['Empresa', /empresa|institucional|corporativ|comercial/i]
 ];
-const PALAVRA_DE_TECNICA = /^(teaser|trailer|filme|film|cerim[oô]nia|[ií]ntegra|na|motion|vinheta|empresa|institucional|v[ií]deo|final|v\d+|\d{3,4}p?|4k|hd|sd|story|stories|reels?|completo|editado|export|render|casamento|wedding|anivers[aá]rio|aniver|ch[aá]|revela[cç][aã]o|revelacao)$/i;
+const PALAVRA_DE_TECNICA = /^(teaser|trailer|filme|film|cerim[oô]nia|[ií]ntegra|na|motion|vinheta|empresa|institucional|v[ií]deo|final|v\d+|\d{3,4}p?|4k|hd|sd|story|stories|reels?|completo|editado|export|render|topo|fundo|casamento|wedding|anivers[aá]rio|aniver|ch[aá]|revela[cç][aã]o|revelacao)$/i;
 
 function tituloDoNome(stem) {
   const palavras = stem.split('/').pop().split(/[-_\s.]+/).filter(p => p && !PALAVRA_DE_TECNICA.test(p));
@@ -508,7 +508,7 @@ async function carregarVideosDaNuvem() {
 
       const nome = g.stem.split('/').pop();
       const extra = info[g.stem] || info[nome] || {};
-      if (/^fundo/i.test(nome)) {
+      if (/(^|[-_ ])(fundo|topo|background|hero)([-_ ]|$)/i.test(nome)) {
         if (/celular|vertical|story|em[-_ ]?p[eé]/i.test(nome)) { if (!SITE.videoFundoCelular) { SITE.videoFundoCelular = video; mudouFundo = true; } }
         else if (!SITE.videoFundo) { SITE.videoFundo = video; mudouFundo = true; }
         return;
