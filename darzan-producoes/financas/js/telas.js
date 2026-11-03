@@ -144,7 +144,7 @@
       <div class="meta">${d ? `<span>${u.svg('calendar-days')}${u.dm(d)}${u.ateHoje(d) >= 0 && u.ateHoje(d) <= 60 ? ` · em ${u.ateHoje(d)} dias` : ''}</span>` : ''}${j['LOCAL'] ? `<span>${u.svg('map-pin')}${u.esc(j['LOCAL'])}</span>` : ''}</div>
       ${c.naoFechado(j) ? (tot ? `<div class="mrow num"><span class="c-muted">orçamento</span><b>${u.k0(tot)}</b></div>` : '') : tot ? `<div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span class="c-muted">${u.k0(rec)} de ${u.k0(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.k0(falta)}</b>` : '<b class="c-in">pago</b>'}</div>` : `<div class="mrow num"><span class="c-muted">Recebido ${u.k0(rec)}</span><span class="estim">sem valor total</span></div>`}
       ${j['O QUE FOI FECHADO'] ? `<div class="ft"><span>${u.svg('package')}${u.esc(j['O QUE FOI FECHADO'])}</span></div>` : ''}
-      ${(() => { const n = c.semResposta(j), o = c.crm(j).origem; return n != null || o ? `<div class="meta">${n != null ? `<span class="${n >= c.DIAS_RESPOSTA ? 'c-warn' : ''}">${u.svg('message-circle')}${n ? `sem resposta há ${n} ${n > 1 ? 'dias' : 'dia'}` : 'falou hoje'}</span>` : ''}${o ? `<span>${u.svg('user')}${u.esc(o)}</span>` : ''}</div>` : ''; })()}
+      ${(() => { const n = c.semResposta(j), o = c.crm(j).origem; return n != null || o ? `<div class="meta">${n != null ? `<span class="${n >= c.DIAS_RESPOSTA ? 'c-warn' : ''}">${u.svg('message-circle')}${n ? `sem resposta há ${n} ${n > 1 ? 'dias' : 'dia'}` : 'falou hoje'}</span>` : ''}${o ? `<span>${u.svg('user')}${u.esc(o)}</span>` : ''}${j['TELEFONE'] ? `<span>${u.svg('smartphone')}${u.esc(j['TELEFONE'])}</span>` : ''}</div>` : ''; })()}
       ${vs.length || nx ? `<div class="meta">${vs.length ? `<span class="${ok < vs.length ? 'c-warn' : ''}">${u.svg('clapperboard')}${ok} de ${vs.length} vídeos</span>` : ''}${nx ? `<span>${u.svg('paperclip')}${nx} ${nx > 1 ? 'arquivos' : 'arquivo'}</span>` : ''}</div>` : ''}</div></button>`;
   }
   const BAL_COR = [['trab', 'Trabalhos e outros', '--clt-sal'], ['rec', 'Recorrentes', '--clt-bon']];
@@ -188,64 +188,23 @@
       fechar(); render(false); toast(`${nome} entrou em “Novo contato”`, () => { db.apagar('TRABALHOS', id); render(false); }, 'Desfazer');
     });
   }
-  /* orçamento dentro da ficha: itens, condições e validade; vira PDF com a marca */
-  const COND_PADRAO = 'Entrada para reservar a data. O restante pode ser parcelado mês a mês, quitado até 7 dias antes do evento.';
-  const ultimaCond = () => { const js = c.trabalhos().map(c.crm).filter(x => x.cond); return js.length ? js[js.length - 1].cond : COND_PADRAO; };
-  const itemOrc = (it = {}) => `<div class="oit"><input class="txt" data-oi="d" value="${u.esc(it.d || '')}" placeholder="O que está incluso" aria-label="Item do orçamento"><input class="txt num" data-oi="v" inputmode="decimal" value="${it.v ? String((+it.v).toFixed(2)).replace('.', ',') : ''}" placeholder="R$" aria-label="Valor do item"><button type="button" class="oix" data-a="rmItemOrc" aria-label="Tirar item">${u.svg('x')}</button></div>`;
-  function blocoOrcamento(j) {
-    const k = j ? c.crm(j) : {}, itens = k.itens && k.itens.length ? k.itens : [{ d: j && j['O QUE FOI FECHADO'] || '', v: j ? c.num(j['VALOR TOTAL']) : '' }];
-    if (c.semCrm()) return '';
-    const lead = j && c.naoFechado(j);
-    return `<div class="jsec" id="jOrc"><h4>${u.svg('file-text')} Orçamento</h4>
-      <div id="oItens">${itens.map(itemOrc).join('')}</div>
-      <button type="button" class="btn2" data-a="addItemOrc" style="width:100%;margin-top:6px">${u.svg('plus')}Mais um item</button>
-      <p class="tot-row" style="margin:10px 2px"><span>Total do orçamento</span><b class="num" id="oTot"></b></p>
-      ${campo('Condições de pagamento', `<textarea class="txt" id="oC" rows="3">${u.esc(k.cond || ultimaCond())}</textarea>`)}
-      <div class="grid2">${campo('Válido por (dias)', `<input class="txt num" id="oVd" inputmode="numeric" value="${u.esc(String(k.validade || 15))}">`)}${campo('De onde veio', `<select class="txt" id="oOg">${opts([['', '—']].concat(ORIGENS), k.origem || '')}</select>`)}</div>
-      ${j ? `<button type="button" class="btn2 pri" data-a="mandarOrc" data-id="${u.esc(j.ID)}" style="margin-top:6px;width:100%">${u.svg('message-circle')}Gerar PDF e mandar no WhatsApp</button>
-      ${k.enviado ? `<p class="c-muted" style="font-size:.8rem;margin:6px 2px 0">Último orçamento enviado em ${u.esc(u.ddmmaa(k.enviado))}.</p>` : ''}
-      ${lead ? `<div class="grid2" style="margin-top:10px">${j['ETAPA'] === 'Perdido' ? `<button type="button" class="btn2" data-a="reabrirJ" data-id="${u.esc(j.ID)}" style="grid-column:1/-1">${u.svg('undo-2')}Voltar a negociar</button>` : `<button type="button" class="btn2 ok" data-a="fechouJ" data-id="${u.esc(j.ID)}">${u.svg('check')}Fechou!</button><button type="button" class="btn2 perigo" data-a="perdeuJ" data-id="${u.esc(j.ID)}">${u.svg('x')}Não fechou</button>`}</div>
-      ${(() => { const lk = c.linkConversa(j, c.msgRetorno(j)); return lk && j['ETAPA'] !== 'Perdido' ? `<a class="whats" href="${u.esc(lk)}" target="_blank" rel="noopener noreferrer" data-a="chameiJ" data-id="${u.esc(j.ID)}" style="margin-top:10px;width:100%;justify-content:center">${u.svg('message-circle')}Perguntar se viu o orçamento</a>` : ''; })()}
-      ${j['ETAPA'] === 'Perdido' && k.motivo ? `<p class="aviso">Não fechou: <b>${u.esc(k.motivo)}</b>${k.perdido ? ` (${u.esc(u.ddmmaa(k.perdido))})` : ''}.</p>` : ''}` : ''}` : ''}</div>`;
+  /* venda na ficha: de onde veio, último contato, "mandei o orçamento", fechou / não fechou e o WhatsApp para retomar a conversa.
+     O orçamento em si o João faz por fora; aqui só fica anotado (e conta nos números do mês) */
+  function blocoVenda(j) {
+    if (c.semCrm() || !c.naoFechado(j)) return '';
+    const k = c.crm(j), n = c.semResposta(j), lk = j['ETAPA'] !== 'Perdido' && c.linkConversa(j, c.msgRetorno(j));
+    const fatos = [k.criado ? `chamou em ${u.ddmmaa(k.criado)}` : '', k.enviado ? `orçamento enviado em ${u.ddmmaa(k.enviado)}` : '', n != null ? (n ? `último contato há ${n} ${n > 1 ? 'dias' : 'dia'}` : 'falou hoje') : ''].filter(Boolean);
+    return `<div class="jsec" id="jVenda"><h4>${u.svg('trending-up')} Venda</h4>
+      ${fatos.length ? `<p class="c-muted" style="margin:0 0 10px;font-size:.84rem">${u.esc(fatos.join(' · '))}</p>` : ''}
+      ${campo('De onde veio', `<select class="txt" id="oOg">${opts([['', '—']].concat(ORIGENS), k.origem || '')}</select>`)}
+      ${lk ? `<a class="whats" href="${u.esc(lk)}" target="_blank" rel="noopener noreferrer" data-a="chameiJ" data-id="${u.esc(j.ID)}" style="width:100%;justify-content:center">${u.svg('message-circle')}${j['ETAPA'] === 'Novo contato' ? 'Retomar a conversa no WhatsApp' : 'Perguntar se viu o orçamento'}</a>` : j['ETAPA'] !== 'Perdido' ? '<p class="aviso">Coloque o WhatsApp do cliente (mais abaixo) para mandar mensagem daqui.</p>' : ''}
+      ${j['ETAPA'] === 'Novo contato' ? `<button type="button" class="btn2 pri" data-a="enviouOrc" data-id="${u.esc(j.ID)}" style="width:100%;margin-top:10px">${u.svg('file-text')}Mandei o orçamento</button>` : ''}
+      <div class="grid2" style="margin-top:10px">${j['ETAPA'] === 'Perdido' ? `<button type="button" class="btn2" data-a="reabrirJ" data-id="${u.esc(j.ID)}" style="grid-column:1/-1">${u.svg('undo-2')}Voltar a negociar</button>` : `<button type="button" class="btn2 ok" data-a="fechouJ" data-id="${u.esc(j.ID)}">${u.svg('check')}Fechou!</button><button type="button" class="btn2 perigo" data-a="perdeuJ" data-id="${u.esc(j.ID)}">${u.svg('x')}Não fechou</button>`}</div>
+      ${j['ETAPA'] === 'Perdido' && k.motivo ? `<p class="aviso">Não fechou: <b>${u.esc(k.motivo)}</b>${k.perdido ? ` (${u.esc(u.ddmmaa(k.perdido))})` : ''}.</p>` : ''}</div>`;
   }
-  /* lê o orçamento da ficha */
-  function lerOrcamento() {
-    const itens = [...document.querySelectorAll('#s2 .oit')].map(x => ({ d: x.querySelector('[data-oi=d]').value.trim(), v: u.r2(u.num(x.querySelector('[data-oi=v]').value)) || 0 })).filter(i => i.d || i.v);
-    return { itens, cond: val('oC').trim(), validade: Math.min(Math.max(parseInt(val('oVd'), 10) || 15, 1), 365), origem: val('oOg'), total: u.r2(u.sum(itens, i => i.v)) };
-  }
-  const somaOrc = () => { const t = $('oTot'); if (t) t.textContent = u.brl(lerOrcamento().total); };
-  /* logo do PDF: carregada antes (o iPhone só deixa compartilhar logo depois do toque, sem esperar nada) */
-  let logoOrc = null;
-  const carregarLogo = () => { if (!logoOrc) fetch('img/logo-orcamento.jpg').then(r => r.ok ? r.arrayBuffer() : null).then(b => { if (b) logoOrc = new Uint8Array(b); }).catch(() => { }); };
   function crmSalvar(id, mudar, extra) {
     const j = db.achar('TRABALHOS', id); if (!j) return;
     db.salvar('TRABALHOS', Object.assign({ ID: id, 'CRM': JSON.stringify(Object.assign(c.crm(j), mudar)) }, extra || {}));
-  }
-  function mandarOrcamento(id) {
-    const j = db.achar('TRABALHOS', id); if (!j) return;
-    const o = lerOrcamento();
-    if (!o.itens.length) { toast('Coloque pelo menos um item no orçamento'); return; }
-    const h = u.hoje(), nome = val('jC').trim() || j['CLIENTE'];
-    const dados = { cliente: nome, tipo: val('jT') || j['TIPO DE EVENTO'], data: val('jD') || j['DATA DO EVENTO'], local: val('jL') || j['LOCAL'], itens: o.itens, cond: o.cond, validade: o.validade, emitido: h };
-    const pdf = A.orcamentoPdf(dados, logoOrc), arq = 'Orcamento-Darzan-' + u.sem(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
-    /* guarda o que foi mandado: itens, total, data; quem era "Novo contato" passa para "Orçamento" */
-    const de = j['ETAPA'] || 'Orçamento';
-    crmSalvar(id, { itens: o.itens, cond: o.cond, validade: o.validade, origem: o.origem || c.crm(j).origem || '', enviado: h, contato: h, criado: c.crm(j).criado || h },
-      Object.assign({ 'VALOR TOTAL': o.total || j['VALOR TOTAL'] }, de === 'Novo contato' ? { 'ETAPA': 'Orçamento' } : {}));
-    A.ultimoOrcamento = { nome: arq, bytes: pdf }; /* para os testes conferirem o PDF */
-    const texto = c.msgOrcamento(Object.assign({}, j, { 'CLIENTE': nome, 'TIPO DE EVENTO': dados.tipo, 'DATA DO EVENTO': dados.data }));
-    let file = null; try { file = new File([pdf], arq, { type: 'application/pdf' }); } catch (e) { /* navegador antigo */ }
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], text: texto }).catch(() => { });
-    else {
-      const url = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' })), a = document.createElement('a');
-      a.href = url; a.download = arq; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
-      const lk = c.linkConversa(Object.assign({}, j, { 'TELEFONE': val('jW') || j['TELEFONE'] }), texto); if (lk) window.open(lk, '_blank', 'noopener');
-    }
-    /* uma cópia do PDF fica nos arquivos do trabalho */
-    if (!semAnexos()) { let b = ''; pdf.forEach(x => { b += String.fromCharCode(x); });
-      const ax = db.novoId('ANEXOS'), dado = 'data:application/pdf;base64,' + btoa(b);
-      N.guardarArquivo(ax, dado).then(() => { arquivos[ax] = dado; db.salvar('ANEXOS', { ID: ax, 'TRABALHO': id, 'NOME': `Orçamento ${u.ddmmaa(h)}`, 'TIPO': 'Orçamento', 'DATA': h, 'VALOR': o.total || '', 'ARQUIVO': 'application/pdf', 'TAMANHO': dado.length }); render(false); }).catch(() => { /* sem internet: o PDF já foi mandado; só a cópia não ficou */ }); }
-    fechar(); render(false); toast(`Orçamento de ${u.brl(o.total)} pronto para ${c.primeiroNome(j)}`);
   }
   function perdeu(id) {
     const j = db.achar('TRABALHOS', id); if (!j) return;
@@ -1037,7 +996,7 @@
     abrir(`<h3 style="margin:0 0 10px">${ed ? u.esc(j['CLIENTE']) : 'Novo trabalho'}</h3>
       <div class="etapas" role="group" aria-label="Etapa">${ETAPAS.concat([['Recorrente', '#c9a7ff'], ['Perdido', '#ff8f8f']]).map(([n, cor]) => `<button type="button" class="chip" data-a="etapaJ" ${ed ? `data-id="${u.esc(j.ID)}"` : ''} data-v="${u.esc(n)}" aria-pressed="${et0 === n}" style="--c:${cor}"><i></i>${n}</button>`).join('')}</div><input type="hidden" id="jE" value="${u.esc(et0)}">
       ${ed && tot ? `<div class="jres"><div class="money"><i style="width:${Math.min(rec / tot, 1) * 100}%"></i></div><div class="mrow num"><span>${u.brl(rec)} de ${u.brl(tot)}</span>${falta > 0 ? `<b class="c-warn">falta ${u.brl(falta)}</b>` : '<b class="c-in">pago</b>'}</div>${prox ? `<small>Próxima parcela: ${u.brl(prox.valor)} em ${u.dm(prox.data)}</small>` : ''}</div>` : ''}
-      ${ed && c.naoFechado(j) ? blocoOrcamento(j) : ''}
+      ${ed ? blocoVenda(j) : ''}
       ${ed ? `<div class="jsec" id="jVid">${videosJob(j)}</div><div class="jsec" id="jAnx">${anexosJob(j)}</div><div class="jsec" id="jRec">${recebimentosJob(j)}</div><div class="jsec"><h4>${u.svg('pencil')} Dados do trabalho</h4></div>` : ''}
       ${campo('Cliente ou casal', `<input class="txt" id="jC" required value="${u.esc(j ? j['CLIENTE'] : '')}" placeholder="Ex.: Ana e Pedro">`)}
       ${campo('Tipo de evento', `<select class="txt" id="jT">${opts(Object.keys(TIPOEV), j ? j['TIPO DE EVENTO'] : (novo && novo['TIPO DE EVENTO']) || 'Casamento')}</select>`)}
@@ -1048,19 +1007,15 @@
       ${campo('Briefing / orçamento', `<textarea class="txt" id="jBr" rows="5" placeholder="Horário, equipe, o que está incluso, adicionais…">${u.esc(j ? j['BRIEFING'] || '' : '')}</textarea>`)}
       <div class="grid2">${campo('WhatsApp', `<input class="txt" id="jW" inputmode="tel" value="${u.esc(j ? j['TELEFONE'] || '' : '')}" placeholder="(19) 9…">`)}${campo('Contrato (link)', `<input class="txt" id="jK" value="${u.esc(j ? j['CONTRATO'] || '' : '')}" placeholder="ou anexe o PDF acima">`)}</div>
       ${campo('Anotações', `<textarea class="txt" id="jO">${u.esc(j ? j['OBS'] || '' : '')}</textarea>`)}
-      ${ed && !c.naoFechado(j) ? blocoOrcamento(j) : ''}
       ${sem.has('briefing') ? '<p class="aviso">Briefing, vídeos e parcela mensal só ficam salvos depois de rodar a atualização no Supabase (atualizacao-trabalhos.sql).</p>' : ''}
       ${ed ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarJ" data-id="${u.esc(j.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar trabalho</button>'}`,
       () => {
         const nome = val('jC').trim(); if (!nome) { toast('Coloque o nome do cliente'); return false; }
-        const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10), orc = $('oItens') ? lerOrcamento() : null;
-        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE') || 'Orçamento', 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), ...(orc && !c.semCrm() ? { 'CRM': JSON.stringify(Object.assign(c.crm(j), { itens: orc.itens, cond: orc.cond, validade: orc.validade, origem: orc.origem })) } : {}), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
+        const pm = u.num(val('jPm')), pd = parseInt(val('jPd'), 10), og = $('oOg') ? val('oOg') : null;
+        db.salvar('TRABALHOS', Object.assign(j ? { ID: j.ID } : {}, { 'CLIENTE': nome, 'TIPO DE EVENTO': val('jT'), 'ETAPA': val('jE') || 'Orçamento', 'DATA DO EVENTO': val('jD'), 'ENTREGA': val('jEn'), 'VALOR TOTAL': val('jV') ? u.r2(u.num(val('jV'))) : '', 'LOCAL': val('jL'), ...(og !== null && !c.semCrm() ? { 'CRM': JSON.stringify(Object.assign(c.crm(j), { origem: og })) } : {}), 'O QUE FOI FECHADO': val('jF'), 'BRIEFING': val('jBr'), 'PARCELA MENSAL': pm > 0 ? u.r2(pm) : '', 'DIA DA PARCELA': pd >= 1 && pd <= 31 ? pd : '', 'TELEFONE': val('jW'), 'CONTRATO': val('jK'), 'OBS': val('jO') }));
         db.garantirFixas(); fechar(); render(false); toast(j ? 'Trabalho atualizado' : 'Trabalho criado');
       }, true);
     if (ed) ligarArquivosJob(j);
-    /* orçamento: soma ao vivo e leva o total para o "Valor total" (se você não mexeu nele à mão) */
-    if ($('oItens')) { carregarLogo(); const jv = $('jV'); jv.addEventListener('input', () => { jv.dataset.mexeu = '1'; });
-      $('s2').oninput = e => { if (!e.target.closest('#jOrc')) return; somaOrc(); const t = lerOrcamento().total; if (t && !jv.dataset.mexeu) jv.value = t.toFixed(2).replace('.', ','); }; somaOrc(); }
   }
   /* muda a etapa (pelo arrastar do quadro ou pelos botões da ficha), com "Desfazer" */
   const semParcelas = j => c.parcelasPrevistas(j).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id }));
@@ -1068,7 +1023,7 @@
     const j = db.achar('TRABALHOS', id); if (!j || j['ETAPA'] === etapa) return;
     const de = j['ETAPA'] || 'Orçamento', k = c.crm(j), h = u.hoje(), aVenda = c.ETAPAS_VENDA.includes(etapa);
     /* o CRM anota quando fechou (vindo de uma etapa de venda) e limpa "perdido" ao voltar a negociar */
-    const crm = c.semCrm() ? null : Object.assign({}, k, c.ETAPAS_VENDA.includes(de) && !aVenda ? { fechado: h } : {}, etapa !== 'Perdido' ? { perdido: '', motivo: '' } : {}, aVenda && etapa !== 'Perdido' ? { contato: k.contato || h } : {});
+    const crm = c.semCrm() ? null : Object.assign({}, k, c.ETAPAS_VENDA.includes(de) && !aVenda ? { fechado: h } : {}, etapa !== 'Perdido' ? { perdido: '', motivo: '' } : {}, aVenda && etapa !== 'Perdido' ? { contato: k.contato || h } : {}, etapa === 'Orçamento' && de === 'Novo contato' ? { enviado: h, contato: h } : {}); /* passou para Orçamento = mandou o orçamento hoje */
     db.lote([{ op: 'salvar', aba: 'TRABALHOS', registro: Object.assign({ ID: id, 'ETAPA': etapa }, crm ? { 'CRM': JSON.stringify(crm) } : {}) }].concat(aVenda ? semParcelas(j) : []));
     if (!aVenda) db.garantirFixas();
     render(false);
@@ -1432,9 +1387,7 @@
     apagarE: b => apagarEquip(b.dataset.id, b),
     novoJ: () => formJob(null),
     novoLead: () => formLead(),
-    addItemOrc: () => { $('oItens').insertAdjacentHTML('beforeend', itemOrc()); const ls = document.querySelectorAll('#s2 .oit [data-oi=d]'); ls[ls.length - 1].focus(); },
-    rmItemOrc: b => { const r = b.closest('.oit'); if (document.querySelectorAll('#s2 .oit').length > 1) r.remove(); else r.querySelectorAll('input').forEach(i => { i.value = ''; }); somaOrc(); },
-    mandarOrc: b => mandarOrcamento(b.dataset.id),
+    enviouOrc: b => { moverJob(b.dataset.id, 'Orçamento'); fechar(); render(false); },
     fechouJ: b => { const j = db.achar('TRABALHOS', b.dataset.id); moverJob(b.dataset.id, 'Fechado'); fechar(); const r = b.getBoundingClientRect(); confete(r.left + r.width / 2, r.top); toast(`${j ? j['CLIENTE'] : 'Cliente'} fechou! Agora está no quadro, em “Fechado”`); },
     perdeuJ: b => perdeu(b.dataset.id),
     reabrirJ: b => { moverJob(b.dataset.id, 'Orçamento'); fechar(); render(false); },

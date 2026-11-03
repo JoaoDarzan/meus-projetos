@@ -1,4 +1,4 @@
-/* Etapa 24 · Vendas (CRM): cliente novo → orçamento em PDF pelo WhatsApp → lembrete de quem não respondeu → fechou / não fechou */
+/* Etapa 24 · Vendas (CRM): cliente novo → "mandei o orçamento" (o orçamento é feito por fora) → follow-up no WhatsApp → fechou / não fechou */
 const { HOJE, calmo, clica, certo, igual, conferirLayout } = require('../ajuda');
 const m0 = HOJE.slice(0, 7);
 const addDias = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
@@ -8,17 +8,6 @@ const LEAD = (id, extra, crm) => Object.assign({ id, user_id: 'u-joao', cliente:
 const job = (st, id) => st.linhas('trabalhos').find(j => j.id === id);
 const crm = (st, id) => JSON.parse(job(st, id).crm || '{}');
 const irQuadro = async p => { await p.evaluate(() => { A.ui.view = 'trabalhos'; A.ui.jseg = 'quadro'; A.render(false); }); await p.waitForSelector('#view .board'); };
-/* o "compartilhar" do celular, de mentira: guarda o que seria mandado */
-const fingirCompartilhar = p => p.evaluate(() => { navigator.canShare = () => true; navigator.share = d => { window.__mandado = { texto: d.text, arquivo: d.files[0].name, tipo: d.files[0].type, tam: d.files[0].size }; return Promise.resolve(); }; });
-/* lê o texto do PDF com o pdf.js que o app já tem */
-const textoDoPdf = p => p.evaluate(async () => {
-  if (!window.pdfjsLib) await new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'vendor/pdfjs/pdf.min.js'; s.onload = ok; s.onerror = erro; document.head.appendChild(s); });
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
-  const doc = await window.pdfjsLib.getDocument({ data: A.ultimoOrcamento.bytes.slice(), isEvalSupported: false }).promise;
-  let t = ''; for (let i = 1; i <= doc.numPages; i++) { const pg = await doc.getPage(i); t += (await pg.getTextContent()).items.map(x => x.str).join(' ') + '\n'; }
-  return { paginas: doc.numPages, texto: t };
-});
-
 module.exports = { etapa: 'Vendas (CRM)', testes: [
   ['cliente novo: entra em "Novo contato" com WhatsApp, de onde veio e o dia em que chamou; conta nos números do mês', async (st, abrir) => {
     const p = await abrir({ aparelho: 'iphone-15' });
@@ -36,31 +25,27 @@ module.exports = { etapa: 'Vendas (CRM)', testes: [
     igual(await p.evaluate(m => A.c.funil(m).novos, m0), 1, '1 cliente novo no mês');
     certo(await p.evaluate(id => !A.c.eventosDoMes(A.ui.mes).some(x => x.ID === id) && !A.c.proximosTrabalhos(50).some(x => x.job && x.job.ID === id), j.id), 'quem ainda não fechou não entra no calendário');
   }],
-  ['orçamento: itens com total, PDF com a marca (nome, itens, total, "incluso", condições) mandado pelo WhatsApp; vira "Orçamento" e guarda uma cópia', async (st, abrir) => {
-    st.tabelas.trabalhos.push(LEAD('JL1', { etapa: 'Novo contato' }));
+  ['"Mandei o orçamento" (ou arrastar para Orçamento) conta como orçamento do mês, sem gerar nada; a ficha tem o WhatsApp para retomar a conversa e anota que chamou', async (st, abrir) => {
+    st.tabelas.trabalhos.push(LEAD('JL1', { etapa: 'Novo contato' }, { contato: addDias(HOJE, -2) }), LEAD('JL4', { etapa: 'Novo contato', cliente: 'Bruna Arrastada' }));
     const p = await abrir({ aparelho: 'iphone-15' });
     await irQuadro(p);
-    await clica(p, '#view [data-a=editJ][data-id="JL1"]'); await p.waitForSelector('#s2 #oItens');
-    const linhas = async () => p.$$('#s2 .oit');
-    await p.fill('#s2 .oit:nth-child(1) [data-oi=d]', 'Filme do casamento (até 15 min), captação de 10h'); await p.fill('#s2 .oit:nth-child(1) [data-oi=v]', '2.800,00');
-    await clica(p, '#s2 [data-a=addItemOrc]'); await p.fill('#s2 .oit:nth-child(2) [data-oi=d]', 'Teaser para redes sociais'); await p.fill('#s2 .oit:nth-child(2) [data-oi=v]', '400');
-    await clica(p, '#s2 [data-a=addItemOrc]'); await p.fill('#s2 .oit:nth-child(3) [data-oi=d]', 'Drone');
-    igual((await linhas()).length, 3, '3 itens');
-    certo(/R\$\s?3\.200,00/.test(await p.textContent('#s2 #oTot')), 'total ao vivo: ' + await p.textContent('#s2 #oTot'));
-    certo(/^3\.?200,00$/.test(await p.inputValue('#s2 #jV')), 'o total vai para o valor do trabalho: ' + await p.inputValue('#s2 #jV'));
-    await conferirLayout(p, 'orçamento na ficha');
-    await fingirCompartilhar(p);
-    await clica(p, '#s2 [data-a=mandarOrc]'); await calmo(p);
-    const m = await p.evaluate(() => window.__mandado);
-    certo(m && m.tipo === 'application/pdf' && /^Orcamento-Darzan-ana-e-pedro\.pdf$/.test(m.arquivo) && /Ana e Pedro/.test(m.texto) && /orçamento/i.test(m.texto) && m.tam > 5000, 'mandou o PDF com a mensagem: ' + JSON.stringify(m));
-    const j = job(st, 'JL1'), k = crm(st, 'JL1');
-    certo(j.etapa === 'Orçamento' && j.valor_total === 3200 && k.enviado === HOJE && k.contato === HOJE && k.itens.length === 3 && k.itens[2].v === 0, 'passou para Orçamento e guardou o que foi mandado: ' + JSON.stringify([j.etapa, j.valor_total, k]));
-    const pdf = await textoDoPdf(p);
-    const t = pdf.texto.replace(/\s+/g, ' ');
-    certo(pdf.paginas === 1 && /ORÇAMENTO/.test(t) && /Ana e Pedro/.test(t) && /Teaser para redes sociais/.test(t) && /R\$ 3\.200,00/.test(t) && /incluso/.test(t) && /Espaço Jardim/.test(t) && /ACEITO/.test(t) && /\(19\) 99527-3041/.test(t), 'o PDF abre e tem tudo: ' + t.slice(0, 400));
-    const ax = st.linhas('anexos').filter(x => x.trabalho === 'JL1');
-    certo(ax.length === 1 && ax[0].tipo === 'Orçamento' && /^data:application\/pdf;base64,JVBER/.test(ax[0].conteudo), 'a cópia do PDF ficou nos arquivos do trabalho');
-    igual(await p.evaluate(m => A.c.funil(m).enviados, m0), 1, '1 orçamento enviado no mês');
+    await clica(p, '#view [data-a=editJ][data-id="JL1"]'); await p.waitForSelector('#s2 #jVenda');
+    certo(!(await p.$('#s2 [data-a=mandarOrc]')) && !(await p.$('#s2 .oit')), 'nada de montar ou gerar orçamento no app');
+    const href = decodeURIComponent(await p.getAttribute('#s2 #jVenda a.whats', 'href'));
+    certo(href.startsWith('https://wa.me/5519988881111?text=Oi, Ana e Pedro!') && /retomar a nossa conversa sobre o seu casamento/.test(href), 'WhatsApp para retomar a conversa: ' + href);
+    await conferirLayout(p, 'ficha de venda');
+    await clica(p, '#s2 #jVenda a.whats'); await calmo(p);
+    mesmo(crm(st, 'JL1').contato, HOJE, 'tocar no WhatsApp anota que chamou hoje');
+    await clica(p, '#s2 [data-a=fechar]');
+    await clica(p, '#view [data-a=editJ][data-id="JL1"]'); await clica(p, '#s2 [data-a=enviouOrc]'); await calmo(p);
+    const k = crm(st, 'JL1');
+    certo(job(st, 'JL1').etapa === 'Orçamento' && k.enviado === HOJE && k.contato === HOJE, 'passou para Orçamento e anotou o envio: ' + job(st, 'JL1').crm);
+    certo(await p.isVisible('#view .col[data-etapa="Orçamento"] .job[data-id="JL1"]'), 'está na coluna Orçamento');
+    await p.evaluate(() => { const b = document.createElement('button'); b.dataset.a = 'enviouOrc'; b.dataset.id = 'JL4'; document.body.appendChild(b); b.click(); b.remove(); }); await calmo(p); /* o mesmo caminho do arrastar: moverJob */
+    certo(job(st, 'JL4').etapa === 'Orçamento' && crm(st, 'JL4').enviado === HOJE, 'o outro também conta');
+    igual(await p.evaluate(m => A.c.funil(m).enviados, m0), 2, '2 orçamentos no mês');
+    await clica(p, '#view [data-a=editJ][data-id="JL1"]');
+    certo(/Perguntar se viu o orçamento/.test(await p.textContent('#s2 #jVenda a.whats')) && /orçamento enviado em/.test(await p.textContent('#s2 #jVenda')), 'depois do orçamento, a mensagem muda');
   }],
   ['cliente sem responder há 4 dias: aparece no cartão e no Pra fazer ("Chamar de novo", com o WhatsApp pronto); marcar anota que chamou hoje, com Desfazer', async (st, abrir) => {
     st.tabelas.trabalhos.push(LEAD('JL2', {}, { enviado: addDias(HOJE, -4), contato: addDias(HOJE, -4) }), LEAD('JL3', { cliente: 'Respondeu Ontem' }, { contato: addDias(HOJE, -1) }));

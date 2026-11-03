@@ -476,8 +476,9 @@ window.A = window.A || {};
     return { novos: em('criado'), enviados: em('enviado'), fechados: em('fechado'), perdidos: em('perdido'), esperando: js.filter(j => (c.semResposta(j) || 0) >= c.DIAS_RESPOSTA).length }; };
   c.primeiroNome = j => { const n = String(j['CLIENTE'] || '').replace(/\s*\(.*?\)\s*/g, ' ').trim(); return / e /i.test(n) ? n : n.split(' ')[0]; };
   c.linkConversa = (j, texto) => { const f = c.foneWhats(j['TELEFONE']); return f ? `https://wa.me/${f}?text=${encodeURIComponent(texto)}` : null; };
-  c.msgOrcamento = j => `Olá, ${c.primeiroNome(j)}! Tudo bem? Segue o orçamento da Darzan Produções${j['TIPO DE EVENTO'] ? ` para o seu ${String(j['TIPO DE EVENTO']).toLowerCase()}` : ''}${/^\d{4}-\d{2}-\d{2}/.test(String(j['DATA DO EVENTO'] || '')) ? ` (${u.ddmmaa(String(j['DATA DO EVENTO']))})` : ''}. Qualquer dúvida, estou à disposição. Para confirmar, é só me responder por aqui.`;
-  c.msgRetorno = j => `Oi, ${c.primeiroNome(j)}! Tudo bem? Passando para saber se você conseguiu ver o orçamento que te mandei. Se quiser, posso ajustar alguma coisa para caber certinho no que você imaginou.`;
+  c.msgRetorno = j => j['ETAPA'] === 'Novo contato'
+    ? `Oi, ${c.primeiroNome(j)}! Tudo bem? Aqui é o João, da Darzan Produções. Passando para retomar a nossa conversa${j['TIPO DE EVENTO'] ? ` sobre o seu ${String(j['TIPO DE EVENTO']).toLowerCase()}` : ''}. Posso te ajudar com mais alguma informação?`
+    : `Oi, ${c.primeiroNome(j)}! Tudo bem? Passando para saber se você conseguiu ver o orçamento que te mandei. Se quiser, posso ajustar alguma coisa para caber certinho no que você imaginou.`;
 
   /* ---------- calendário dos dias trabalhados ---------- */
   /* cada dia marcado (JPL SOM, Darzan, outro) com o valor dele; PAGAMENTO liga o dia ao lançamento que pagou.
