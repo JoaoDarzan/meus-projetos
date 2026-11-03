@@ -84,6 +84,8 @@ module.exports = { etapa: 'Voltar e Para onde foi', testes: [
     igual(pills.length, esperado.length, 'um por conta corrente');
     certo(pills.every(([, logo]) => logo), 'cada banco com o ícone');
     certo(esperado.every(([b, v], i) => pills[i][0].startsWith(b + ':') && (v == null || pills[i][0].includes(A_brl(v)))), 'só o saldo da conta corrente: ' + JSON.stringify(pills));
+    const vis = await p.$$eval('#view .bp[data-a=irBancos][aria-label] b', bs => bs.map(b => b.textContent));
+    certo(esperado.every(([, v], i) => v == null || vis[i] === A_brl(v)) && vis.some(t => /,\d\d$/.test(t)), 'no início, o saldo de cada banco com os centavos, sem arredondar: ' + vis);
     const cores = await p.$$eval('#view .flows .flow b', bs => bs.map(b => getComputedStyle(b).color));
     certo(new Set(cores).size === 3, 'Entrou, Saiu e Guardou com cores diferentes: ' + cores);
   }],

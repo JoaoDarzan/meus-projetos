@@ -20,30 +20,59 @@
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
     return `<button type="button" class="it btn" data-a="editL" data-id="${u.esc(l.id)}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
-  /* "Para onde foi": rosca com as categorias (cores validadas para o fundo escuro) e a lista; tocar abre as subcategorias */
+  /* "Para onde foi": anel fino com as categorias (cores validadas para o fundo escuro) e a lista.
+     A porcentagem aparece só ao passar o mouse ou o dedo (na fatia ou na linha); tocar abre as subcategorias */
   const CAT_COR = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9'];
-  function ondeFoi(r, onde) {
+  function ondeFoi(r) {
     if (!r.cats.length) return '';
     const tot = u.sum(r.cats, x => x.valor) || 1, top = r.cats.slice(0, 6), resto = r.cats.slice(6);
     const fatias = top.map((x, i) => Object.assign({ cor: CAT_COR[i] }, x));
     if (resto.length) fatias.push({ cat: 'Outras', valor: u.sum(resto, x => x.valor), n: u.sum(resto, x => x.n), cor: '#6b7591', outras: resto });
     let acc = 0;
-    const R = 70, C = 2 * Math.PI * R, gap = fatias.length > 1 ? 1.6 : 0;
-    const rotulos = [];
-    const arcos = fatias.map(f => { const len = Math.max(f.valor / tot * C - gap, .6), a = `<circle class="fatia" r="${R}" cx="90" cy="90" fill="none" stroke="${f.cor}" stroke-width="24" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(f.valor / tot)})</title></circle>`;
-      /* a porcentagem em cima da fatia (só nas que têm espaço: 6% ou mais) */
-      if (f.valor / tot >= .06) { const ang = (acc + f.valor / tot * C / 2) / C * 2 * Math.PI - Math.PI / 2; rotulos.push(`<text class="pf num" x="${(90 + R * Math.cos(ang)).toFixed(1)}" y="${(90 + R * Math.sin(ang)).toFixed(1)}" text-anchor="middle" dominant-baseline="central">${Math.round(f.valor / tot * 100)}%</text>`); }
-      acc += f.valor / tot * C; return a; }).join('');
+    const R = 76, C = 2 * Math.PI * R, gap = fatias.length > 1 ? 3 : 0;
     const aberta = ui.cexp && fatias.find(f => f.cat === ui.cexp);
-    /* no meio: o total; com uma categoria aberta, o valor dela */
-    const meio = aberta ? [u.k0(aberta.valor), `${u.esc(aberta.cat.length > 16 ? aberta.cat.slice(0, 15) + '…' : aberta.cat)} · ${u.pct(aberta.valor / tot)}`] : [u.k0(r.saiu), 'saiu no mês'];
+    const curto = t => t.length > 18 ? t.slice(0, 17) + '…' : t;
+    /* cada fatia: o traço fino que aparece e, por cima, uma faixa larga invisível (mais fácil de acertar com o dedo) */
+    const arcos = fatias.map(f => { const len = Math.max(f.valor / tot * C - gap, .8), dash = `stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}"`, a = `<circle class="fatia${aberta === f ? ' on' : ''}" r="${R}" cx="90" cy="90" fill="none" stroke="${f.cor}" ${dash} data-v="${u.esc(f.cat)}" data-p="${u.pct(f.valor / tot)}" data-n="${u.esc(curto(f.cat))}" data-r="${u.esc(u.brl(f.valor))}"/>`;
+      acc += f.valor / tot * C; return [a, `<circle class="hitf" r="${R}" cx="90" cy="90" fill="none" stroke="transparent" ${dash} data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(f.valor / tot)})</title></circle>`]; });
+    /* no meio: o total; com uma categoria aberta (ou com o mouse/dedo em cima), a porcentagem dela */
+    const meio = aberta ? [u.pct(aberta.valor / tot), curto(aberta.cat), u.brl(aberta.valor)] : [u.k0(r.saiu), 'saiu no mês', ''];
     const subs = f => {
       if (f.outras) return f.outras.map(x => [x.cat, x.valor]);
       return Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
     };
-    return `<div class="ondefoi"><div class="rosca"><svg viewBox="0 0 180 180" role="img" aria-label="Gastos por categoria"><g transform="rotate(-90 90 90)">${arcos}</g><g class="pfs" aria-hidden="true">${rotulos.join('')}</g><text x="90" y="86" text-anchor="middle" class="rv num">${meio[0]}</text><text x="90" y="106" text-anchor="middle" class="rl">${meio[1]}</text></svg></div>
-      <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}<small>${f.n} ${f.n === 1 ? 'gasto' : 'gastos'}</small></span><b class="num">${u.brl(f.valor)}<small>${u.pct(f.valor / tot)}</small></b></button>${aberta === f ? (() => { const ss = subs(f), mx = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / mx * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : `<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button>`}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div>`;
+    return `<div class="ondefoi${aberta ? ' foco' : ''}"><div class="rosca"><svg viewBox="0 0 180 180" role="img" aria-label="Gastos por categoria" data-m="${u.esc(JSON.stringify(meio))}"><circle class="trilho" r="${R}" cx="90" cy="90" fill="none"/><g transform="rotate(-90 90 90)">${arcos.map(x => x[0]).join('')}${arcos.map(x => x[1]).join('')}</g><text x="90" y="${meio[2] ? 84 : 90}" text-anchor="middle" class="rv num">${u.esc(meio[0])}</text><text x="90" y="${meio[2] ? 102 : 108}" text-anchor="middle" class="rl">${u.esc(meio[1])}</text><text x="90" y="117" text-anchor="middle" class="rl rl2 num">${u.esc(meio[2])}</text></svg></div>
+      <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}</span><b class="num">${u.brl(f.valor)}</b></button>${aberta === f ? (() => { const ss = subs(f), mx = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / mx * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : `<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button>`}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div>`;
   }
+  /* passar o mouse ou o dedo numa fatia (ou numa linha da lista): ela fica em destaque e o meio mostra a porcentagem */
+  (() => {
+    let atual = null;
+    const mostrar = (box, cat) => {
+      const svg = box.querySelector('.rosca svg'); if (!svg) return;
+      const f = cat && [...svg.querySelectorAll('.fatia')].find(x => x.dataset.v === cat);
+      const tx = svg.querySelectorAll('text'), m = f ? [f.dataset.p, f.dataset.n, f.dataset.r] : JSON.parse(svg.dataset.m || '["","",""]');
+      svg.querySelectorAll('.fatia').forEach(x => x.classList.toggle('on', x === f));
+      box.querySelectorAll('.catl').forEach(x => x.classList.toggle('quente', !!f && x.dataset.v === cat));
+      box.classList.toggle('foco', !!f);
+      tx[0].textContent = m[0]; tx[1].textContent = m[1]; tx[2].textContent = m[2];
+      tx[0].setAttribute('y', m[2] ? 84 : 90); tx[1].setAttribute('y', m[2] ? 102 : 108);
+      if (f && atual !== cat) { svg.classList.remove('pulso'); void svg.getBoundingClientRect(); svg.classList.add('pulso'); }
+      atual = f ? cat : null;
+    };
+    /* volta ao normal: a categoria aberta (se tiver) ou o total */
+    const voltar = box => { const ab = box.querySelector('.catl.on'); mostrar(box, ab ? ab.dataset.v : null); };
+    const alvo = el => el && el.closest && el.closest('.ondefoi .hitf, .ondefoi .catl');
+    document.addEventListener('pointerover', e => { const a = alvo(e.target); if (a) mostrar(a.closest('.ondefoi'), a.dataset.v); });
+    document.addEventListener('pointerout', e => { const a = alvo(e.target); if (!a || alvo(e.relatedTarget)) return; if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return; voltar(a.closest('.ondefoi')); });
+    document.addEventListener('pointerdown', e => { const a = alvo(e.target); if (a) mostrar(a.closest('.ondefoi'), a.dataset.v); });
+    /* no celular: arrastar o dedo em volta do anel vai trocando a fatia (no anel a tela não rola; fora dele, rola normal) */
+    let noAnel = false;
+    document.addEventListener('touchstart', e => { noAnel = !!(e.target.closest && e.target.closest('.ondefoi .hitf')); }, { passive: true });
+    document.addEventListener('touchmove', e => { if (!noAnel) return; e.preventDefault(); const t = e.touches[0], a = t && alvo(document.elementFromPoint(t.clientX, t.clientY)); if (a) mostrar(a.closest('.ondefoi'), a.dataset.v); }, { passive: false });
+    document.addEventListener('touchend', () => { noAnel = false; });
+    document.addEventListener('focusin', e => { const a = alvo(e.target); if (a) mostrar(a.closest('.ondefoi'), a.dataset.v); });
+    document.addEventListener('focusout', e => { const a = alvo(e.target); if (a && !alvo(e.relatedTarget)) voltar(a.closest('.ondefoi')); });
+  })();
 
   function anel(p, tam, esp, cor) { const r = (tam - esp) / 2, cf = 2 * Math.PI * r; return `<svg viewBox="0 0 ${tam} ${tam}" width="${tam}" height="${tam}"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="${esp}"/><circle class="rg" cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${cf}" stroke-dashoffset="${cf}" data-off="${cf * (1 - Math.min(Math.max(p, 0), 1))}"/></svg>`; }
   const foto = () => window.FOTO_JOAO ? `<img class="ava" src="${window.FOTO_JOAO}" alt="">` : `<span class="ava" style="display:grid;place-items:center;background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#3a2500;font-weight:800">JD</span>`;
@@ -96,7 +125,7 @@
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
           <div class="big num" data-cnt="${r.futuro ? r.prevSobra : r.sobra}" data-fmt="big">${u.big(r.futuro ? r.prevSobra : r.sobra)}</div></div>
         <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="k0">${u.k0(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.k0(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="k0">${u.k0(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="k0">${u.k0(r.guardou)}</b></span></div>
-        <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.k0(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
+        <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.brl(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
       ${cartoes.length ? `<section class="sec"><div class="sec-h"><h2>Cartões</h2><button class="more" type="button" data-a="irCartoes">Ver faturas</button></div><div class="rail">${cartoes.map(k => { const nome = k['CARTÃO'], fm = m, v = c.fatura(nome, fm), ven = c.vence(nome, fm), q = u.ateHoje(ven.data); return `<button type="button" class="gcard sm tilt" style="--g:${c.GRAD[nome] || 'var(--mp)'}" data-a="irCartoes" data-v="${u.esc(nome)}"><span class="sheen"></span><span class="bank">${u.esc(nome)}${u.svg('smartphone-nfc')}</span><span><span class="k">Fatura de ${u.nomeMes(fm).toLowerCase()}</span><br><span class="amt num">${u.brl(v)}</span></span><span class="foot"><span>${q < 0 ? 'Venceu' : 'Vence'} ${u.dm(ven.data)}${ven.estimado ? '*' : ''}</span><span>${c.pagFatura(nome, fm) ? 'Paga ✓' : q < 0 && v > 0 ? 'Atrasada' : 'Crédito'}</span></span></button>`; }).join('')}</div></section>` : ''}
       <section class="sec"><div class="acts">
