@@ -1,5 +1,6 @@
 // Cloudflare (Workers): publica só a pasta do site, igual ao GitHub Pages,
-// e o robô cloudflare/worker.js, que lista os vídeos do R2 em /api/videos.
+// e o robô cloudflare/worker.js: lista os vídeos do R2 em /api/videos e entrega
+// os vídeos de /videos/ em pedaços (o iPhone precisa disso para tocar liso).
 // Endereço provisório: https://darzanproducoes.joaodarzan10.workers.dev
 {
   "name": "darzanproducoes",
@@ -8,7 +9,7 @@
   "assets": {
     "directory": "./darzan-producoes",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/videos/*"]
   },
   "r2_buckets": [
     { "binding": "VIDEOS", "bucket_name": "darzan-videos" }
