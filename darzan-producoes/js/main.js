@@ -662,7 +662,11 @@ function setupMenu() {
   toggle.addEventListener('click', () => setOpen(!header.classList.contains('is-open')));
   $$('#nav a').forEach(a => a.addEventListener('click', () => setOpen(false)));
 
-  const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 40);
+  const onScroll = () => {
+    header.classList.toggle('is-scrolled', window.scrollY > 40);
+    /* botão do WhatsApp só aparece depois do topo (no topo já tem o botão de orçamento) */
+    document.body.classList.toggle('passou-topo', window.scrollY > window.innerHeight * 0.55);
+  };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 }
