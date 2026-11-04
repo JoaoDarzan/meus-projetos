@@ -318,6 +318,31 @@ function renderVideos() {
   })).join('') + cartaoVazio('media-card film-card', 'Em breve').repeat(vagas(reais.length, 3));
   bindCards(grid);
   arrumarFiltros();
+  montarPontos();
+}
+
+/* pontinhos do carrossel de filmes (celular) */
+function montarPontos() {
+  const grid = $('#videoGrid');
+  const pontos = $('#videoPontos');
+  if (!grid || !pontos) return;
+  const cards = () => $$('.media-card:not(.is-empty)', grid).filter(c => !c.hidden);
+  const atualizar = () => {
+    const lista = cards();
+    grid.classList.toggle('so-um', lista.length <= 1);
+    pontos.hidden = lista.length <= 1;
+    if (pontos.children.length !== lista.length) pontos.innerHTML = '<i></i>'.repeat(lista.length);
+    const meio = grid.scrollLeft + grid.clientWidth / 2;
+    let atual = 0;
+    lista.forEach((c, i) => { if (c.offsetLeft <= meio) atual = i; });
+    [...pontos.children].forEach((p, i) => p.classList.toggle('is-on', i === atual));
+  };
+  if (!grid.dataset.pontos) {
+    grid.dataset.pontos = '1';
+    grid.addEventListener('scroll', () => requestAnimationFrame(atualizar), { passive: true });
+    $$('.filters[data-target="videoGrid"] .filter').forEach(f => f.addEventListener('click', () => setTimeout(atualizar)));
+  }
+  atualizar();
 }
 
 function renderStories() {

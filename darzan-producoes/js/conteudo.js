@@ -38,10 +38,7 @@ const SITE = {
   // OPCIONAL: versão VERTICAL (em pé) do vídeo de fundo, para celular.
   // Com ela, o celular mostra o vídeo em tela cheia. Sem ela, mostra o vídeo
   // horizontal inteiro numa faixa no topo. Ex: 'videos/fundo-celular.mp4'
-  videoFundoCelular: {
-    fontes: [{ rotulo: 'Vertical', src: 'videos/topo-vertical.mp4' }],
-    capa: 'videos/topo-vertical.jpg'
-  },
+  videoFundoCelular: '',
 
   // Vídeo vertical que aparece DENTRO DO CELULAR na seção Storymaker.
   // Ex: 'videos/story-destaque.mp4'
