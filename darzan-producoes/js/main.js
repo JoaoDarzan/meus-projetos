@@ -8,7 +8,8 @@ const TIPOS = {
   'teaser': 'Teaser',
   'cerimonia': 'Cerimônia na íntegra',
   'motion': 'Vídeo com motion',
-  'empresa': 'Vídeo para empresa'
+  'empresa': 'Vídeo para empresa',
+  'depoimento': 'Depoimento'
 };
 
 /* recarregou a página: volta sempre para o começo (não para onde estava) */
@@ -246,7 +247,7 @@ function videoCard(v, i, { lista, classe, tag, vazio }) {
       <div class="media-card__media">${media}</div>
       ${info ? '<span class="media-card__play"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>' : ''}
       ${info && v.duracao ? `<span class="media-card__tempo">${esc(v.duracao)}</span>` : ''}
-      ${info || v.titulo ? `<div class="media-card__info">
+      ${v.titulo || tag ? `<div class="media-card__info">
         ${tag ? `<span class="media-card__cat">${esc(tag)}</span>` : ''}
         <strong>${esc(v.titulo)}</strong>
       </div>` : ''}
@@ -297,7 +298,7 @@ function bindCards(grid) {
 }
 
 /* espaços vazios para completar a última fileira (mínimo de uma fileira) */
-const vagas = (qtd, fileira) => Math.max(fileira, Math.ceil(qtd / fileira) * fileira) - qtd;
+const vagas = (qtd, fileira) => Math.max(0, fileira - qtd);
 const cartaoVazio = (classe, texto) => `
     <div class="${classe} reveal is-empty" aria-hidden="true">
       <div class="media-card__media"><div class="placeholder">
@@ -313,7 +314,7 @@ function renderVideos() {
   grid.innerHTML = VIDEOS.map((v, i) => videoCard(v, i, {
     lista: 'filmes',
     classe: 'media-card film-card',
-    tag: [TIPOS[v.tipo], v.evento].filter(Boolean).join(' · '),
+    tag: v.detalhe || [TIPOS[v.tipo], v.evento].filter(Boolean).join(' · '),
     vazio: ''
   })).join('') + cartaoVazio('media-card film-card', 'Em breve').repeat(vagas(reais.length, 3));
   bindCards(grid);
@@ -352,7 +353,7 @@ function renderStories() {
   grid.innerHTML = STORIES.map((v, i) => videoCard(v, i, {
     lista: 'stories',
     classe: 'media-card story-card',
-    tag: v.evento || '',
+    tag: v.detalhe || v.evento || '',
     vazio: ''
   })).join('') + cartaoVazio('media-card story-card', '').repeat(vagas(reais.length, 4));
   bindCards(grid);
@@ -482,8 +483,12 @@ function renderFeedbacks() {
    - o tipo sai do nome: teaser, cerimonia, motion, empresa/institucional; senão é "filme"
    - nome com "story"/"stories"/"vertical"/"reels" vai para os stories
    - nome com "fundo" ou "topo" vira o vídeo de fundo do topo ("fundo-celular"/"topo-vertical": versão em pé)
-   - os mais novos aparecem primeiro. Títulos à mão: lista.json no bucket (opcional). */
+   - "davi-e-leticia-making-of-noivo" vira "Davi & Letícia" com a etiqueta "Making of do noivo"
+   - "depoimento" vai para o filtro Depoimentos; "story-1" aparece sem título
+   - ordem: teasers, casal, making of, festa, trends, depoimentos, takes (mais novo primeiro em cada grupo)
+   - à mão (opcional): lista.json no bucket com { "nome": { "titulo", "detalhe", "tipo", "ordem" } } */
 const TIPO_PELO_NOME = [
+  ['depoimento', /depoimento|feedback/i],
   ['cerimonia', /cerim[oô]nia|[ií]ntegra/i],
   ['teaser', /teaser|trailer/i],
   ['motion', /motion|vinheta|anima[cç]/i],
@@ -495,14 +500,64 @@ const EVENTO_PELO_NOME = [
   ['Chá revelação', /ch[aá][-_ ]?(de[-_ ])?revela/i],
   ['Empresa', /empresa|institucional|corporativ|comercial/i]
 ];
-const PALAVRA_DE_TECNICA = /^(teaser|trailer|filme|film|cerim[oô]nia|[ií]ntegra|na|motion|vinheta|empresa|institucional|v[ií]deo|final|v\d+|\d{3,4}p?|4k|hd|sd|story|stories|reels?|completo|editado|export|render|topo|fundo|casamento|wedding|anivers[aá]rio|aniver|ch[aá]|revela[cç][aã]o|revelacao)$/i;
 
-function tituloDoNome(stem) {
-  const palavras = stem.split('/').pop().split(/[-_\s.]+/).filter(p => p && !PALAVRA_DE_TECNICA.test(p));
-  return palavras.map((p, i) => (i > 0 && /^(e|de|da|do|das|dos)$/i.test(p))
-    ? p.toLowerCase()
-    : p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+const ACENTOS = {
+  leticia: 'letícia', helloa: 'helloa', joao: 'joão', vitoria: 'vitória', antonio: 'antônio', lucia: 'lúcia',
+  decoracao: 'decoração', cerimonia: 'cerimônia', integra: 'íntegra', alianca: 'aliança', aliancas: 'alianças',
+  seria: 'séria', video: 'vídeo', videos: 'vídeos', aniversario: 'aniversário', cha: 'chá', revelacao: 'revelação',
+  recepcao: 'recepção', saida: 'saída', danca: 'dança', emocao: 'emoção', camera: 'câmera', ensaio: 'ensaio'
+};
+const FRASES = [
+  [/^making of noivo$/, 'Making of do noivo'],
+  [/^making of noiva$/, 'Making of da noiva'],
+  [/^(v[ií]deo )?casal$/, 'Vídeo do casal'],
+  [/^melhores momentos festa$/, 'Melhores momentos da festa'],
+  [/^trend alian[cç]a$/, 'Trend da aliança'],
+  [/^teaser oficial$/, 'Teaser oficial']
+];
+const FORA_DO_NOME = /^(v\d+|\d{3,4}p?|4k|hd|sd|final|export|render|editado|vertical|horizontal|story|stories|reels?|topo|fundo|\d{4})$/i;
+const acento = p => ACENTOS[p.toLowerCase()] || p.toLowerCase();
+const maiuscula = t => t.charAt(0).toUpperCase() + t.slice(1);
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function descreverNome(stem, tipo) {
+  let nome = stem.split('/').pop().toLowerCase();
+  let data = '';
+  const md = nome.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (md) { data = `${MESES[+md[2] - 1] || ''} · ${md[1]}`; nome = nome.replace(md[0], ''); }
+  let titulo = '';
+  let resto = nome;
+  const par = nome.match(/^(?:casal-)?([a-zà-ú]+)-e-([a-zà-ú]+)(?:-(.*))?$/);
+  if (par) {
+    titulo = `${maiuscula(acento(par[1]))} & ${maiuscula(acento(par[2]))}`;
+    resto = par[3] || (nome.startsWith('casal-') ? 'casal' : '');
+  }
+  const palavras = resto.split(/[-_\s.]+/).filter(p => p && !FORA_DO_NOME.test(p)).map(acento);
+  let frase = palavras.join(' ');
+  const pronta = FRASES.find(([re]) => re.test(frase));
+  frase = pronta ? pronta[1] : maiuscula(frase);
+  if (tipo === 'depoimento') return { titulo: titulo || 'Depoimento de cliente', detalhe: data || 'Depoimento' };
+  if (!titulo) {
+    if (/^story( |$)/i.test(frase) || /^\d*$/.test(frase.replace(/\s/g, ''))) return { titulo: '', detalhe: '' };
+    return { titulo: frase, detalhe: '' };
+  }
+  if (frase.toLowerCase() === (TIPOS[tipo] || '').toLowerCase()) frase = '';
+  return { titulo, detalhe: frase };
 }
+
+/* ordem dentro de um mesmo dia de envio: teasers e filmes primeiro, depoimentos e takes por último */
+function prioridade(item, stem) {
+  const n = stem.toLowerCase();
+  if (item.tipo === 'teaser') return 0;
+  if (item.tipo === 'cerimonia') return 2;
+  if (item.tipo === 'depoimento') return 8;
+  if (/take/.test(n)) return 9;
+  if (/making/.test(n)) return 3;
+  if (/casal/.test(n)) return 1;
+  if (/trend/.test(n)) return 6;
+  return 4;
+}
+
 const urlR2 = nome => `${SITE.videosBase.replace(/\/+$/, '')}/${nome.split('/').map(encodeURIComponent).join('/')}`;
 const rotuloQualidade = q => q >= 2160 ? '4K' : q ? `${q}p` : 'Original';
 
@@ -545,9 +600,9 @@ async function carregarVideosDaNuvem() {
   const filmes = [];
   const stories = [];
   let mudouFundo = false;
+  const novos = [];
   [...grupos.values()]
     .filter(g => g.videos.length && !jaNoSite.has(g.stem))
-    .sort((a, b) => (a.enviado < b.enviado ? 1 : a.enviado > b.enviado ? -1 : 0))
     .forEach(g => {
       /* melhor qualidade até 1080p primeiro (4K pesa demais para o site); a mais leve por último */
       const peso = v => (v.q === 0 ? 1500 : v.q);
@@ -566,15 +621,29 @@ async function carregarVideosDaNuvem() {
       }
       const tipo = TIPOS[extra.tipo] ? extra.tipo : (TIPO_PELO_NOME.find(([, re]) => re.test(nome)) || ['filme'])[0];
       const evento = extra.evento || (EVENTO_PELO_NOME.find(([, re]) => re.test(nome)) || [''])[0];
+      const nomeBonito = descreverNome(g.stem, tipo);
       const item = {
-        titulo: extra.titulo || tituloDoNome(g.stem) || TIPOS[tipo],
+        titulo: extra.titulo != null ? extra.titulo : nomeBonito.titulo,
+        detalhe: extra.detalhe != null ? extra.detalhe : nomeBonito.detalhe,
         tipo, evento, video,
         capa: extra.capa || '',
         duracao: extra.duracao || ''
       };
-      if (extra.lista === 'stories' || /story|stories|vertical|reels?/i.test(nome)) stories.push(item);
-      else filmes.push(item);
+      novos.push({
+        item, stem: g.stem, dia: g.enviado.slice(0, 10), enviado: g.enviado,
+        ordem: typeof extra.ordem === 'number' ? extra.ordem : null,
+        story: extra.lista === 'stories' || /story|stories|vertical|reels?/i.test(nome)
+      });
     });
+  /* ordem: "ordem" do lista.json (se tiver); senão teasers primeiro, depois vídeos de casal,
+     making of, festa, trends, depoimentos e takes; dentro de cada grupo, o mais novo primeiro */
+  novos.sort((a, b) => {
+    if (a.ordem != null || b.ordem != null) return (a.ordem ?? 999) - (b.ordem ?? 999);
+    const pa = prioridade(a.item, a.stem), pb = prioridade(b.item, b.stem);
+    if (pa !== pb) return pa - pb;
+    return a.enviado < b.enviado ? 1 : -1;
+  });
+  novos.forEach(n => (n.story ? stories : filmes).push(n.item));
 
   if (filmes.length) {
     VIDEOS.splice(0, VIDEOS.length, ...VIDEOS.filter(v => v.video), ...filmes);
