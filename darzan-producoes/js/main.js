@@ -110,7 +110,9 @@ function montarVideoFundo() {
   media.classList.remove('is-empty');
   if (fonte.tipo === 'arquivo') {
     /* celular: versão 720p (carrega mais rápido); computador: 1080p */
-    const src = celular && fonte.leve ? fonte.leve : fonte.src;
+    const c = navigator.connection;
+    const fraca = !!c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''));
+    const src = (celular || fraca) && fonte.leve ? fonte.leve : fonte.src;
     const capa = fonte.thumb ? ` poster="${esc(fonte.thumb)}"` : '';
     media.innerHTML = `<video src="${esc(src)}"${capa} muted loop playsinline autoplay preload="auto"></video>`;
     const v = $('video', media);
@@ -204,7 +206,8 @@ function setupMedia() {
 
   const phone = $('#storyPhone');
   if (SITE.videoCelular) {
-    phone.innerHTML = `<video src="${esc(SITE.videoCelular)}" muted loop playsinline autoplay></video>`;
+    phone.innerHTML = `<video data-src="${esc(SITE.videoCelular)}" muted loop playsinline preload="none"></video>`;
+    tocarQuandoAparecer($('video', phone));
   } else {
     phone.innerHTML = `
       <div class="placeholder placeholder--phone">
@@ -217,6 +220,17 @@ function setupMedia() {
   about.innerHTML = SITE.fotoPerfil
     ? `<img src="${esc(SITE.fotoPerfil)}" alt="João Darzan" loading="lazy">`
     : `<div class="placeholder"><svg viewBox="0 0 24 24"><use href="#i-camera"/></svg><span>Sua foto aqui</span></div>`;
+}
+
+/* vídeo que só baixa quando chega perto da tela, e pausa quando sai (economiza internet) */
+function tocarQuandoAparecer(video) {
+  if (!video) return;
+  const carregar = () => { if (!video.src && video.dataset.src) video.src = video.dataset.src; };
+  if (!('IntersectionObserver' in window)) { carregar(); video.play().catch(() => { }); return; }
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && video.offsetParent !== null) { carregar(); video.play().catch(() => { }); }
+    else if (video.src) video.pause();
+  }, { rootMargin: '200px 0px' }).observe(video);
 }
 
 /* ---------- Cartão de vídeo (filmes e stories) ---------- */
