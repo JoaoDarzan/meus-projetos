@@ -579,7 +579,12 @@ async function carregarVideosDaNuvem() {
   if (!SITE.videosBase || !/^https?:$/.test(location.protocol)) return;
   let dados;
   try {
-    const r = await fetch('api/videos');
+    /* no endereço do GitHub a lista vem do robô da Cloudflare; desiste em 8 s para nunca travar o site */
+    const api = /github\.io$/.test(location.hostname) ? `${SITE.robo}/api/videos` : 'api/videos';
+    const parar = new AbortController();
+    const relogio = setTimeout(() => parar.abort(), 8000);
+    const r = await fetch(api, { signal: parar.signal });
+    clearTimeout(relogio);
     if (!r.ok) return;
     dados = await r.json();
   } catch (e) { return; }

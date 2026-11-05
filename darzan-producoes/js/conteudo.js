@@ -21,6 +21,8 @@ const SITE = {
 
   // Onde os vídeos ficam guardados (Cloudflare R2). Não precisa mexer.
   videosBase: 'https://pub-130031e922ee48738efb8b8f3926986b.r2.dev',
+  // Robô da Cloudflare que lista os vídeos (usado quando o site abre pelo endereço do GitHub).
+  robo: 'https://darzanproducoes.joaodarzan10.workers.dev',
 
   // Vídeo que roda no FUNDO do topo do site, atrás dos textos.
   // Vídeo guardado na Cloudflare: escreva só o nome. Ex: 'fundo' (usa fundo-1080.mp4 e fundo-720.mp4).
