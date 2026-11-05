@@ -575,19 +575,50 @@ function prioridade(item, stem) {
 const urlR2 = nome => `${SITE.videosBase.replace(/\/+$/, '')}/${nome.split('/').map(encodeURIComponent).join('/')}`;
 const rotuloQualidade = q => q >= 2160 ? '4K' : q ? `${q}p` : 'Original';
 
+/* busca um JSON e desiste depois de "ms" (nunca deixa o site travado esperando) */
+async function buscarJson(url, ms) {
+  const parar = new AbortController();
+  const relogio = setTimeout(() => parar.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: parar.signal, cache: 'no-cache' });
+    return r.ok ? await r.json() : null;
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(relogio);
+  }
+}
+
+/* De onde vem a lista de vídeos:
+   - Cloudflare: do robô, na hora (api/videos).
+   - GitHub: primeiro da lista guardada no próprio GitHub (videos.json, atualizada sozinha
+     de 15 em 15 minutos), que abre em qualquer internet; depois tenta o robô da Cloudflare
+     para pegar o que acabou de subir (se a internet bloquear o workers.dev, fica a guardada). */
 async function carregarVideosDaNuvem() {
   if (!SITE.videosBase || !/^https?:$/.test(location.protocol)) return;
-  let dados;
-  try {
-    /* no endereço do GitHub a lista vem do robô da Cloudflare; desiste em 8 s para nunca travar o site */
-    const api = /github\.io$/.test(location.hostname) ? `${SITE.robo}/api/videos` : 'api/videos';
-    const parar = new AbortController();
-    const relogio = setTimeout(() => parar.abort(), 8000);
-    const r = await fetch(api, { signal: parar.signal });
-    clearTimeout(relogio);
-    if (!r.ok) return;
-    dados = await r.json();
-  } catch (e) { return; }
+  if (/github\.io$/.test(location.hostname)) {
+    const guardada = await buscarJson('videos.json', 8000);
+    if (guardada) aplicarLista(guardada);
+    const naHora = SITE.robo ? await buscarJson(`${SITE.robo}/api/videos`, 6000) : null;
+    if (naHora && JSON.stringify(naHora.arquivos) !== JSON.stringify(guardada && guardada.arquivos)) aplicarLista(naHora);
+  } else {
+    const naHora = await buscarJson('api/videos', 8000);
+    if (naHora) aplicarLista(naHora);
+  }
+}
+
+/* o que estava escrito à mão no conteudo.js (guardado para poder aplicar a lista mais de uma vez) */
+let BASE = null;
+function aplicarLista(dados) {
+  if (!BASE) {
+    BASE = {
+      videos: VIDEOS.filter(v => v.video),
+      stories: STORIES.filter(v => v.video),
+      fotos: FOTOS.filter(f => f.arquivo),
+      fundo: SITE.videoFundo,
+      fundoCelular: SITE.videoFundoCelular
+    };
+  }
   const info = dados.info || {};
 
   /* junta as versões de cada vídeo (1080, 720, capa) pelo nome */
@@ -615,7 +646,10 @@ async function carregarVideosDaNuvem() {
     grupos.set(stem, g);
   }
 
-  const jaNoSite = new Set([...VIDEOS, ...STORIES].map(v => (typeof v.video === 'string' ? v.video : '')).filter(Boolean));
+  const jaNoSite = new Set([...BASE.videos, ...BASE.stories].map(v => (typeof v.video === 'string' ? v.video : '')).filter(Boolean));
+  const fundoAntes = SITE.videoFundo, fundoCelAntes = SITE.videoFundoCelular;
+  SITE.videoFundo = BASE.fundo;
+  SITE.videoFundoCelular = BASE.fundoCelular;
   const filmes = [];
   const stories = [];
   let mudouFundo = false;
@@ -665,12 +699,12 @@ async function carregarVideosDaNuvem() {
   novos.forEach(n => (n.story ? stories : filmes).push(n.item));
 
   if (filmes.length) {
-    VIDEOS.splice(0, VIDEOS.length, ...VIDEOS.filter(v => v.video), ...filmes);
+    VIDEOS.splice(0, VIDEOS.length, ...BASE.videos, ...filmes);
     renderVideos();
     observarReveal($('#videoGrid'));
   }
   if (stories.length) {
-    STORIES.splice(0, STORIES.length, ...STORIES.filter(v => v.video), ...stories);
+    STORIES.splice(0, STORIES.length, ...BASE.stories, ...stories);
     renderStories();
     observarReveal($('#storyGrid'));
     if (!SITE.videoCelular) {
@@ -679,14 +713,14 @@ async function carregarVideosDaNuvem() {
       setupMedia();
     }
   }
-  if (mudouFundo) { modoVideo = null; montarVideoFundo(); }
+  if (SITE.videoFundo !== fundoAntes || SITE.videoFundoCelular !== fundoCelAntes) { modoVideo = null; montarVideoFundo(); }
   if (fotos.length) {
-    const jaTem = new Set(FOTOS.map(f => f.arquivo));
+    const jaTem = new Set(BASE.fotos.map(f => f.arquivo));
     const novas = fotos
       .sort((a, b) => (String(a.enviado) < String(b.enviado) ? 1 : -1))
       .map(a => ({ arquivo: urlR2(a.nome), legenda: '' }))
       .filter(f => !jaTem.has(f.arquivo));
-    FOTOS.splice(0, FOTOS.length, ...FOTOS.filter(f => f.arquivo), ...novas);
+    FOTOS.splice(0, FOTOS.length, ...BASE.fotos, ...novas);
     renderFotos();
     observarReveal($('#photoGrid'));
   }
