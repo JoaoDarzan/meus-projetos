@@ -36,7 +36,7 @@ module.exports = { etapa: 'Calendário dos dias trabalhados', testes: [
     st.tabelas.dias.push({ id: 'WSAB', user_id: 'u-joao', data: SAB, empresa: 'JPL SOM', descricao: 'som', valor: null, pagamento: null, obs: null },
       { id: 'WDOM', user_id: 'u-joao', data: DOM, empresa: 'JPL SOM', descricao: 'som', valor: null, pagamento: null, obs: null },
       { id: 'WOUT', user_id: 'u-joao', data: SAB, empresa: 'Buffet Teste', descricao: 'outro trampo', valor: 100, pagamento: null, obs: null });
-    st.tabelas.extrato.push(L('LPIXJPL', { descricao: 'Pix do Fábio JPL SOM' }));
+    st.tabelas.extrato.push(L('LPIXJPL', { descricao: 'Pix do cliente JPL SOM' }));
     const p = await abrir({ aparelho: 'iphone-15' });
     const renda0 = await p.evaluate(m => A.c.resumo(m).fonte['JPL SOM'], m0);
     await p.evaluate(() => { A.ui.view = 'fin'; A.ui.fseg = 'extrato'; A.render(false); });

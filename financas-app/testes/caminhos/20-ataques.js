@@ -31,9 +31,14 @@ module.exports = { etapa: 'Vigia de segurança (ataques)', testes: [
     st.tabelas.trabalhos.push({ id: `J"><svg onload=window.__xss=1>`, user_id: 'u-joao', cliente: ATAQUES[0], tipo_de_evento: ATAQUES[1], etapa: 'Fechado', entregas: `[ ] ${ATAQUES[2]}\n[x] ${ATAQUES[4]}`, briefing: ATAQUES[3] });
     st.tabelas.trabalhos.push({ id: 'JX', user_id: 'u-joao', cliente: 'Com anexo', tipo_de_evento: 'Casamento', etapa: 'Fechado' });
     st.tabelas.anexos.push({ id: 'XA1', user_id: 'u-joao', trabalho: 'JX', nome: ATAQUES[0], tipo: 'Comprovante', arquivo: 'image/png', conteudo: `x" onerror="window.__xss=1` });
+    /* vendas (CRM): o ataque dentro dos dados do cliente (de onde veio, motivo) e no calendário de dias trabalhados */
+    st.tabelas.trabalhos.push({ id: 'JLEAD', user_id: 'u-joao', cliente: ATAQUES[2], tipo_de_evento: 'Casamento', etapa: 'Novo contato', telefone: ATAQUES[4], crm: JSON.stringify({ origem: ATAQUES[0], criado: HOJE, contato: HOJE, motivo: ATAQUES[1] }) },
+      { id: 'JPERD', user_id: 'u-joao', cliente: ATAQUES[3], tipo_de_evento: 'Casamento', etapa: 'Perdido', crm: JSON.stringify({ origem: ATAQUES[1], perdido: HOJE, motivo: ATAQUES[0] }) },
+      { id: 'JRUIM', user_id: 'u-joao', cliente: 'crm quebrado', tipo_de_evento: 'Casamento', etapa: 'Orçamento', crm: ATAQUES[0] });
+    st.tabelas.dias.push({ id: 'WX1', user_id: 'u-joao', data: HOJE, empresa: ATAQUES[0], descricao: ATAQUES[1], valor: 100, pagamento: ATAQUES[2], obs: ATAQUES[3] });
     st.tabelas.equipamentos.push({ id: 'EX1', user_id: 'u-joao', nome: ATAQUES[1], tipo: ATAQUES[0], valor: 10, foto: `x" onerror="window.__xss=1` });
     const p = await abrir({ larg: 1280, alt: 900 });
-    const telas = [['inicio', {}], ['trabalhos', { jseg: 'quadro' }], ['trabalhos', { jseg: 'recorrentes' }], ['trabalhos', { jseg: 'balanco' }], ['tarefas', {}], ['equip', {}]]
+    const telas = [['inicio', {}], ['trabalhos', { jseg: 'quadro' }], ['trabalhos', { jseg: 'recorrentes' }], ['trabalhos', { jseg: 'balanco' }], ['trabalhos', { jseg: 'calendario' }], ['tarefas', {}], ['equip', {}]]
       .concat(['extrato', 'revisar', 'bancos', 'cartoes', 'fixas', 'metas'].map(f => ['fin', { fseg: f }])).concat(['mes', 'ano', 'darzan', 'jpl', 'clt'].map(r => ['fin', { fseg: 'relatorios', rseg: r }]));
     for (const [v, o] of telas) {
       await p.evaluate(([v, o]) => { Object.assign(A.ui, o); A.ui.view = v; A.render(false); }, [v, o]);
@@ -45,11 +50,18 @@ module.exports = { etapa: 'Vigia de segurança (ataques)', testes: [
     await p.evaluate(() => { A.ui.view = 'trabalhos'; A.ui.jseg = 'quadro'; A.render(false); });
     for (const id of await p.$$eval('#view .job', js => js.map(j => j.dataset.id))) {
       await p.evaluate(id => { const b = [...document.querySelectorAll('#view .job')].find(j => j.dataset.id === id); b.click(); }, id);
-      await p.waitForSelector('#s2 #jVid');
+      await p.waitForSelector('#s2 #jVid, #s2 #jVenda');
       certo(!(await injetado(p)).length, `ficha do trabalho ${id}: ${await injetado(p)}`);
       if (id === 'JX') { await clica(p, '#jAnx [data-a=verX]'); await p.waitForTimeout(300); certo(!(await injetado(p)).length, 'anexo: ' + await injetado(p)); }
       await clica(p, '#s2 [data-a=fechar]');
     }
+    /* quem não fechou (fica fora do quadro) e o dia trabalhado */
+    await p.evaluate(() => { document.querySelector('#view details.perd').open = true; });
+    await clica(p, '#view details.perd [data-a=editJ][data-id="JPERD"]');
+    certo(!(await injetado(p)).length, 'ficha de quem não fechou: ' + await injetado(p)); await clica(p, '#s2 [data-a=fechar]');
+    await p.evaluate(() => { A.ui.view = 'trabalhos'; A.ui.jseg = 'calendario'; A.render(false); });
+    await clica(p, `#view [data-a=calDia][data-v="${HOJE}"]`);
+    certo(!(await injetado(p)).length, 'dia trabalhado: ' + await injetado(p)); await clica(p, '#s2 [data-a=fechar]').catch(() => { });
     await p.evaluate(() => { A.ui.view = 'equip'; A.render(false); });
     await clica(p, '#view [data-a=editE][data-id="EX1"]').catch(() => { });
     certo(!(await injetado(p)).length, 'ficha do equipamento: ' + await injetado(p));

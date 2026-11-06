@@ -15,6 +15,14 @@ const etapas = fs.readdirSync(PASTA).filter(f => f.endsWith('.js')).sort()
   .map(f => Object.assign({ arquivo: f }, require(path.join(PASTA, f))))
   .filter(e => !filtro || e.arquivo.startsWith(filtro.padStart(2, '0')) || e.arquivo.toLowerCase().includes(filtro) || e.etapa.toLowerCase().includes(filtro));
 
+/* versão: o número do app (sw.js) e o carimbo ?v= de cada arquivo no index.html têm de ser iguais; senão o celular continua com arquivos velhos */
+{
+  const APP = path.join(__dirname, '../../darzan-producoes/financas');
+  const sw = (fs.readFileSync(path.join(APP, 'sw.js'), 'utf8').match(/darzan-financas-v(\d+)/) || [])[1];
+  const vs = [...fs.readFileSync(path.join(APP, 'index.html'), 'utf8').matchAll(/\?v=(\d+)/g)].map(m => m[1]);
+  if (!sw || !vs.length || vs.some(v => v !== sw)) { console.error(`✗ Versão desencontrada: sw.js v${sw}, index.html ${[...new Set(vs)].map(v => 'v' + v).join(', ')}. Troque todas juntas.`); process.exit(1); }
+}
+
 (async () => {
   const b = await chromium.launch();
   const relatorio = [], inicio = Date.now();

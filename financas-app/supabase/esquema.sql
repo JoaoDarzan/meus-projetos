@@ -568,6 +568,7 @@ revoke all on function public.claude_dono(text) from public, anon, authenticated
 create or replace function public.claude_tabela_ok(p_tabela text) returns boolean language sql immutable set search_path = '' as $$
   select p_tabela = any (array['extrato', 'contas', 'cartoes', 'parcelados', 'fixas', 'equipamentos', 'trabalhos', 'anexos', 'dias', 'tarefas', 'metas', 'categorias', 'avisos']);
 $$;
+revoke all on function public.claude_tabela_ok(text) from public, anon, authenticated; -- só as funções do Claude usam (por dentro)
 
 -- ler uma tabela inteira do dono da chave (sem o arquivo dos anexos, que é pesado)
 create or replace function public.claude_ler(p_chave text, p_tabela text) returns json language plpgsql security definer set search_path = '' as $$

@@ -2,8 +2,10 @@
    Roda no GitHub todo dia (.github/workflows/vigia-seguranca.yml). Se algo abrir, o GitHub manda e-mail para o João.
    Só lê e tenta coisas que precisam ser recusadas: não grava nada. Uso: node financas-app/ferramentas/vigia_online.mjs */
 const SUPABASE = 'https://sczpyzcozcaibyzekmau.supabase.co', CHAVE = 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
-const SITES = ['https://joaodarzan.github.io/meus-projetos/financas/']; /* único endereço do app */
-const TABELAS = ['extrato', 'contas', 'cartoes', 'parcelados', 'fixas', 'equipamentos', 'trabalhos', 'anexos', 'tarefas', 'metas', 'categorias', 'avisos', 'aparelhos', 'acesso_claude', 'config_servidor', 'sinal_de_vida'];
+const SITES = ['https://joaodarzan.github.io/meus-projetos/financas/', 'https://darzanproducoes.joaodarzan10.workers.dev/financas/']; /* o app no GitHub Pages e a cópia que a Cloudflare publica junto com o site */
+/* todas as tabelas do banco, lidas do esquema (tabela nova entra na vigia sozinha) */
+const TABELAS = [...(await import('node:fs')).readFileSync(new URL('../supabase/esquema.sql', import.meta.url), 'utf8').matchAll(/create table if not exists public\.(\w+)/g)].map(m => m[1]);
+if (TABELAS.length < 10) throw new Error('não achei as tabelas no esquema.sql');
 const problemas = [], ok = [], avisos = [];
 const confere = (bom, txt) => (bom ? ok : problemas).push(txt);
 const api = (caminho, op = {}) => fetch(SUPABASE + caminho, { ...op, headers: { apikey: CHAVE, 'Content-Type': 'application/json', ...(op.headers || {}) } });
@@ -24,6 +26,11 @@ const chute = 'dfc_' + crypto.randomUUID().replace(/-/g, '');
 for (const [fn, corpo] of [['claude_ler', { p_chave: chute, p_tabela: 'extrato' }], ['claude_gravar', { p_chave: chute, p_ops: [] }], ['avisos_pendentes', { p_segredo: crypto.randomUUID(), p_hoje: new Date().toISOString().slice(0, 10) }]]) {
   const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
   confere(r.status >= 400, `${fn} com chave inventada é recusada (${r.status})`);
+}
+/* 4a. funções internas do banco: um estranho não consegue nem chamar */
+for (const [fn, corpo] of [['claude_tabela_ok', { p_tabela: 'extrato' }], ['claude_dono', { p_chave: chute }], ['segredo_ok', { p_segredo: crypto.randomUUID() }]]) {
+  const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
+  confere(r.status === 401 || r.status === 403, `${fn} fechada para estranhos (${r.status})`);
 }
 /* 4b. o Netlify foi desligado: o endereço antigo não pode mais servir a versão velha do app */
 const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' }).catch(() => null);

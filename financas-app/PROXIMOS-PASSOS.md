@@ -14,7 +14,7 @@ Lista do que o João pediu, em ordem. O que está no topo é o que estamos fazen
 
 - [x] Face ID como tela de bloqueio: um toque abre, só pede depois de 15 minutos fora.
 - [ ] "Acesso do Claude": uma chave que o João cria no app para o Claude ler e corrigir os dados direto, sem arquivos para importar (dá para desligar quando quiser).
-- [ ] Transferências entre as minhas contas reconhecidas sozinhas nos extratos (Pix para/de "João Pedro Pereira Darzan", cofrinhos/caixinhas).
+- [ ] Transferências entre as minhas contas reconhecidas sozinhas nos extratos (Pix para/de mim mesmo, cofrinhos/caixinhas).
 - [ ] Investimentos: aba com quanto cada caixinha/cofrinho rendeu por mês, com gráfico (PicPay já mostra "Rendimento recebido"; com o Open Finance, entra sozinho).
 - [ ] Tela inicial: "Para onde foi" em gráfico (pizza ou barras), tocando numa categoria abre as subcategorias (ex.: Transporte → gasolina, Uber, seguro).
 - [ ] Revisar categorias e subcategorias com o extrato do ano; fontes de renda: Latinha, Facebook (Viewpoints), Play One...

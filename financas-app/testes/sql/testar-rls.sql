@@ -76,6 +76,7 @@ set role anon;
 select pg_temp.espera_erro('select * from public.acesso_claude', 'sem login leu a chave');
 select pg_temp.espera_erro($q$select public.claude_ler('chute', 'extrato')$q$, 'chave errada leu os dados');
 select pg_temp.espera_erro($q$select public.claude_dono('chave-do-joao')$q$, 'qualquer um pode chamar claude_dono');
+select pg_temp.espera_erro($q$select public.claude_tabela_ok('extrato')$q$, 'qualquer um pode chamar claude_tabela_ok');
 select pg_temp.espera_erro($q$select public.claude_ler('chave-do-joao', 'aparelhos')$q$, 'leu tabela não permitida');
 select pg_temp.espera_erro($q$select public.claude_ler('chave-do-joao', 'acesso_claude')$q$, 'leu a tabela das chaves');
 select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"extrato","op":"salvar","linha":{"id":"C1","senha":"x"}}]')$q$, 'gravou coluna que não existe');
