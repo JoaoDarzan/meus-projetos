@@ -642,10 +642,11 @@
   };
   /* meu trabalho (CLT): quanto entrou de cada holerite, o que mudou e o que a empresa guardou de FGTS */
   const CLT_COR = [['sal', 'Salário e horas extras', '--clt-sal'], ['ben', 'Vale-transporte e refeição', '--clt-ben'], ['bon', 'Bonificação', '--clt-bon']];
+  const semHolerites = () => db.faltando && db.faltando.has('HOLERITES');
   REL.clt = () => {
     const botao = `<button type="button" class="btn2 pri" data-a="holeriteFoto" style="width:100%;justify-content:center">${u.svg('camera')}Lançar o salário pela foto do holerite</button>`;
     const ps = c.clt(); if (!ps.length) return `<section class="sec">${botao}</section>` + vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
-    const ult = ps[ps.length - 1], tot = u.sum(ps, p => p.liq), fgts = u.sum(ps, p => p.fgts || 0), inss = u.sum(ps, p => p.inss || 0);
+    const ult = ps[ps.length - 1], recebidos = ps.filter(p => !p.prev), tot = u.sum(recebidos, p => p.liq), fgts = u.sum(ps, p => p.fgts || 0), inss = u.sum(ps, p => p.inss || 0);
     const nomeComp = p => p.comp ? u.cap(p.comp.replace('/', ' de ')) : 'pago em ' + u.nomeMes(p.m).toLowerCase();
     const dest = [];
     const bases = ps.filter(p => p.base);
@@ -658,12 +659,12 @@
     if (inss) dest.push(['receipt', `<b>INSS</b> descontado: ${u.k0(inss)} no total (conta para a sua aposentadoria).`]);
     const irrf = u.sum(ps, p => p.irrf || 0);
     if (irrf) dest.push(['landmark', `<b>Imposto de renda</b> descontado: ${u.k0(irrf)} no total (entra na declaração do ano que vem).`]);
-    const lista = ps.slice().reverse().map(p => `<div class="it"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.irrf ? 'IR ' + u.k0(p.irrf) : '', p.bon > p.com ? 'bônus ' + u.k0(p.bon - p.com) : '', p.com ? 'comissão ' + u.k0(p.com) : '', p.horas ? String(p.horas).replace('.', ',') + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>recebido ${u.dm(p.data)}</small></div></div>`).join('');
-    return `<section class="sec">${botao}</section><section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
-      <section class="sec"><div class="kpis"><div class="kpi"><span>Recebido no ano</span><b class="num">${u.brl(tot)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.brl(tot / ps.length)}</b></div>${fgts ? `<div class="kpi"><span>FGTS guardado</span><b class="num">${u.brl(fgts)}</b></div>` : ''}${ult.base ? `<div class="kpi"><span>Salário base</span><b class="num">${u.brl(ult.base)}</b></div>` : ''}</div></section>
+    const lista = ps.slice().reverse().map(p => `<button type="button" class="it btn" data-a="verHolerite" data-v="${u.esc(p.m)}"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.irrf ? 'IR ' + u.k0(p.irrf) : '', p.bon > p.com ? 'bônus ' + u.k0(p.bon - p.com) : '', p.com ? 'comissão ' + u.k0(p.com) : '', p.horas ? String(p.horas).replace('.', ',') + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>${p.prev ? 'a receber' : 'recebido'} ${u.dm(p.data)}</small></div></button>`).join('');
+    return `<section class="sec">${botao}</section><section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})${ult.prev ? ` · a receber ${u.dm(ult.data)}` : ''}</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
+      <section class="sec"><div class="kpis"><div class="kpi"><span>Recebido no ano</span><b class="num">${u.brl(tot)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.brl(recebidos.length ? tot / recebidos.length : 0)}</b></div>${fgts ? `<div class="kpi"><span>FGTS guardado</span><b class="num">${u.brl(fgts)}</b></div>` : ''}${ult.base ? `<div class="kpi"><span>Salário base</span><b class="num">${u.brl(ult.base)}</b></div>` : ''}</div></section>
       <section class="sec"><div class="sec-h"><h2>O que entrou de cada salário</h2></div><div class="panel"><div class="lgd">${CLT_COR.map(([, n, v]) => `<span><i style="background:var(${v})"></i>${n}</span>`).join('')}</div><div class="chart" id="chClt"></div></div></section>
       ${dest.length ? `<section class="sec"><div class="sec-h"><h2>${u.svg('sparkles')}Destaques</h2></div><div class="panel" style="display:grid;gap:12px">${dest.map(([i, t]) => `<div class="dest">${u.svg(i)}<span>${t}</span></div>`).join('')}</div></section>` : ''}
-      <section class="sec"><div class="sec-h"><h2>Holerites</h2></div><div class="panel" style="padding:4px 10px 10px">${lista}</div></section>`;
+      <section class="sec"><div class="sec-h"><h2>Holerites</h2><span class="c-muted" style="font-size:.8rem">toque para ver tudo</span></div>${semHolerites() ? `<p class="aviso">Falta 1 passo para guardar cada holerite detalhado: rodar <b>financas-app/supabase/atualizacao-holerites.sql</b> no Supabase (SQL Editor → New query → colar → Run).</p>` : ''}<div class="panel" style="padding:4px 10px 10px">${lista}</div></section>`;
   };
   REL.darzan = relFonte('Darzan Produções');
   REL.jpl = relFonte('JPL SOM');
@@ -947,6 +948,49 @@
       rd.readAsDataURL(arq);
     });
   }
+  /* ---------- um holerite detalhado (toque na lista do Meu trabalho) ---------- */
+  const DICA_ITEM = [[/d\.?s\.?r.*extra/, 'descanso semanal sobre as horas extras'], [/d\.?s\.?r.*noturn/, 'descanso semanal sobre o adicional noturno'], [/arredondamento atual/, 'centavos arredondados neste mês'],
+    [/arredondamento anterior/, 'centavos devolvidos do mês passado'], [/diferenca de salario/, 'reajuste pago de forma retroativa'], [/passe/, 'vale-transporte'], [/refei/, 'vale-refeição'], [/adicional noturno/, 'trabalho à noite'],
+    [/inss/, 'previdência (aposentadoria)'], [/irrf|imposto de renda/, 'imposto de renda'], [/bonifica/, 'bônus do mês'], [/hora.*extra/, 'horas a mais']];
+  /* o holerite vem sem acento e em maiúsculas: "Inss Sobre Salario" → "INSS sobre salário" */
+  const ACENTOS = { salario: 'salário', refeicao: 'refeição', bonificacao: 'bonificação', diferenca: 'diferença', previdencia: 'previdência', comissao: 'comissão', gratificacao: 'gratificação', ferias: 'férias' };
+  const nomeItem = d => u.cap(String(d).toLowerCase().replace(/\b[a-z]+\b/g, w => ACENTOS[w] || w).replace(/\b(inss|irrf|fgts|dsr|plr)\b/g, w => w.toUpperCase()).replace(/\bd\.s\.r\./g, 'DSR'));
+  const dicaItem = d => (DICA_ITEM.find(([re]) => re.test(u.sem(d))) || [])[1] || '';
+  const refItem = i => { const r = String(i.referencia || '').trim(), t = u.sem(i.descricao); if (!r || /^0+([.,]0+)?$/.test(r)) return '';
+    const v = String(u.num(r)).replace('.', ','); return /^salario$/.test(t.trim()) ? `${v} dias` : /hora|noturn/.test(t) ? `${v} h` : /inss|irrf/.test(t) ? `${v}%` : r; };
+  function fichaHolerite(m) {
+    const ps = c.clt(), i = ps.findIndex(x => x.m === m); if (i < 0) return;
+    const p = ps[i], ant = ps[i - 1], h = p.h;
+    const lancs = c.lancs().filter(l => l.cat === 'Salário CLT' && l.status !== 'Cancelado' && u.mes(l.data) === m).sort((a, b) => b.valor - a.valor);
+    const titulo = p.comp ? `Holerite de ${p.comp}` : `Salário pago em ${u.nomeMes(m).toLowerCase()}`;
+    const linha = (t, v, extra = '', cls = '') => `<div class="hl"><span>${u.esc(t)}${extra ? `<small>${u.esc(extra)}</small>` : ''}</span><b class="num ${cls}">${v}</b></div>`;
+    const dif = ant ? u.r2(p.liq - ant.liq) : null;
+    const item = (x, campo) => linha(nomeItem(x.descricao), u.brl(x[campo]), [refItem(x), dicaItem(x.descricao)].filter(Boolean).join(' · '), campo === 'desconto' ? 'c-out' : '');
+    const banco = (lancs[0] || {}).banco || (h && h.banco) || '';
+    let corpo;
+    if (h && h.itens.length) {
+      const venc = h.itens.filter(x => x.vencimento), desc = h.itens.filter(x => x.desconto);
+      const tv = h.totalVenc != null ? h.totalVenc : u.sum(venc, x => x.vencimento), td = h.totalDesc != null ? h.totalDesc : u.sum(desc, x => x.desconto);
+      const he = h.itens.filter(x => c.parteHolerite(x.descricao) === 'HE' && !/d\.?s\.?r/.test(u.sem(x.descricao)) && u.num(x.referencia));
+      const dias = (h.itens.find(x => /^salario$/.test(u.sem(x.descricao).trim())) || {}).referencia;
+      corpo = `<div class="sec-h" style="margin-top:16px"><h2>Vencimentos (o que você ganhou)</h2></div><div class="panel hls" id="hVenc">${venc.map(x => item(x, 'vencimento')).join('')}${linha('Total de vencimentos', u.brl(tv), '', 'c-in')}</div>
+        <div class="sec-h" style="margin-top:16px"><h2>Descontos</h2></div><div class="panel hls" id="hDesc">${desc.map(x => item(x, 'desconto')).join('') || linha('Nenhum desconto', u.brl(0))}${linha('Total de descontos', u.brl(td), '', 'c-out')}</div>
+        <div class="panel hls" style="margin-top:12px">${linha('Líquido (vencimentos − descontos)', u.brl(p.liq), '', 'c-in')}</div>
+        <div class="sec-h" style="margin-top:16px"><h2>Horas e dias</h2></div><div class="panel hls" id="hHoras">${[dias ? linha('Dias de salário', `${String(u.num(dias)).replace('.', ',')} dias`) : '',
+          ...he.map(x => linha(nomeItem(x.descricao), `${String(u.num(x.referencia)).replace('.', ',')} h`, u.brl(x.vencimento))),
+          he.length > 1 ? linha('Horas extras no mês', `${String(u.r2(u.sum(he, x => u.num(x.referencia)))).replace('.', ',')} h`) : '',
+          ...h.itens.filter(x => /noturn/.test(u.sem(x.descricao)) && !/d\.?s\.?r/.test(u.sem(x.descricao)) && u.num(x.referencia)).map(x => linha('Horas à noite (adicional noturno)', `${String(u.num(x.referencia)).replace('.', ',')} h`, u.brl(x.vencimento)))].join('') || linha('Sem horas extras', '—')}</div>
+        <div class="sec-h" style="margin-top:16px"><h2>Bases e FGTS</h2></div><div class="panel hls" id="hBases">${[h.base != null ? linha('Salário base (contrato)', u.brl(h.base)) : '', h.baseInss != null ? linha('Base do INSS', u.brl(h.baseInss)) : '',
+          h.baseFgts != null ? linha('Base do FGTS', u.brl(h.baseFgts)) : '', h.fgts != null ? linha('FGTS do mês', u.brl(h.fgts), 'a empresa deposita no seu FGTS; não cai na conta') : '',
+          h.baseIrrf != null ? linha('Base do imposto de renda', u.brl(h.baseIrrf)) : '', h.faixaIrrf != null ? linha('Faixa do imposto de renda', h.faixaIrrf ? String(h.faixaIrrf).replace('.', ',') + '%' : 'isento') : ''].join('')}</div>`;
+    } else corpo = `<p class="aviso" style="margin-top:14px">Este mês não tem o holerite guardado item por item. Mande a foto dele para ver tudo detalhado.</p><button type="button" class="btn2" data-a="holeriteFoto" style="width:100%;justify-content:center">${u.svg('camera')}Mandar a foto deste holerite</button>`;
+    abrir(`<h3 style="margin:0 0 4px">${u.esc(titulo)}</h3><div class="c-muted" style="font-size:.84rem">${u.esc([h && h.empresa, `${p.prev ? 'cai' : 'caiu'} em ${u.dm(p.data)}${banco ? ' no ' + banco : ''}`].filter(Boolean).join(' · '))}</div>
+      <div class="bignum num" style="margin:12px 0 2px">${u.brl(p.liq)}</div><div class="c-muted" style="font-size:.84rem">${p.prev ? 'a receber' : 'líquido que caiu na conta'}${dif != null ? ` · <span class="${dif >= 0 ? 'c-in' : 'c-out'}">${dif >= 0 ? '+' : '−'} ${u.brl(Math.abs(dif))} que no mês anterior</span>` : ''}</div>
+      ${ant && p.base && ant.base && p.base !== ant.base ? `<p class="okc hok" style="margin-top:10px">${u.svg('trending-up')}Salário base subiu de ${u.brl(ant.base)} para ${u.brl(p.base)} (+${u.pct(p.base / ant.base - 1)}).</p>` : ''}
+      <div class="sec-h" style="margin-top:16px"><h2>Como entrou na conta</h2></div><div class="panel hls" id="hPartes">${lancs.map(l => linha(l.desc, u.brl(l.valor), l.status === 'Previsto' ? 'a receber' : '', 'c-in')).join('')}</div>
+      ${corpo}`, null, true);
+  }
+
   /* ---------- holerite pela foto: escolhe a foto → o Claude lê (função do Supabase) → o João confere → lança ---------- */
   function escolherHolerite() {
     if (A.nuvem.ehDemo()) { toast('Na demonstração não dá para ler holerite'); return; }
@@ -974,8 +1018,7 @@
     abrir(`<h3 style="margin:0 0 10px">Não deu para ler</h3><p>${u.esc(e.semInternet ? 'Sem internet agora. Tente de novo quando tiver conexão.' : e.message)}</p><p class="c-muted" style="font-size:.86rem">Dica: o holerite inteiro na foto, reto, com boa luz e sem sombra.</p>${outra}`);
   }
   function formHolerite(h) {
-    const ult = c.lancs().filter(l => l.cat === 'Salário CLT').sort((a, b) => a.data < b.data ? 1 : -1)[0];
-    const banco0 = ult ? ult.banco : 'PicPay', r = c.holeriteLinhas(h, u.hoje(), banco0);
+    const banco0 = c.BANCO_SALARIO, r = c.holeriteLinhas(h, u.hoje(), banco0); /* o salário cai sempre no Inter (conta principal); dá para trocar */
     const linha = (t, v, cls = '') => `<div class="hl"><span>${u.esc(t)}</span><b class="num ${cls}">${u.brl(v)}</b></div>`;
     abrir(`<h3 style="margin:0 0 4px">Holerite de ${u.esc(r.comp)}</h3><div class="c-muted" style="font-size:.84rem">${u.esc(h.empresa || '')}</div>
       <div class="bignum num" style="margin:12px 0 2px">${u.brl(r.liq)}</div><div class="c-muted" style="font-size:.84rem;margin-bottom:12px">líquido que cai na conta</div>
@@ -992,6 +1035,7 @@
         x.linhas.forEach(reg => { const old = db.achar('EXTRATO', reg.ID), of = old && (String(old['OBS'] || '').match(/OF [0-9a-f-]{20,}/i) || [])[0];
           if (of) Object.assign(reg, { 'OBS': reg['OBS'] + ' · ' + of, 'STATUS': old['STATUS'], 'DATA': old['DATA'] }); });
         const ops = x.jaTem.filter(l => !novos.has(l.id)).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id })).concat(x.linhas.map(reg => ({ op: 'salvar', aba: 'EXTRATO', registro: reg })));
+        if (!semHolerites()) ops.push({ op: 'salvar', aba: 'HOLERITES', registro: c.registroHolerite(h, data, banco) }); /* o holerite inteiro, para abrir detalhado */
         db.lote(ops); fechar(); Object.assign(ui, { view: 'fin', fseg: 'relatorios', rseg: 'clt' }); render(false);
         toast(`Salário de ${x.comp} lançado: ${u.brl(x.liq)}`);
       }, true);
@@ -1455,6 +1499,7 @@
     irExtrato: () => { ui.fseg = 'extrato'; ui.filtro = 'tudo'; go('fin'); },
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },
     holeriteFoto: () => escolherHolerite(),
+    verHolerite: b => fichaHolerite(b.dataset.v),
     abreCat: b => { ui.cexp = ui.cexp === b.dataset.v ? null : b.dataset.v; render(false); },
     filtroCat: b => { ui.fseg = 'extrato'; ui.filtro = 'cat:' + b.dataset.v; go('fin'); },
     novoL: b => formLanc(b.dataset.t),

@@ -97,6 +97,13 @@ test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(ln('IOF DIARIO DB PF', -0.2, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
   assert.deepEqual(ln('Juros do rotativo', -2.8, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
   assert.deepEqual(ln('AJUSTE A CREDITO', 5.26, 'cartão'), ['Reembolso', 'Reembolso', 'Compra devolvida']);
+  /* redistribuir o salário não é renda nova nem gasto */
+  assert.deepEqual(ln('Aplicação Cofrinho', -500), ['Guardado', 'Guardado', 'Reserva'], 'mandar para o cofrinho é guardar');
+  assert.deepEqual(ln('Dinheiro guardado na Caixinha', -300), ['Guardado', 'Guardado', 'Reserva']);
+  assert.deepEqual(ln('Resgate Meu Porquinho', 200), ['Guardado', 'Guardado', 'Reserva'], 'tirar do cofrinho também não é renda');
+  assert.deepEqual(ln('Pix recebido', 1000, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas'], 'vindo de outra conta minha');
+  assert.deepEqual((l => [l.grupo, l.subcategoria])(linhaNova({ pid: 'y', data: '2026-11-01', banco: 'B', tipo: 'conta', valor: 800, desc: 'Pix recebido', parcela: '', categoriaPluggy: 'Same person transfer' }, new Map())), ['Transferência', 'Entre minhas contas'], 'o banco diz que é a mesma pessoa');
+  assert.deepEqual(ln('Rendimento da aplicação', 1.2), ['Renda', 'Outras rendas', 'Rendimentos'], 'o rendimento continua sendo renda');
   assert.deepEqual(ln('Padaria', -10), ['Desejos', '', ''], 'o resto vai para o Revisar');
 });
 

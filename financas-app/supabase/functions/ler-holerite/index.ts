@@ -18,7 +18,7 @@ const dinheiro = { type: ['number', 'null'] };
 export const ESQUEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['legivel', 'motivo', 'empresa', 'competencia_mes', 'competencia_ano', 'itens', 'total_vencimentos', 'total_descontos', 'liquido', 'salario_base', 'fgts_mes', 'base_inss'],
+  required: ['legivel', 'motivo', 'empresa', 'competencia_mes', 'competencia_ano', 'itens', 'total_vencimentos', 'total_descontos', 'liquido', 'salario_base', 'base_inss', 'base_fgts', 'fgts_mes', 'base_irrf', 'faixa_irrf'],
   properties: {
     legivel: { type: 'boolean', description: 'false se a foto não é um holerite ou não dá para ler os valores com segurança' },
     motivo: { type: 'string', description: 'se não deu para ler, o motivo em português simples; senão, vazio' },
@@ -44,13 +44,16 @@ export const ESQUEMA = {
     total_descontos: dinheiro,
     liquido: dinheiro,
     salario_base: dinheiro,
-    fgts_mes: dinheiro,
-    base_inss: dinheiro,
+    base_inss: { type: ['number', 'null'], description: 'rodapé: Sal. Contr. INSS' },
+    base_fgts: { type: ['number', 'null'], description: 'rodapé: Base Cálc. FGTS' },
+    fgts_mes: { type: ['number', 'null'], description: 'rodapé: FGTS do Mês' },
+    base_irrf: { type: ['number', 'null'], description: 'rodapé: Base Cálc. IRRF' },
+    faixa_irrf: { type: ['number', 'null'], description: 'rodapé: Faixa IRRF (porcentagem, ex.: 27.5)' },
   },
 };
 
 const PEDIDO = `Esta é a foto de um holerite (recibo de pagamento de salário) brasileiro. Leia todos os itens da tabela, linha por linha, com o valor exato em reais (use ponto para os centavos: 1074.00).
-Cada item tem valor em Vencimentos ou em Descontos (o outro fica null). Pode haver marcas de lápis ou caneta por cima: ignore os riscos e leia os números impressos.
+Cada item tem valor em Vencimentos ou em Descontos (o outro fica null). Leia também o rodapé (salário base, bases do INSS, FGTS e IRRF, FGTS do mês e faixa do IRRF). Pode haver marcas de lápis ou caneta por cima: ignore os riscos e leia os números impressos.
 Confira a sua leitura: a soma dos vencimentos tem de dar o Total de Vencimentos, a dos descontos o Total de Descontos, e Total de Vencimentos menos Total de Descontos tem de dar o Valor Líquido. Se não bater, leia de novo os números com atenção.
 Não escreva o nome, CPF ou outros dados pessoais do funcionário em nenhum campo.
 Se a imagem não for um holerite ou estiver ilegível, responda legivel=false e explique o motivo em uma frase.`;

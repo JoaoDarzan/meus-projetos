@@ -37,6 +37,11 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
      arquivo `supabase/functions/ler-holerite/index.ts` inteiro → Deploy (deixe ligada a opção de exigir login/JWT).
   3. Supabase → Edge Functions → Secrets → Add new secret: nome `ANTHROPIC_API_KEY`, valor = a chave → Save.
   Antes disso, o botão explica esses passos. Quando o arquivo da função mudar no GitHub, é preciso colar de novo.
+  Cada holerite fica guardado inteiro na tabela `holerites` (todos os itens, totais, bases, FGTS e faixa do IR): no Meu
+  trabalho, tocar num holerite abre tudo detalhado (como entrou na conta, cada vencimento e desconto com a referência e o que
+  significa, horas, bases e FGTS, e a comparação com o mês anterior). Precisa rodar uma vez `supabase/atualizacao-holerites.sql`.
+  O salário cai no **Inter** (o banco já vem escolhido); o que o João manda depois para outras contas e cofrinhos é
+  transferência ou guardado (o robô dos bancos reconhece), não renda nova.
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
   a cada 3 dias).
 

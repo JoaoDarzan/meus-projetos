@@ -40,6 +40,10 @@
     DIAS: { tabela: 'dias', prefixo: 'W', opcional: true, colunas: [
       ['DATA', 'data', 'date'], ['EMPRESA', 'empresa', 'text'], ['O QUE FOI', 'descricao', 'text'], ['VALOR', 'valor', 'numeric'],
       ['PAGAMENTO', 'pagamento', 'text'], ['OBS', 'obs', 'text']] },
+    /* cada holerite inteiro (todos os itens, totais e bases), para abrir detalhado no Meu trabalho; o dinheiro em si fica no EXTRATO (LCLT-…) */
+    HOLERITES: { tabela: 'holerites', prefixo: 'H', opcional: true, colunas: [
+      ['COMPETÊNCIA', 'competencia', 'text'], ['EMPRESA', 'empresa', 'text'], ['PAGAMENTO', 'pagamento', 'date'], ['BANCO', 'banco', 'text'],
+      ['LÍQUIDO', 'liquido', 'numeric'], ['DADOS', 'dados', 'text']] },
     TAREFAS: { tabela: 'tarefas', prefixo: 'T', colunas: [
       ['TAREFA', 'tarefa', 'text'], ['DATA', 'data', 'date'], ['VALOR', 'valor', 'numeric'], ['TIPO', 'tipo', 'text'], ['FEITA', 'feita', 'boolean'], ['OBS', 'obs', 'text']] },
     METAS: { tabela: 'metas', prefixo: 'M', colunas: [

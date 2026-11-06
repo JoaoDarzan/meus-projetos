@@ -349,9 +349,9 @@ window.A = window.A || {};
   const CLT_PARTE = { 'Salário': 'sal', 'Horas extras': 'he', 'Vale-transporte': 'ben', 'Vale-refeição': 'ben', 'Benefícios': 'ben', 'Bonificação': 'bon', 'Comissão': 'bon' };
   c.clt = () => {
     const meses = {}, n = (t, re) => { const x = (String(t).match(re) || [])[1]; return x ? c.num(x.replace(/\./g, '').replace(',', '.')) : null; };
-    c.lancs().filter(l => l.grupo === 'Renda' && l.cat === 'Salário CLT' && l.status !== 'Previsto').forEach(l => {
+    c.lancs().filter(l => l.grupo === 'Renda' && l.cat === 'Salário CLT' && l.status !== 'Cancelado').forEach(l => { /* o que ainda vai cair entra marcado como "a receber" */
       const m = u.mes(l.data), x = meses[m] || (meses[m] = { m, sal: 0, he: 0, ben: 0, bon: 0, com: 0, liq: 0, horas: 0, bruto: null, inss: null, irrf: null, fgts: null, base: null, comp: null, data: l.data });
-      x[CLT_PARTE[l.sub] || 'sal'] += l.valor; x.liq += l.valor;
+      x[CLT_PARTE[l.sub] || 'sal'] += l.valor; x.liq += l.valor; if (l.status === 'Previsto') x.prev = true; if (l.data > x.data) x.data = l.data;
       if (l.sub === 'Comissão') x.com += l.valor; /* comissão fora do holerite: conta junto da bonificação, mas aparece com o nome dela */
       if (l.sub === 'Horas extras') x.horas = u.r2(x.horas + (n(l.desc, /(\d+(?:[.,]\d+)?)\s*h\b/i) || 0)); /* "10 h" ou "4,55 h" */
       if (/holerite de [a-zç]+\/\d{4}/i.test(l.obs)) {
@@ -359,12 +359,44 @@ window.A = window.A || {};
         x.comp = (l.obs.match(/holerite de ([a-zç]+\/\d{4})/i) || [])[1] || null;
       }
     });
-    return Object.values(meses).sort((a, b) => a.m < b.m ? -1 : 1).map(x => (['sal', 'he', 'ben', 'bon', 'com', 'liq'].forEach(k => { x[k] = u.r2(x[k]); }), x));
+    /* com o holerite guardado inteiro, os números vêm dele (mais certos que a anotação) */
+    const hs = c.holerites();
+    return Object.values(meses).sort((a, b) => a.m < b.m ? -1 : 1).map(x => {
+      ['sal', 'he', 'ben', 'bon', 'com', 'liq'].forEach(k => { x[k] = u.r2(x[k]); });
+      const h = hs.find(y => u.mes(y.pagamento) === x.m);
+      if (h) {
+        x.h = h; x.comp = `${u.MESES[+h.comp.slice(5, 7) - 1].toLowerCase()}/${h.comp.slice(0, 4)}`;
+        const de = re => u.r2(u.sum(h.itens.filter(i => re.test(u.sem(i.descricao))), i => i.desconto));
+        x.bruto = h.totalVenc != null ? h.totalVenc : u.r2(u.sum(h.itens, i => i.vencimento)); x.inss = de(/inss/) || null; x.irrf = de(/irrf|imposto de renda/) || null;
+        if (h.fgts != null) x.fgts = h.fgts; if (h.base != null) x.base = h.base;
+        x.horas = u.r2(u.sum(h.itens.filter(i => c.parteHolerite(i.descricao) === 'HE' && !/d\.?s\.?r|repouso/.test(u.sem(i.descricao))), i => u.num(i.referencia))) || x.horas;
+      }
+      return x;
+    });
   };
+
+  /* holerites guardados inteiros (tabela HOLERITES; DADOS = itens, totais e bases em JSON) */
+  c.holerites = () => db.linhas('HOLERITES').filter(h => h['COMPETÊNCIA']).map(h => {
+    let d = {}; try { d = JSON.parse(h['DADOS'] || '{}') || {}; } catch (e) { d = {}; }
+    const itens = (Array.isArray(d.itens) ? d.itens : []).map(i => ({ codigo: String(i.codigo || ''), descricao: String(i.descricao || ''), referencia: String(i.referencia || ''), vencimento: +i.vencimento || 0, desconto: +i.desconto || 0 }));
+    const n = v => v == null || v === '' || !isFinite(+v) ? null : +v;
+    return { id: h.ID, comp: String(h['COMPETÊNCIA']).slice(0, 7), empresa: String(h['EMPRESA'] || ''), pagamento: String(h['PAGAMENTO'] || '').slice(0, 10), banco: String(h['BANCO'] || ''),
+      liquido: c.num(h['LÍQUIDO']), itens, totalVenc: n(d.total_vencimentos), totalDesc: n(d.total_descontos), base: n(d.salario_base), baseInss: n(d.base_inss), baseFgts: n(d.base_fgts),
+      fgts: n(d.fgts_mes), baseIrrf: n(d.base_irrf), faixaIrrf: n(d.faixa_irrf) };
+  });
+  /* o holerite de um pagamento (mês em que caiu) */
+  c.holeriteDoMes = m => c.holerites().find(h => u.mes(h.pagamento) === m) || null;
+  /* para guardar: o que a foto leu vira uma linha da tabela HOLERITES */
+  c.registroHolerite = (h, data, banco) => ({ ID: `H${h.competencia_ano}-${String(h.competencia_mes).padStart(2, '0')}`, 'COMPETÊNCIA': `${h.competencia_ano}-${String(h.competencia_mes).padStart(2, '0')}`,
+    'EMPRESA': String(h.empresa || ''), 'PAGAMENTO': data, 'BANCO': banco, 'LÍQUIDO': u.r2(+h.liquido || 0),
+    'DADOS': JSON.stringify({ itens: (h.itens || []).map(i => ({ codigo: i.codigo || '', descricao: i.descricao || '', referencia: i.referencia || '', vencimento: i.vencimento == null ? null : +i.vencimento, desconto: i.desconto == null ? null : +i.desconto })),
+      total_vencimentos: h.total_vencimentos, total_descontos: h.total_descontos, salario_base: h.salario_base, base_inss: h.base_inss, base_fgts: h.base_fgts == null ? null : h.base_fgts,
+      fgts_mes: h.fgts_mes, base_irrf: h.base_irrf == null ? null : h.base_irrf, faixa_irrf: h.faixa_irrf == null ? null : h.faixa_irrf }) });
 
   /* ---------- holerite lido pela foto → as mesmas linhas que o Claude lança à mão ----------
      Vale-refeição, vale-transporte, bonificação e horas extras (com o DSR delas) viram linhas próprias; o resto
      (salário, adicionais, diferenças, arredondamentos) menos os descontos (INSS, IR...) fica em "Salário", que fecha no líquido. */
+  c.BANCO_SALARIO = 'Inter'; /* conta principal: o salário cai aqui e depois é redistribuído (transferências e cofrinhos, não é renda nova) */
   c.parteHolerite = d => { const t = u.sem(d);
     if (/refei|alimenta|\bv\.?r\b/.test(t)) return 'VR';
     if (/passe|transporte|\bv\.?t\b/.test(t)) return 'VT';

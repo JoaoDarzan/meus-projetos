@@ -33,6 +33,7 @@ module.exports = { etapa: 'Holerite pela foto', testes: [
     const vistas = await p.$$eval('#s2 #hLinhas .hl', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
     certo(vistas.length === 5 && /Salário \(setembro\)R\$ 1\.824,50/.test(vistas[0]) && /Horas extras \(setembro\) · 2,5 hR\$ 50,00/.test(vistas[4]), 'as 5 linhas: ' + vistas);
     await conferirLayout(p, 'holerite lido');
+    mesmo(await p.inputValue('#s2 #hB'), 'Inter', 'o banco já vem no Inter (onde o salário cai)');
     await p.fill('#s2 #hDt', addDias(HOJE, -1)); await p.selectOption('#s2 #hB', 'Nubank');
     await clica(p, '#s2 .save'); await calmo(p);
     const v = k => linha(st, k) && linha(st, k).valor;
@@ -43,6 +44,8 @@ module.exports = { etapa: 'Holerite pela foto', testes: [
     certo(/^Holerite de setembro\/2026 · /.test(sal.obs) && /bruto R\$ 3\.105,00/.test(sal.obs) && /INSS R\$ 160,00/.test(sal.obs) && /IRRF R\$ 20,00/.test(sal.obs) && /salário base R\$ 2\.000,00/.test(sal.obs) && /líquido R\$ 2\.924,50/.test(sal.obs), 'anotação com os números do holerite: ' + sal.obs);
     const mt = await p.evaluate(m => A.c.clt().find(x => x.m === m), m0);
     certo(mt && mt.liq === 2924.5 && mt.horas === 2.5 && mt.irrf === 20 && mt.inss === 160 && mt.base === 2000 && mt.comp === 'setembro/2026', 'Meu trabalho lê o holerite: ' + JSON.stringify(mt));
+    const hs = st.linhas('holerites');
+    certo(hs.length === 1 && hs[0].id === 'H2026-09' && hs[0].competencia === '2026-09' && hs[0].liquido === 2924.5 && JSON.parse(hs[0].dados).itens.length === 10, 'guardou o holerite inteiro: ' + JSON.stringify(hs[0]));
     certo(/IR R\$ 20/.test(await p.textContent('#view')) && /2,5 h extras/.test(await p.textContent('#view')), 'a lista mostra o imposto de renda e as horas com vírgula');
   }],
   ['salário que ainda não caiu fica previsto; lançar de novo no mês troca o anterior sem perder a marca do robô dos bancos; leitura que não fecha avisa antes', async (st, abrir) => {
@@ -87,5 +90,44 @@ module.exports = { etapa: 'Holerite pela foto', testes: [
     igual(st.pedidosClaude.length, 0, 'nada disso chegou ao Claude');
     const partes = await p.evaluate(() => ['D.S.R. Sobre Horas Extras', 'DSR Adicional Noturno', 'Vale Refeicao', 'Passe', 'Bonificacao', 'Horas Extras 80%', 'Diferenca de Salario', 'Adicional Noturno Horas 30%'].map(A.c.parteHolerite));
     mesmo(partes.join(','), 'HE,SAL,VR,VT,BON,HE,SAL,SAL', 'cada item do holerite vai para a parte certa');
+  }],
+  ['tocar num holerite abre tudo detalhado: como entrou na conta, cada vencimento e desconto com a referência, horas, bases e FGTS; salário que ainda vai cair aparece como "a receber"', async (st, abrir) => {
+    st.tabelas.extrato = st.tabelas.extrato.filter(l => l.categoria !== 'Salário CLT');
+    const L = (m, k, valor, sub, desc, status = 'Pago', data = m + '-06') => ({ id: `LCLT-${m}-${k}`, user_id: 'u-joao', data, banco: 'Inter', descricao: desc, grupo: 'Renda', tipo: 'conta', valor, categoria: 'Salário CLT', subcategoria: sub, status, parcela: '', obs: 'holerite' });
+    const ant = addDias(HOJE, -40).slice(0, 7), prox = HOJE; /* cai hoje, ainda não confirmado */
+    st.tabelas.extrato.push(L(ant, 'SAL', 1800, 'Salário', 'Salário (anterior)'), L(ant, 'VR', 400, 'Vale-refeição', 'Vale-refeição (anterior)'),
+      L(m0, 'SAL', 1824.5, 'Salário', 'Salário (setembro)', 'Previsto', prox), L(m0, 'VR', 400, 'Vale-refeição', 'Vale-refeição (setembro)', 'Previsto', prox), L(m0, 'VT', 150, 'Vale-transporte', 'Vale-transporte (setembro)', 'Previsto', prox),
+      L(m0, 'BON', 500, 'Bonificação', 'Bonificação (setembro)', 'Previsto', prox), L(m0, 'HE', 50, 'Horas extras', 'Horas extras (setembro) · 2,5 h', 'Previsto', prox));
+    const h = HOLERITE();
+    st.tabelas.holerites.push({ id: 'H2026-09', user_id: 'u-joao', competencia: '2026-09', empresa: 'Empresa Exemplo Ltda', pagamento: prox, banco: 'Inter', liquido: 2924.5,
+      dados: JSON.stringify(Object.assign({}, h, { base_fgts: 2555, base_irrf: 2555, faixa_irrf: 7.5 })) });
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await irMeuTrabalho(p);
+    certo(/a receber/.test(await p.textContent('#view .sub')) && /2\.924/.test(await p.textContent('#view .bignum')), 'o último salário é o que vai cair, marcado "a receber"');
+    certo(/Recebido no ano\s*R\$ 2\.200,00/.test((await p.textContent('#view .kpis')).replace(/\s+/g, ' ')), 'recebido no ano só conta o que já caiu: ' + await p.textContent('#view .kpis'));
+    await clica(p, `#view [data-a=verHolerite][data-v="${m0}"]`); await p.waitForSelector('#s2 #hVenc');
+    const txt = sel => p.textContent(sel).then(t => t.replace(/\s+/g, ' '));
+    const venc = await txt('#s2 #hVenc'), desc = await txt('#s2 #hDesc'), horas = await txt('#s2 #hHoras'), bases = await txt('#s2 #hBases'), partes = await txt('#s2 #hPartes');
+    certo(/Holerite de setembro\/2026/.test(await txt('#s2 h3')) && /Empresa Exemplo/.test(await txt('#s2')) && /cai em/.test(await txt('#s2')), 'título, empresa e quando cai');
+    certo(/Salário.*30 dias.*R\$ 2\.000,00/.test(venc) && /Horas extras 60%.*2,5 h.*R\$ 40,00/.test(venc) && /DSR sobre horas extras.*descanso semanal.*R\$ 10,00/.test(venc) && /Passe.*vale-transporte.*R\$ 150,00/.test(venc) && /Total de vencimentos\s*R\$ 3\.105,00/.test(venc), 'cada vencimento com referência e explicação: ' + venc);
+    certo(/INSS sobre salário.*9%.*R\$ 160,00/.test(desc) && /IRRF sobre salário.*imposto de renda.*R\$ 20,00/.test(desc) && /Total de descontos\s*R\$ 180,50/.test(desc), 'descontos: ' + desc);
+    certo(/Dias de salário\s*30 dias/.test(horas) && /Horas extras 60%.*2,5 h/.test(horas) && /Horas à noite.*0,5 h/.test(horas), 'horas e dias: ' + horas);
+    certo(/Salário base \(contrato\)\s*R\$ 2\.000,00/.test(bases) && /FGTS do mês.*R\$ 160,00/.test(bases) && /Faixa do imposto de renda\s*7,5%/.test(bases), 'bases e FGTS: ' + bases);
+    certo(/Salário \(setembro\).*R\$ 1\.824,50/.test(partes) && /Bonificação \(setembro\).*R\$ 500,00/.test(partes) && /a receber/.test(partes), 'como entra na conta: ' + partes);
+    certo(/\+ R\$ 724,50 que no mês anterior/.test(await txt('#s2')), 'compara com o mês anterior');
+    await conferirLayout(p, 'holerite detalhado');
+    await clica(p, '#s2 [data-a=fechar]');
+    await clica(p, `#view [data-a=verHolerite][data-v="${ant}"]`); await p.waitForSelector('#s2 :text("Mandar a foto deste holerite")');
+    certo(/não tem o holerite guardado item por item/.test(await txt('#s2')) && /Salário \(anterior\)/.test(await txt('#s2 #hPartes')), 'mês sem holerite guardado: mostra o que entrou e pede a foto');
+  }],
+  ['sem a tabela dos holerites no Supabase: avisa o passo e lançar pela foto continua funcionando (só não guarda o detalhe)', async (st, abrir) => {
+    st.semTabela('holerites'); st.holerite = claudeLe(HOLERITE());
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await irMeuTrabalho(p);
+    certo(/atualizacao-holerites\.sql/.test(await p.textContent('#view')), 'mostra o arquivo para rodar');
+    await mandarFoto(p); await p.waitForSelector('#s2 #hLinhas');
+    await clica(p, '#s2 .save'); await calmo(p);
+    certo(linha(st, 'SAL') && linha(st, 'VR'), 'o salário foi lançado');
+    certo(!(await p.evaluate(() => A.db.fila.length)), 'nada ficou preso na fila de envio');
   }],
 ] };
