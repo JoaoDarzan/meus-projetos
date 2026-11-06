@@ -30,6 +30,17 @@ Com ela o celular mostra o vídeo em tela cheia; sem ela, mostra o vídeo horizo
 
 ### 3. Filmes (vídeos horizontais)
 Coloque em `VIDEOS`. O **primeiro** da lista aparece em destaque, maior.
+
+**Jeito principal: vídeo guardado na Cloudflare R2** (bucket `darzan-videos`). Para cada filme, suba três arquivos com o mesmo nome:
+`nome-1080.mp4`, `nome-720.mp4` e `nome.jpg` (capa). No site, escreva só o nome:
+```js
+{ titulo: 'Ana & Pedro', tipo: 'filme', evento: 'Casamento', video: 'casamento-ana-pedro', capa: '', duracao: '4:32' },
+```
+Ele abre no **player próprio** (`js/player.js`): controles dourados, qualidade HD/SD, tela cheia,
+e no fim do filme o convite "Quero um filme assim" para o WhatsApp. No computador, passar o mouse no cartão mostra uma prévia.
+O endereço da Cloudflare fica em `SITE.videosBase` (já configurado). O vídeo de fundo segue a mesma regra: `videoFundo: 'fundo'`.
+
+Também aceita link do YouTube ou Vimeo (útil para uma galeria secundária):
 ```js
 { titulo: 'Ana & Pedro', tipo: 'filme',     evento: 'Casamento', video: 'https://youtu.be/XXXXXXXXXXX', capa: '' },
 { titulo: 'Ana & Pedro', tipo: 'teaser',    evento: 'Casamento', video: 'https://vimeo.com/123456789', capa: '' },

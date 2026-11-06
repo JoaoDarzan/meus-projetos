@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=dev">
 </head>
 <body>
 
@@ -30,7 +30,7 @@
   <header class="header" id="header">
     <div class="container header__inner">
       <a href="#inicio" class="logo" aria-label="Darzan Produções - início">
-        <img class="logo__img" src="img/logo-darzan.svg" alt="" width="58" height="58">
+        <img class="logo__img" src="img/logo-darzan-160.webp" alt="" width="58" height="58">
         <span class="logo__text">Darzan <em>Produções</em></span>
       </a>
 
@@ -62,9 +62,10 @@
 
       <div class="container hero__inner">
         <div class="hero__text reveal">
-          <img class="hero__logo" src="img/logo-darzan.png" alt="Logo Darzan Produções" width="170" height="170">
+          <img class="hero__logo" src="img/logo-darzan-340.webp" alt="Logo Darzan Produções" width="170" height="170">
           <p class="eyebrow">Videomaker · Campinas e região</p>
           <h1>Seu dia contado como <em>cinema</em></h1>
+          <p class="hero__curta">Filmes de casamento, teasers e stories feitos para emocionar.</p>
           <p class="hero__lead">
             Filmes cinematográficos, teasers, cerimônia na íntegra, vídeos com motion e vídeos para empresas.
             Imagens feitas para emocionar hoje e daqui a muitos anos.
@@ -72,11 +73,11 @@
           <div class="hero__actions">
             <a href="#videos" class="btn btn--gold">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg>
-              Assistir aos filmes
+              <span class="rot-pc">Assistir aos filmes</span><span class="rot-cel">Ver filmes</span>
             </a>
             <a href="#contato" class="btn btn--ghost js-whatsapp" data-msg="Olá! Vim pelo site e gostaria de um orçamento.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-whatsapp"/></svg>
-              Solicitar orçamento
+              <span class="rot-pc">Solicitar orçamento</span><span class="rot-cel">Orçamento</span>
             </a>
           </div>
         </div>
@@ -215,11 +216,13 @@
           <button class="filter" data-filter="cerimonia" role="tab" aria-selected="false">Cerimônia na íntegra</button>
           <button class="filter" data-filter="motion" role="tab" aria-selected="false">Motion</button>
           <button class="filter" data-filter="empresa" role="tab" aria-selected="false">Empresas</button>
+          <button class="filter" data-filter="depoimento" role="tab" aria-selected="false">Depoimentos</button>
         </div>
 
         <div class="film-grid" id="videoGrid">
           <!-- preenchido via js/conteudo.js (VIDEOS) -->
         </div>
+        <div class="carrossel-pontos" id="videoPontos" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -316,13 +319,6 @@
           <h2>Momentos em <em>fotos</em></h2>
         </div>
 
-        <div class="filters" role="tablist" aria-label="Filtrar fotos" data-target="photoGrid">
-          <button class="filter is-active" data-filter="todos" role="tab" aria-selected="true">Todas</button>
-          <button class="filter" data-filter="casamentos" role="tab" aria-selected="false">Casamentos</button>
-          <button class="filter" data-filter="empresas" role="tab" aria-selected="false">Empresas</button>
-          <button class="filter" data-filter="aniversarios" role="tab" aria-selected="false">Aniversários</button>
-          <button class="filter" data-filter="cha-revelacao" role="tab" aria-selected="false">Chá revelação</button>
-        </div>
 
         <div class="photo-grid" id="photoGrid">
           <!-- preenchido via js/conteudo.js (FOTOS) -->
@@ -412,7 +408,7 @@
   <footer class="footer">
     <div class="container footer__inner">
       <a href="#inicio" class="logo logo--footer" aria-label="Darzan Produções - voltar ao início">
-        <img class="logo__img" src="img/logo-darzan.svg" alt="" width="72" height="72">
+        <img class="logo__img" src="img/logo-darzan-160.webp" alt="" width="72" height="72" loading="lazy">
         <span class="logo__text">Darzan <em>Produções</em></span>
       </a>
       <nav class="footer__nav" aria-label="Rodapé">
@@ -455,7 +451,8 @@
     <symbol id="i-quote" viewBox="0 0 24 24"><path fill="currentColor" d="M4 18v-5c0-4 2-7 6-8l1 2c-2 .7-3 2.2-3 4h3v7Zm9 0v-5c0-4 2-7 6-8l1 2c-2 .7-3 2.2-3 4h3v7Z"/></symbol>
   </svg>
 
-  <script src="js/conteudo.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/conteudo.js?v=dev"></script>
+  <script src="js/player.js?v=dev"></script>
+  <script src="js/main.js?v=dev"></script>
 </body>
 </html>

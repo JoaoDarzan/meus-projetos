@@ -19,11 +19,23 @@ const SITE = {
   email: '',
   cidade: 'Campinas e região · Atendo também outras cidades',
 
+  // Onde os vídeos ficam guardados (Cloudflare R2). Não precisa mexer.
+  videosBase: 'https://pub-130031e922ee48738efb8b8f3926986b.r2.dev',
+  // Robô da Cloudflare que lista os vídeos (usado quando o site abre pelo endereço do GitHub).
+  robo: 'https://darzanproducoes.joaodarzan10.workers.dev',
+
   // Vídeo que roda no FUNDO do topo do site, atrás dos textos.
+  // Vídeo guardado na Cloudflare: escreva só o nome. Ex: 'fundo' (usa fundo-1080.mp4 e fundo-720.mp4).
   // Use um trecho horizontal do seu melhor filme (30 a 60 segundos, sem som).
   // Melhor qualidade: um arquivo seu ('videos/fundo.mp4', 1920x1080, até ~15 MB).
   // Também aceita link do YouTube ou Vimeo (o YouTube começa com qualidade baixa).
-  videoFundo: '',
+  videoFundo: {
+    fontes: [
+      { rotulo: '1080p', src: 'videos/topo-1080.mp4' },
+      { rotulo: '720p', src: 'videos/topo-720.mp4' }
+    ],
+    capa: 'videos/topo.jpg'   // 1ª imagem do vídeo: aparece na hora, sem tela preta
+  },
 
   // OPCIONAL: versão VERTICAL (em pé) do vídeo de fundo, para celular.
   // Com ela, o celular mostra o vídeo em tela cheia. Sem ela, mostra o vídeo
@@ -43,24 +55,21 @@ const SITE = {
    evento: texto livre. Ex: 'Casamento', 'Empresa', 'Aniversário', 'Chá revelação'
 
    video: pode ser
+     - SÓ O NOME de um vídeo guardado na Cloudflare: 'casamento-ana-pedro'
+       (o site usa casamento-ana-pedro-1080.mp4, -720.mp4 e a capa casamento-ana-pedro.jpg
+       e abre no player próprio, em alta qualidade, sem marca do YouTube)
      - um arquivo seu:            'videos/filme-ana-pedro.mp4'
      - um link do YouTube:        'https://youtu.be/XXXXXXXXXXX'
      - um link do Vimeo:          'https://vimeo.com/123456789'
 
    capa (opcional): imagem de capa. Ex: 'img/capa-filme-1.jpg'
+   duracao (opcional): aparece no canto do cartão. Ex: '4:32'
    O PRIMEIRO filme da lista aparece em destaque (maior).
    Deixe video: '' para manter o espaço reservado.
 */
 const VIDEOS = [
-  { titulo: 'Filme de casamento',       tipo: 'filme',     evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Teaser de casamento',      tipo: 'teaser',    evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Cerimônia na íntegra',     tipo: 'cerimonia', evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Vídeo institucional',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Vinheta animada',          tipo: 'motion',    evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Teaser de aniversário',    tipo: 'teaser',    evento: 'Aniversário',   video: '', capa: '' },
-  { titulo: 'Filme do chá revelação',   tipo: 'filme',     evento: 'Chá revelação', video: '', capa: '' },
-  { titulo: 'Conteúdo para redes',      tipo: 'empresa',   evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'Convite animado',          tipo: 'motion',    evento: 'Casamento',     video: '', capa: '' }
+  // Os vídeos da Cloudflare entram aqui sozinhos (os mais novos primeiro).
+  // Para fixar um vídeo à mão: { titulo: 'Ana & Pedro', tipo: 'filme', evento: 'Casamento', video: 'nome-no-bucket' },
 ];
 
 /* ---------- STORIES (vídeos verticais do storymaker) ----------
@@ -69,28 +78,15 @@ const VIDEOS = [
    Deixe video: '' para manter o espaço reservado.
 */
 const STORIES = [
-  { titulo: 'Making of da noiva',  evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Entrada dos noivos',  evento: 'Casamento',     video: '', capa: '' },
-  { titulo: 'Bastidores',          evento: 'Empresa',       video: '', capa: '' },
-  { titulo: 'A revelação',         evento: 'Chá revelação', video: '', capa: '' }
+  // Os stories da Cloudflare entram aqui sozinhos (nome com "story" ou "reels").
+  // Enquanto não houver, o site mostra 4 espaços vazios.
 ];
 
 /* ---------- FOTOS ----------
-   arquivo: caminho da foto. Ex: 'fotos/casamento-01.jpg'
-   categoria: 'casamentos' | 'empresas' | 'aniversarios' | 'cha-revelacao'
-   Deixe arquivo: '' para manter o espaço reservado.
+   Galeria simples, sem categorias. As fotos da pasta "fotos/" do bucket da Cloudflare
+   entram sozinhas. Para colocar à mão: { arquivo: 'fotos/foto-01.jpg', legenda: '' }
 */
-const FOTOS = [
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'empresas',      legenda: 'Evento corporativo' },
-  { arquivo: '', categoria: 'aniversarios',  legenda: 'Aniversário' },
-  { arquivo: '', categoria: 'cha-revelacao', legenda: 'Chá revelação' },
-  { arquivo: '', categoria: 'casamentos',    legenda: 'Casamento' },
-  { arquivo: '', categoria: 'aniversarios',  legenda: 'Aniversário' },
-  { arquivo: '', categoria: 'empresas',      legenda: 'Evento corporativo' },
-  { arquivo: '', categoria: 'cha-revelacao', legenda: 'Chá revelação' }
-];
+const FOTOS = [];
 
 /* ---------- FEEDBACKS ----------
    texto:  o depoimento do cliente

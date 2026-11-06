@@ -1,19 +1,24 @@
 # Publica o site (e o app em /financas) no GitHub Pages: é o único lugar onde os dois ficam no ar.
 # Endereço: https://joaodarzan.github.io/meus-projetos/  ·  app: https://joaodarzan.github.io/meus-projetos/financas/
 # Precisa ligar uma vez: Settings → Pages → Source: GitHub Actions.
+# De 15 em 15 minutos ele também pega a lista de vídeos do robô da Cloudflare e guarda em videos.json,
+# para o endereço do GitHub mostrar os vídeos mesmo em internets que bloqueiam o workers.dev.
+# Só publica de novo se a lista mudou.
 name: Publicar no GitHub Pages
 on:
   push:
     branches: [main]
     paths: ['darzan-producoes/**', '.github/workflows/publicar-github-pages.yml']
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
 permissions:
   contents: read
   pages: write
   id-token: write
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   publicar:
     runs-on: ubuntu-latest
@@ -22,8 +27,34 @@ jobs:
       url: ${{ steps.publicado.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Lista de vídeos e carimbo de versão
+        id: preparar
+        run: |
+          set -u
+          ROBO=https://darzanproducoes.joaodarzan10.workers.dev/api/videos
+          NO_AR=https://joaodarzan.github.io/meus-projetos/videos.json
+          if curl -fsS --max-time 30 "$ROBO" -o darzan-producoes/videos.json; then
+            echo "Lista nova pega no robô"
+          elif curl -fsS --max-time 30 "$NO_AR" -o darzan-producoes/videos.json; then
+            echo "Robô não respondeu: mantém a lista que já estava no ar"
+          else
+            echo '{"arquivos":[],"info":{}}' > darzan-producoes/videos.json
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if curl -fsS --max-time 30 "$NO_AR" -o /tmp/no-ar.json && cmp -s /tmp/no-ar.json darzan-producoes/videos.json; then
+              echo "Nada mudou: não publica de novo"
+              echo "publicar=nao" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          VERSAO="$(git rev-parse --short HEAD)-$(date +%s)"
+          sed -i "s/?v=dev/?v=$VERSAO/g" darzan-producoes/index.html
+          echo "publicar=sim" >> "$GITHUB_OUTPUT"
+      - if: steps.preparar.outputs.publicar == 'sim'
+        uses: actions/configure-pages@v5
+      - if: steps.preparar.outputs.publicar == 'sim'
+        uses: actions/upload-pages-artifact@v3
         with: { path: darzan-producoes }
-      - id: publicado
+      - if: steps.preparar.outputs.publicar == 'sim'
+        id: publicado
         uses: actions/deploy-pages@v4
