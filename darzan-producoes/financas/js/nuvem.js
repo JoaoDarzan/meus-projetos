@@ -23,8 +23,8 @@ window.A = window.A || {};
     const txt = await r.text();
     let corpo = null; try { corpo = txt ? JSON.parse(txt) : null; } catch (e) { corpo = txt; }
     if (!r.ok) {
-      const msg = (corpo && (corpo.error_description || corpo.msg || corpo.message || corpo.error)) || ('Erro ' + r.status);
-      throw new ErroNuvem(String(msg), r.status);
+      const msg = (corpo && (corpo.erro || corpo.error_description || corpo.msg || corpo.message || corpo.error)) || ('Erro ' + r.status);
+      const e = new ErroNuvem(String(msg), r.status); e.motivo = corpo && corpo.motivo || null; throw e;
     }
     return { corpo, r };
   }
@@ -125,6 +125,15 @@ window.A = window.A || {};
     const grupos = {};
     linhas.forEach(l => { const k = Object.keys(l).sort().join(','); (grupos[k] = grupos[k] || []).push(l); });
     for (const g of Object.values(grupos)) for (let i = 0; i < g.length; i += 500) await rest('POST', `${tabela}?on_conflict=id`, g.slice(i, i + 500), 'resolution=merge-duplicates,return=minimal');
+  };
+  /* holerite pela foto: a função "ler-holerite" do Supabase manda a foto ao Claude e devolve os números (a foto não fica guardada) */
+  n.lerHolerite = async (imagem, tipo) => {
+    if (n.ehDemo()) throw new ErroNuvem('A demonstração não lê holerite', 400);
+    const faz = async () => chamar('/functions/v1/ler-holerite', { method: 'POST', headers: { apikey: CONFIG.chave, Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ imagem, tipo }) });
+    try { return (await faz()).corpo.holerite; } catch (e) {
+      if (e.status !== 401) throw e;
+      await n.renovar(); return (await faz()).corpo.holerite;
+    }
   };
   /* arquivo de um anexo (foto ou PDF em "data:..."); vai e vem direto, sem esperar na fila, porque é pesado */
   n.arquivo = async id => {

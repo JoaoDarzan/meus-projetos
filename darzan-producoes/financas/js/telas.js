@@ -643,7 +643,8 @@
   /* meu trabalho (CLT): quanto entrou de cada holerite, o que mudou e o que a empresa guardou de FGTS */
   const CLT_COR = [['sal', 'Salário e horas extras', '--clt-sal'], ['ben', 'Vale-transporte e refeição', '--clt-ben'], ['bon', 'Bonificação', '--clt-bon']];
   REL.clt = () => {
-    const ps = c.clt(); if (!ps.length) return vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
+    const botao = `<button type="button" class="btn2 pri" data-a="holeriteFoto" style="width:100%;justify-content:center">${u.svg('camera')}Lançar o salário pela foto do holerite</button>`;
+    const ps = c.clt(); if (!ps.length) return `<section class="sec">${botao}</section>` + vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
     const ult = ps[ps.length - 1], tot = u.sum(ps, p => p.liq), fgts = u.sum(ps, p => p.fgts || 0), inss = u.sum(ps, p => p.inss || 0);
     const nomeComp = p => p.comp ? u.cap(p.comp.replace('/', ' de ')) : 'pago em ' + u.nomeMes(p.m).toLowerCase();
     const dest = [];
@@ -652,11 +653,13 @@
     const bons = ps.filter(p => p.bon > 0), hb = bons.filter(p => p.comp && p.bon > p.com).map(p => p.bon - p.com); /* a comparação só usa bônus de holerite, sem comissão */
     if (bons.length) dest.push(['award', `<b>Bonificação${bons.some(p => p.com) ? ' e comissão' : ''}</b> em ${bons.length} ${bons.length > 1 ? 'meses' : 'mês'}: ${u.k0(u.sum(bons, p => p.bon))} no total${hb.length > 1 ? `, de ${u.k0(hb[0])} para ${u.k0(hb[hb.length - 1])} nos holerites (${hb[hb.length - 1] >= hb[0] ? '+' : ''}${u.pct(hb[hb.length - 1] / hb[0] - 1)})` : ''}.`]);
     const hes = ps.filter(p => p.he > 0);
-    if (hes.length) dest.push(['clock', `<b>Horas extras</b>: ${u.sum(hes, p => p.horas)} h em ${hes.length} ${hes.length > 1 ? 'meses' : 'mês'}, ${u.k0(u.sum(hes, p => p.he))} a mais no salário.`]);
+    if (hes.length) dest.push(['clock', `<b>Horas extras</b>: ${String(u.r2(u.sum(hes, p => p.horas))).replace('.', ',')} h em ${hes.length} ${hes.length > 1 ? 'meses' : 'mês'}, ${u.k0(u.sum(hes, p => p.he))} a mais no salário.`]);
     if (fgts) dest.push(['piggy-bank', `<b>FGTS</b>: a empresa já guardou ${u.k0(fgts)} para você (não entra na conta, fica no FGTS).`]);
     if (inss) dest.push(['receipt', `<b>INSS</b> descontado: ${u.k0(inss)} no total (conta para a sua aposentadoria).`]);
-    const lista = ps.slice().reverse().map(p => `<div class="it"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.bon > p.com ? 'bônus ' + u.k0(p.bon - p.com) : '', p.com ? 'comissão ' + u.k0(p.com) : '', p.horas ? p.horas + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>recebido ${u.dm(p.data)}</small></div></div>`).join('');
-    return `<section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
+    const irrf = u.sum(ps, p => p.irrf || 0);
+    if (irrf) dest.push(['landmark', `<b>Imposto de renda</b> descontado: ${u.k0(irrf)} no total (entra na declaração do ano que vem).`]);
+    const lista = ps.slice().reverse().map(p => `<div class="it"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.irrf ? 'IR ' + u.k0(p.irrf) : '', p.bon > p.com ? 'bônus ' + u.k0(p.bon - p.com) : '', p.com ? 'comissão ' + u.k0(p.com) : '', p.horas ? String(p.horas).replace('.', ',') + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>recebido ${u.dm(p.data)}</small></div></div>`).join('');
+    return `<section class="sec">${botao}</section><section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
       <section class="sec"><div class="kpis"><div class="kpi"><span>Recebido no ano</span><b class="num">${u.brl(tot)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.brl(tot / ps.length)}</b></div>${fgts ? `<div class="kpi"><span>FGTS guardado</span><b class="num">${u.brl(fgts)}</b></div>` : ''}${ult.base ? `<div class="kpi"><span>Salário base</span><b class="num">${u.brl(ult.base)}</b></div>` : ''}</div></section>
       <section class="sec"><div class="sec-h"><h2>O que entrou de cada salário</h2></div><div class="panel"><div class="lgd">${CLT_COR.map(([, n, v]) => `<span><i style="background:var(${v})"></i>${n}</span>`).join('')}</div><div class="chart" id="chClt"></div></div></section>
       ${dest.length ? `<section class="sec"><div class="sec-h"><h2>${u.svg('sparkles')}Destaques</h2></div><div class="panel" style="display:grid;gap:12px">${dest.map(([i, t]) => `<div class="dest">${u.svg(i)}<span>${t}</span></div>`).join('')}</div></section>` : ''}
@@ -944,6 +947,56 @@
       rd.readAsDataURL(arq);
     });
   }
+  /* ---------- holerite pela foto: escolhe a foto → o Claude lê (função do Supabase) → o João confere → lança ---------- */
+  function escolherHolerite() {
+    if (A.nuvem.ehDemo()) { toast('Na demonstração não dá para ler holerite'); return; }
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'hFoto'; inp.hidden = true;
+    inp.addEventListener('change', () => { const arq = inp.files && inp.files[0]; inp.remove(); if (arq) lerHoleriteFoto(arq); });
+    document.body.appendChild(inp); inp.click();
+  }
+  async function lerHoleriteFoto(arq) {
+    abrir(`<h3 style="margin:0 0 6px">Lendo o holerite…</h3><div class="spin" style="margin:22px auto" role="status" aria-label="Lendo"></div>
+      <p class="c-muted" style="text-align:center;font-size:.86rem">Leva uns 20 a 40 segundos. A foto vai só para o Claude ler e não fica guardada em lugar nenhum.</p>`);
+    const vez = (lerHoleriteFoto.vez = (lerHoleriteFoto.vez || 0) + 1), aindaAqui = () => vez === lerHoleriteFoto.vez && !$('scrim2').hidden;
+    let foto;
+    try { foto = await reduzirFoto(arq, 2000, 1800000); } catch (e) { if (aindaAqui()) { fechar(); toast('Não consegui abrir essa foto'); } return; }
+    try { const h = await A.nuvem.lerHolerite(foto.split(',')[1], 'image/jpeg'); if (aindaAqui()) formHolerite(h); }
+    catch (e) { if (aindaAqui()) erroHolerite(e); }
+  }
+  function erroHolerite(e) {
+    const outra = `<button type="button" class="save" data-a="holeriteFoto">${u.svg('camera')} Tentar com outra foto</button>`;
+    if (e.status === 404) return abrir(`<h3 style="margin:0 0 10px">Falta 1 passo para ler holerite pela foto</h3>
+      <p>A leitura precisa ser ligada uma vez no Supabase (e uma chave do Claude). O passo a passo está no arquivo <b>financas-app/README.md</b>, em “Ler holerite pela foto”.</p>
+      <ol class="howto"><li><div><b>Criar a chave do Claude</b><span>console.anthropic.com → API Keys → Create Key (precisa de crédito na conta).</span></div></li>
+      <li><div><b>Ligar a função no Supabase</b><span>Edge Functions → Deploy a new function → Via Editor → nome <code>ler-holerite</code> → colar o arquivo <code>financas-app/supabase/functions/ler-holerite/index.ts</code> → Deploy.</span></div></li>
+      <li><div><b>Guardar a chave</b><span>Edge Functions → Secrets → nome <code>ANTHROPIC_API_KEY</code>, valor = a chave → Save.</span></div></li></ol>`);
+    if (e.motivo === 'chave') return abrir(`<h3 style="margin:0 0 10px">A chave do Claude não funcionou</h3><p>${u.esc(e.message)}.</p><p class="c-muted">Confira em Supabase → Edge Functions → Secrets o <code>ANTHROPIC_API_KEY</code>, e se a conta em console.anthropic.com tem crédito.</p>`);
+    abrir(`<h3 style="margin:0 0 10px">Não deu para ler</h3><p>${u.esc(e.semInternet ? 'Sem internet agora. Tente de novo quando tiver conexão.' : e.message)}</p><p class="c-muted" style="font-size:.86rem">Dica: o holerite inteiro na foto, reto, com boa luz e sem sombra.</p>${outra}`);
+  }
+  function formHolerite(h) {
+    const ult = c.lancs().filter(l => l.cat === 'Salário CLT').sort((a, b) => a.data < b.data ? 1 : -1)[0];
+    const banco0 = ult ? ult.banco : 'PicPay', r = c.holeriteLinhas(h, u.hoje(), banco0);
+    const linha = (t, v, cls = '') => `<div class="hl"><span>${u.esc(t)}</span><b class="num ${cls}">${u.brl(v)}</b></div>`;
+    abrir(`<h3 style="margin:0 0 4px">Holerite de ${u.esc(r.comp)}</h3><div class="c-muted" style="font-size:.84rem">${u.esc(h.empresa || '')}</div>
+      <div class="bignum num" style="margin:12px 0 2px">${u.brl(r.liq)}</div><div class="c-muted" style="font-size:.84rem;margin-bottom:12px">líquido que cai na conta</div>
+      ${r.bate ? `<p class="okc hok">${u.svg('circle-check')}Conferi a leitura: os itens somam os totais do holerite.</p>` : `<div class="aviso" id="hProb"><b>Confira com o papel antes de lançar:</b><ul>${r.probs.map(p => `<li>${u.esc(p)}</li>`).join('')}</ul></div>`}
+      <div class="panel hls" id="hLinhas">${r.linhas.map(l => linha(l['DESCRIÇÃO'], l['VALOR'], 'c-in')).join('')}</div>
+      <p class="c-muted" style="font-size:.82rem;margin:8px 2px 14px">Bruto ${u.brl(r.venc)}${r.inss ? ` · INSS ${u.brl(r.inss)}` : ''}${r.irrf ? ` · imposto de renda ${u.brl(r.irrf)}` : ''}${h.fgts_mes ? ` · FGTS ${u.brl(h.fgts_mes)} (guardado pela empresa)` : ''}${h.salario_base ? ` · salário base ${u.brl(h.salario_base)}` : ''}</p>
+      <div class="grid2">${campo('Dia que caiu (ou vai cair)', `<input class="txt" id="hDt" type="date" value="${u.hoje()}">`)}${campo('Banco', `<select class="txt" id="hB">${opts(c.BANCOS.filter(b => b !== 'Não informado'), banco0)}</select>`)}</div>
+      ${r.jaTem.length ? `<p class="aviso">Já tem salário lançado em ${u.esc(u.nomeMes(u.mes(u.hoje())).toLowerCase())}: ele vai ser trocado por este.</p>` : ''}
+      <p class="c-muted" style="font-size:.82rem">Se ainda não caiu, fica como previsto; quando o banco mostrar o depósito, o robô marca como recebido sozinho.</p>
+      <div class="acoes"><button type="button" class="btn2" data-a="holeriteFoto">${u.svg('camera')}Outra foto</button><button class="save" type="submit">Lançar salário</button></div>`,
+      () => {
+        const data = val('hDt') || u.hoje(), banco = val('hB'), x = c.holeriteLinhas(h, data, banco), novos = new Set(x.linhas.map(l => l.ID));
+        /* se o robô já tinha conferido a linha com o banco, a marca dele fica (senão ele traria o depósito de novo) */
+        x.linhas.forEach(reg => { const old = db.achar('EXTRATO', reg.ID), of = old && (String(old['OBS'] || '').match(/OF [0-9a-f-]{20,}/i) || [])[0];
+          if (of) Object.assign(reg, { 'OBS': reg['OBS'] + ' · ' + of, 'STATUS': old['STATUS'], 'DATA': old['DATA'] }); });
+        const ops = x.jaTem.filter(l => !novos.has(l.id)).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id })).concat(x.linhas.map(reg => ({ op: 'salvar', aba: 'EXTRATO', registro: reg })));
+        db.lote(ops); fechar(); Object.assign(ui, { view: 'fin', fseg: 'relatorios', rseg: 'clt' }); render(false);
+        toast(`Salário de ${x.comp} lançado: ${u.brl(x.liq)}`);
+      }, true);
+  }
+
   function salvarEquip(e) {
     const nome = val('eN').trim(), v = u.num(val('eV'));
     if (!nome) { toast('Dê um nome para o equipamento'); return false; }
@@ -1401,6 +1454,7 @@
     irCartoes: b => { ui.fseg = 'cartoes'; if (b.dataset.v) ui.cartao = b.dataset.v; go('fin'); },
     irExtrato: () => { ui.fseg = 'extrato'; ui.filtro = 'tudo'; go('fin'); },
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },
+    holeriteFoto: () => escolherHolerite(),
     abreCat: b => { ui.cexp = ui.cexp === b.dataset.v ? null : b.dataset.v; render(false); },
     filtroCat: b => { ui.fseg = 'extrato'; ui.filtro = 'cat:' + b.dataset.v; go('fin'); },
     novoL: b => formLanc(b.dataset.t),

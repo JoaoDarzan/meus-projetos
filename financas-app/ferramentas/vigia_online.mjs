@@ -32,6 +32,9 @@ for (const [fn, corpo] of [['claude_tabela_ok', { p_tabela: 'extrato' }], ['clau
   const r = await api('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(corpo) });
   confere(r.status === 401 || r.status === 403, `${fn} fechada para estranhos (${r.status})`);
 }
+/* 4c. a leitura de holerite (função do Supabase) não atende quem não está logado */
+const fh = await api('/functions/v1/ler-holerite', { method: 'POST', body: JSON.stringify({ imagem: 'AAAA', tipo: 'image/jpeg' }) });
+confere(fh.status === 401 || fh.status === 404, `leitura de holerite fechada sem login (${fh.status === 404 ? 'ainda não ligada' : fh.status})`);
 /* 4b. o Netlify foi desligado: o endereço antigo não pode mais servir a versão velha do app */
 const nf = await fetch('https://darzanproducoes.netlify.app/financas/', { redirect: 'manual' }).catch(() => null);
 if (!nf || nf.status === 404 || (nf.status >= 300 && nf.status < 400)) ok.push('endereço antigo do Netlify não serve mais o app');

@@ -545,6 +545,7 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
 .splash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;align-content:center;gap:16px;background:var(--bg);text-align:center;padding:24px;transition:opacity .5s var(--ease)}
 .splash.out{opacity:0;pointer-events:none}
 .splash .ringw{width:96px;height:96px}
+.spin{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--blue-hi);animation:gira 1s linear infinite}
 .splash .spin{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--blue-hi);animation:gira 1s linear infinite;margin:0 auto}
 @keyframes gira{to{transform:rotate(360deg)}}
 .splash p{color:var(--muted);margin:0}
@@ -845,3 +846,10 @@ body.com-visor{overflow:hidden}
 details.perd{margin-top:14px;border:1px solid var(--stroke);border-radius:16px;padding:6px 12px;background:var(--glass)}
 details.perd summary{cursor:pointer;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px;padding:6px 0;list-style:none}
 details.perd summary svg{width:16px;height:16px}
+
+/* holerite pela foto */
+.hls{padding:4px 12px}
+.hl{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)}
+.hl:first-child{border-top:0}
+.hok{display:flex;gap:8px;align-items:center;font-size:.88rem;margin:0 0 12px}.hok svg{width:18px;height:18px;flex:none}
+#hProb ul{margin:6px 0 0;padding-left:18px}
