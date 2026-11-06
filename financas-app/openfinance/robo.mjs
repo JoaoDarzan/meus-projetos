@@ -76,7 +76,7 @@ async function principal() {
   Object.entries(contar(casados.filter(p => p.acao === 'novo'), p => `${p.banco} (${p.tipo})`)).forEach(([k, n]) => console.log(`  · novos em ${k}: ${n}`));
 
   /* o saldo de cada conta no app (depois desta importação) bate com o do banco? só diz sim ou não (o registro é público) */
-  const depois = extrato.map(l => { const p = casados.find(x => x.acao === 'conferir' && x.app === l.id); return p && l.status === 'Previsto' && p.data <= hoje ? Object.assign({}, l, { status: 'Pago', data: p.data }) : l; })
+  const depois = extrato.map(l => { const p = casados.find(x => x.acao === 'conferir' && (x.grupo || [x.app]).includes(l.id)); return p && l.status === 'Previsto' && p.data <= hoje ? Object.assign({}, l, { status: 'Pago', data: p.data }) : l; })
     .concat(casados.filter(p => p.acao === 'novo').map(p => linhaNova(p, mem)));
   console.log('\nSaldo das contas (o app depois desta importação × o banco):');
   saldos.forEach(({ banco, saldo }) => { const b = saldoBate(saldo, contasApp.find(c => c.banco === banco && String(c.conta).toLowerCase() === 'conta'), depois);
@@ -104,10 +104,11 @@ async function principal() {
     const ops = extrato.filter(l => /^LOFP-/.test(l.id)).map(l => ({ tabela: 'extrato', op: 'apagar', linha: { id: l.id } }));
     casados.forEach(p => {
       if (p.acao === 'novo') ops.push({ tabela: 'extrato', op: 'salvar', linha: linhaNova(p, mem) });
-      if (p.acao === 'conferir') {
-        const l = extrato.find(x => x.id === p.app), obs = [String(l.obs || '').trim(), `OF ${p.pid}`].filter(Boolean).join(' · ');
+      /* conferido pelo banco (no holerite, todas as linhas que somam o depósito ganham a marca) */
+      if (p.acao === 'conferir') (p.grupo || [p.app]).forEach(id => {
+        const l = extrato.find(x => x.id === id), obs = [String(l.obs || '').trim(), `OF ${p.pid}`].filter(Boolean).join(' · ');
         ops.push({ tabela: 'extrato', op: 'salvar', linha: Object.assign({ id: l.id, obs }, l.status === 'Previsto' && p.data <= hoje ? { status: 'Pago', data: p.data } : {}) });
-      }
+      });
     });
     await gravar(ops);
     console.log(`\nImportado: ${resumo.novo || 0} novos e ${resumo.conferir || 0} conferidos pelo banco.`);

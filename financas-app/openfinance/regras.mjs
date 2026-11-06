@@ -127,8 +127,29 @@ export function casar(propostas, extrato) {
       /* prefere a mesma parcela; depois a data mais perto */
       .sort((a, b) => ((a.parcela || '') !== p.parcela) - ((b.parcela || '') !== p.parcela) || Math.abs(dias(String(a.data).slice(0, 10), p.data)) - Math.abs(dias(String(b.data).slice(0, 10), p.data)));
     if (cands.length) { usados.add(cands[0].id); return Object.assign({ acao: 'conferir', app: cands[0].id }, p); }
+    const grupo = p.valor > 0 && holerite(p, extrato.filter(l => !usados.has(l.id)));
+    if (grupo) { grupo.forEach(id => usados.add(id)); return Object.assign({ acao: 'conferir', app: grupo[0], grupo }, p); }
     return Object.assign({ acao: p.pagFatura ? 'ignorar' : 'novo' }, p);
   });
+}
+
+/* o holerite entra no app dividido (salário, vale-refeição, vale-transporte, bonificação, horas extras: LCLT-AAAA-MM-…),
+   mas o banco mostra um depósito só (ou alguns). Se a soma de algumas linhas do mesmo holerite dá o valor do depósito, são elas. */
+function holerite(p, extrato) {
+  if (p.tipo !== 'conta') return null;
+  const linhas = extrato.filter(l => /^LCLT-\d{4}-\d{2}-/.test(l.id) && l.status !== 'Cancelado' && sem(l.banco) === sem(p.banco) && !/cart/i.test(l.tipo) && +l.valor > 0
+    && (l.status === 'Previsto' ? dias(String(l.data).slice(0, 10), p.data) >= -7 && dias(String(l.data).slice(0, 10), p.data) <= 20 : Math.abs(dias(String(l.data).slice(0, 10), p.data)) <= 3));
+  const lotes = new Map(); linhas.forEach(l => { const k = l.id.slice(0, 13); lotes.set(k, (lotes.get(k) || []).concat(l)); });
+  for (const ls of lotes.values()) {
+    if (ls.length > 12) continue;
+    let melhor = null;
+    for (let m = 1; m < 1 << ls.length; m++) {
+      const sub = ls.filter((_, i) => m & 1 << i);
+      if (sub.length > 1 && Math.abs(Math.round(sub.reduce((s, l) => s + +l.valor, 0) * 100) / 100 - p.valor) < 0.011 && (!melhor || sub.length > melhor.length)) melhor = sub;
+    }
+    if (melhor) return melhor.map(l => l.id);
+  }
+  return null;
 }
 
 /* compra/Pix que voltou (estorno ou devolução): devolução completa → os dois ficam de fora; um pouco menor → os dois entram como reembolso.

@@ -127,6 +127,21 @@ test('conta prevista paga atrasada (o seguro venceu dia 27 e foi pago dia 31) é
   assert.equal(saldoBate(1000, { banco: 'PicPay' }, mov), null, 'sem saldo conferido: não dá para dizer');
 });
 
+test('salário: o depósito do banco é a soma das linhas do holerite (salário, vales, bonificação, horas extras) → confere todas, não repete', () => {
+  /* valores inventados */
+  const H = (k, valor, extra) => Object.assign({ id: 'LCLT-2030-01-' + k, banco: 'BancoTeste', tipo: 'conta', valor, data: '2030-01-05', status: 'Previsto', obs: 'holerite' }, extra);
+  const ex = [H('SAL', 2000.5), H('VR', 400), H('VT', 100), H('BON', 600), H('HE', 49.5), H('X', 99, { banco: 'Outro' }), { id: 'LOUTRA', banco: 'BancoTeste', tipo: 'conta', valor: 1000, data: '2030-01-05', status: 'Previsto', obs: '' }];
+  const um = casar([{ pid: 'd1', banco: 'BancoTeste', tipo: 'conta', valor: 3150, data: '2030-01-05', desc: 'PIX RECEBIDO EMPRESA' }], ex)[0];
+  assert.deepEqual([um.acao, [...um.grupo].sort()], ['conferir', ['LCLT-2030-01-BON', 'LCLT-2030-01-HE', 'LCLT-2030-01-SAL', 'LCLT-2030-01-VR', 'LCLT-2030-01-VT']]);
+  /* pago em dois depósitos: o salário à parte e os vales juntos */
+  const dois = casar([{ pid: 'd2', banco: 'BancoTeste', tipo: 'conta', valor: 2650, data: '2030-01-05', desc: 'SALARIO' }, { pid: 'd3', banco: 'BancoTeste', tipo: 'conta', valor: 500, data: '2030-01-06', desc: 'BENEFICIO' }], ex);
+  assert.deepEqual(dois.map(x => [x.acao, [...(x.grupo || [])].sort()]), [['conferir', ['LCLT-2030-01-BON', 'LCLT-2030-01-HE', 'LCLT-2030-01-SAL']], ['conferir', ['LCLT-2030-01-VR', 'LCLT-2030-01-VT']]]);
+  assert.equal(casar([{ pid: 'd4', banco: 'BancoTeste', tipo: 'conta', valor: 3000, data: '2030-01-05', desc: 'x' }], ex)[0].acao, 'novo', 'valor que nenhuma soma dá: é novo');
+  assert.equal(casar([{ pid: 'd5', banco: 'Outro', tipo: 'conta', valor: 3150, data: '2030-01-05', desc: 'x' }], ex)[0].acao, 'novo', 'outro banco não casa');
+  assert.equal(casar([{ pid: 'd6', banco: 'BancoTeste', tipo: 'conta', valor: 3150, data: '2030-02-20', desc: 'x' }], ex)[0].acao, 'novo', 'longe da data não casa');
+  assert.equal(casar([{ pid: 'd7', banco: 'BancoTeste', tipo: 'conta', valor: 1400, data: '2030-01-05', desc: 'x' }], ex)[0].acao, 'novo', 'não mistura com linha que não é do holerite');
+});
+
 test('o que o João mandou ignorar (cancelado com a marca OF) não volta', async () => {
   const { st, env, fim } = await preparar();
   st.tabelas.extrato.push({ id: 'LOF-aaaaaaaa-0000-0000-0000-000000000002', user_id: 'u-joao', data: '2026-10-21', banco: 'BancoTeste', descricao: 'Padaria Pão Quente', grupo: 'Desejos', tipo: 'conta', valor: -19.9, categoria: '', subcategoria: '', status: 'Cancelado', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000002 · ignorado' });
