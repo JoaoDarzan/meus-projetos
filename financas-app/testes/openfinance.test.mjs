@@ -149,6 +149,21 @@ test('salário: o depósito do banco é a soma das linhas do holerite (salário,
   assert.equal(casar([{ pid: 'd7', banco: 'BancoTeste', tipo: 'conta', valor: 1400, data: '2030-01-05', desc: 'x' }], ex)[0].acao, 'novo', 'não mistura com linha que não é do holerite');
 });
 
+test('Pix dividido: o Pix inteiro do banco é a soma das partes LDV (pagamento + reembolso) → confere todas, não repete', () => {
+  /* valores inventados */
+  const D = (k, valor, extra) => Object.assign({ id: 'LDV-X1-' + k, banco: 'BancoTeste', tipo: 'conta', valor, data: '2030-01-05', status: 'Previsto', obs: 'Pix dividido' }, extra);
+  const ex = [D('PAG', 250), D('R1', 80.4), D('R2', 19.6), { id: 'LDV-Y2-PAG', banco: 'BancoTeste', tipo: 'conta', valor: 250, data: '2030-01-05', status: 'Previsto', obs: '' }];
+  const um = casar([{ pid: 'p1', banco: 'BancoTeste', tipo: 'conta', valor: 350, data: '2030-01-06', desc: 'PIX RECEBIDO' }], ex)[0];
+  assert.deepEqual([um.acao, [...um.grupo].sort()], ['conferir', ['LDV-X1-PAG', 'LDV-X1-R1', 'LDV-X1-R2']]);
+  assert.equal(casar([{ pid: 'p2', banco: 'BancoTeste', tipo: 'conta', valor: 330.4, data: '2030-01-06', desc: 'x' }], ex)[0].acao, 'novo', 'só parte das partes não casa: tem que ser o Pix inteiro');
+  assert.equal(casar([{ pid: 'p3', banco: 'Outro', tipo: 'conta', valor: 350, data: '2030-01-06', desc: 'x' }], ex)[0].acao, 'novo', 'outro banco não casa');
+  assert.equal(casar([{ pid: 'p4', banco: 'BancoTeste', tipo: 'conta', valor: 350, data: '2030-03-01', desc: 'x' }], ex)[0].acao, 'novo', 'longe da data não casa');
+  assert.equal(casar([{ pid: 'p5', banco: 'BancoTeste', tipo: 'conta', valor: 350, data: '2030-01-06', desc: 'x' }], ex.map(l => Object.assign({}, l, { status: 'Pago' })))[0].acao, 'novo', 'parte já paga não casa de novo');
+  const dois = casar([{ pid: 'p6', banco: 'BancoTeste', tipo: 'conta', valor: 350, data: '2030-01-06', desc: 'x' }, { pid: 'p7', banco: 'BancoTeste', tipo: 'conta', valor: 350, data: '2030-01-06', desc: 'x' }], ex);
+  assert.deepEqual(dois.map(x => x.acao), ['conferir', 'novo'], 'o mesmo dividido não casa duas vezes');
+  assert.equal(casar([{ pid: 'p8', banco: 'BancoTeste', tipo: 'conta', valor: 250, data: '2030-01-06', desc: 'x' }], ex)[0].acao, 'novo', 'uma parte sozinha não casa com outro Pix do mesmo valor');
+});
+
 test('o que o João mandou ignorar (cancelado com a marca OF) não volta', async () => {
   const { st, env, fim } = await preparar();
   st.tabelas.extrato.push({ id: 'LOF-aaaaaaaa-0000-0000-0000-000000000002', user_id: 'u-joao', data: '2026-10-21', banco: 'BancoTeste', descricao: 'Padaria Pão Quente', grupo: 'Desejos', tipo: 'conta', valor: -19.9, categoria: '', subcategoria: '', status: 'Cancelado', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000002 · ignorado' });

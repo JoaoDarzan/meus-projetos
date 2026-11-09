@@ -125,13 +125,13 @@ export function casar(propostas, extrato) {
   extrato.forEach(l => { if (/^LOFP-/.test(l.id)) return; const m = String(l.obs || '').match(/OF ([0-9a-f-]{20,})/i); if (m) { porPid.set(m[1], l.id); usados.add(l.id); } });
   return propostas.map(p => {
     if (porPid.has(p.pid)) return Object.assign({ acao: 'ja-importado', app: porPid.get(p.pid) }, p);
-    const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-/.test(l.id) && sem(l.banco) === sem(p.banco)
+    const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-|^LDV-/.test(l.id) && sem(l.banco) === sem(p.banco)
       && (/cart/i.test(l.tipo) ? 'cartão' : 'conta') === p.tipo && Math.abs((+l.valor || 0) - p.valor) < 0.011
       && (l.status === 'Previsto' ? dias(String(l.data).slice(0, 10), p.data) >= -7 && dias(String(l.data).slice(0, 10), p.data) <= 20 : Math.abs(dias(String(l.data).slice(0, 10), p.data)) <= 3))
       /* prefere a mesma parcela; depois a data mais perto */
       .sort((a, b) => ((a.parcela || '') !== p.parcela) - ((b.parcela || '') !== p.parcela) || Math.abs(dias(String(a.data).slice(0, 10), p.data)) - Math.abs(dias(String(b.data).slice(0, 10), p.data)));
     if (cands.length) { usados.add(cands[0].id); return Object.assign({ acao: 'conferir', app: cands[0].id }, p); }
-    const grupo = p.valor > 0 && holerite(p, extrato.filter(l => !usados.has(l.id)));
+    const livres = extrato.filter(l => !usados.has(l.id)), grupo = dividido(p, livres) || (p.valor > 0 && holerite(p, livres));
     if (grupo) { grupo.forEach(id => usados.add(id)); return Object.assign({ acao: 'conferir', app: grupo[0], grupo }, p); }
     return Object.assign({ acao: p.pagFatura ? 'ignorar' : 'novo' }, p);
   });
@@ -153,6 +153,19 @@ function holerite(p, extrato) {
     }
     if (melhor) return melhor.map(l => l.id);
   }
+  return null;
+}
+
+/* Pix dividido: um Pix só que é parte pagamento e parte reembolso (ex.: o cliente paga o trabalho e devolve junto um gasto
+   que o João adiantou). O Claude deixa as partes previstas como LDV-<código>-<parte>; quando o banco mostra o Pix inteiro,
+   ele é a soma de TODAS as partes do mesmo código (mesmo banco, perto da data) → confere todas, sem repetir. */
+function dividido(p, extrato) {
+  if (p.tipo !== 'conta') return null;
+  const lotes = new Map();
+  extrato.filter(l => /^LDV-[A-Za-z0-9]+-[A-Za-z0-9]+$/.test(l.id) && l.status === 'Previsto' && sem(l.banco) === sem(p.banco) && !/cart/i.test(l.tipo)
+    && dias(String(l.data).slice(0, 10), p.data) >= -7 && dias(String(l.data).slice(0, 10), p.data) <= 20)
+    .forEach(l => { const k = l.id.replace(/-[^-]+$/, ''); lotes.set(k, (lotes.get(k) || []).concat(l)); });
+  for (const ls of lotes.values()) if (ls.length > 1 && Math.abs(Math.round(ls.reduce((s, l) => s + +l.valor, 0) * 100) / 100 - p.valor) < 0.011) return ls.map(l => l.id);
   return null;
 }
 
