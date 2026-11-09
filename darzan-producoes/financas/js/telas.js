@@ -88,6 +88,21 @@
 
 
   /* ================= INÍCIO ================= */
+  /* atalhos redondos (Nubank / Mercado Pago): o primeiro, em destaque, é o mais usado */
+  function atalhos() {
+    const nr = c.totalRevisar();
+    const at = (a, ic, t, extra, pri) => `<button type="button" class="at${pri ? ' pri' : ''}" data-a="${a}" ${extra || ''}><i>${u.svg(ic)}</i><span>${t}</span></button>`;
+    return `<nav class="atalhos sec" aria-label="Atalhos">${at('novoL', 'plus', 'Lançar gasto', 'data-t="saida"', true)}${at('novoL', 'arrow-up', 'Recebi', 'data-t="entrada"')}${at('novoL', 'piggy-bank', 'Guardei', 'data-t="guardar"')}${at('transferir', 'arrow-left-right', 'Transferir')}${at('irCartoes', 'credit-card', 'Pagar fatura')}${at('irRevisar', 'sparkles', 'Revisar', nr ? `aria-label="Revisar (${nr})" data-n="${nr > 99 ? '99+' : nr}"` : '')}</nav>`;
+  }
+  /* caixinhas e metas deslizando para o lado (Nubank): quanto tem, quanto rendeu no mês e a barrinha da meta */
+  function railCaixinhas() {
+    const cxs = c.caixinhas().filter(x => (c.saldo(x) || 0) > 0).sort((a, b) => c.saldo(b) - c.saldo(a)), ms = c.metas();
+    if (!cxs.length && !ms.length) return '';
+    const fimAnt = u.addDias(u.mes(u.hoje()) + '-01', -1), nome = x => String(x['CONTA']).replace(/^(Caixinha|Cofrinho)\s+/i, '');
+    const cardCx = x => { const rd = c.semSaldos() ? null : rendeuDesde([x], fimAnt); return `<button type="button" class="cxm" data-a="irBancos"><span class="e">${u.svg('piggy-bank')}</span><small>${u.esc(nome(x))}</small><b class="num">${u.brl(c.saldo(x))}</b><span class="p">${u.esc(x['BANCO'])}${rd && rd.v ? ` · <span class="${rd.v > 0 ? 'c-in' : 'c-out'}">${rd.v > 0 ? '+' : '−'} ${u.brl(Math.abs(rd.v))} no mês</span>` : ''}</span></button>`; };
+    const cardM = g => { const alvo = c.num(g['VALOR ALVO']), t = c.noPote(g), p = alvo ? Math.min(t / alvo, 1) : 0; return `<button type="button" class="cxm meta" data-a="irMetas"><span class="e">${u.svg('target')}</span><small>${u.esc(g['META'])}</small><b class="num">${u.brl(t)}</b>${alvo ? `<span class="mbar"><i style="width:${(p * 100).toFixed(1)}%"></i></span><span class="p">${u.pct(p)} de ${u.k0(alvo)}</span>` : ''}</button>`; };
+    return `<section class="sec" id="hCaixinhas"><div class="sec-h"><h2>Caixinhas e metas</h2><button class="more" type="button" data-a="irBancos">Ver todas</button></div><div class="rail">${ms.map(cardM).join('')}${cxs.map(cardCx).join('')}</div></section>`;
+  }
   R.inicio = () => {
     const r = c.resumo(ui.mes), m = ui.mes;
     const ult = c.ordenar(r.L);
@@ -105,22 +120,20 @@
         <div class="hello"><button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
           <button class="eye" type="button" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}">${u.svg(ui.oculto ? 'eye-off' : 'eye')}</button>
           <button class="bell ${nov ? 'ring' : ''}" type="button" data-a="novidades" aria-label="${nov ? `${nov} ${nov > 1 ? 'novidades' : 'novidade'} do banco` : 'Novidades do banco'}">${u.svg('bell')}${nov ? `<span class="cnt">${nov > 99 ? '99+' : nov}</span>` : ''}</button></div>
-        <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
-          <div class="big num" data-cnt="${r.futuro ? r.prevSobra : r.sobra}" data-fmt="big">${u.big(r.futuro ? r.prevSobra : r.sobra)}</div></div>
+        ${(() => { const rs = c.bancosComConta().map(c.resumoBanco), B = u.r2(u.sum(rs, x => x.bruto)), L = u.r2(u.sum(rs, x => x.liquido)), sob = r.futuro ? r.prevSobra : r.sobra;
+          return `<button type="button" class="bal" data-a="irBancos" aria-label="Dinheiro nos bancos: ${u.brl(B)}"><div class="lbl">Dinheiro nos bancos <span class="seta">${u.svg('chevron-right')}</span></div>
+          <div class="big num" data-cnt="${B}" data-fmt="big">${u.big(B)}</div>${Math.abs(B - L) >= 0.01 ? `<div class="liqh">Se sacar tudo hoje: <b class="num">${u.brl(L)}</b></div>` : ''}</button>
+          <div class="mesl">${pill()}<span class="sob">${r.futuro ? 'previsto sobrar' : 'sobrou'} <b class="num ${sob < 0 ? 'c-out' : ''}">${u.brl(sob)}</b></span></div>`; })()}
         <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="brl">${u.brl(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.brl(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="brl">${u.brl(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="brl">${u.brl(r.guardou)}</b></span></div>
         <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.brl(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
+      ${atalhos()}
       ${cartoes.length ? `<section class="sec"><div class="sec-h"><h2>Cartões</h2><button class="more" type="button" data-a="irCartoes">Ver faturas</button></div><div class="rail">${cartoes.map(k => { const nome = k['CARTÃO'], fm = m, v = c.fatura(nome, fm), ven = c.vence(nome, fm), q = u.ateHoje(ven.data); return `<button type="button" class="gcard sm tilt" style="--g:${c.GRAD[nome] || 'var(--mp)'}" data-a="irCartoes" data-v="${u.esc(nome)}"><span class="sheen"></span><span class="bank">${u.esc(nome)}${u.svg('smartphone-nfc')}</span><span><span class="k">Fatura de ${u.nomeMes(fm).toLowerCase()}</span><br><span class="amt num">${u.brl(v)}</span></span><span class="foot"><span>${q < 0 ? 'Venceu' : 'Vence'} ${u.dm(ven.data)}${ven.estimado ? '*' : ''}</span><span>${c.pagFatura(nome, fm) ? 'Paga ✓' : q < 0 && v > 0 ? 'Atrasada' : 'Crédito'}</span></span></button>`; }).join('')}</div></section>` : ''}
-      <section class="sec"><div class="acts">
-        <button class="act" type="button" data-a="novoL" data-t="saida"><span class="o">${u.svg('arrow-down')}</span>Gastei</button>
-        <button class="act" type="button" data-a="novoL" data-t="entrada"><span class="o">${u.svg('arrow-up')}</span>Recebi</button>
-        <button class="act" type="button" data-a="novoL" data-t="guardar"><span class="o">${u.svg('piggy-bank')}</span>Guardei</button>
-        <button class="act" type="button" data-a="novoE"><span class="o">${u.svg('camera')}</span>Equipamento</button></div></section>
       <section class="sec"><div class="sec-h"><h2>Minhas rendas</h2></div><div class="incomes">
         ${[['Salário CLT', 'Salário CLT'], ['Darzan Produções', 'Darzan'], ['JPL SOM', 'JPL SOM']].map(([k, n]) => `<button class="inc" type="button" data-a="irRel" data-v="${u.esc(k === 'Darzan Produções' ? 'darzan' : k === 'JPL SOM' ? 'jpl' : 'mes')}">${u.ti(c.icone(k))}<span class="n">${n}</span><b class="v num">${u.k0(r.fonte[k])}</b>${dif(r.fonte[k], media(k))}</button>`).join('')}</div></section>
-    </div><div class="col-r">
+    ${railCaixinhas()}</div><div class="col-r">
       <section class="sec"><div class="sec-h"><h2>${u.svg('list-checks')}Pra fazer em ${u.nomeMes(m).toLowerCase()}</h2><button class="more" type="button" data-a="go" data-v="tarefas">${doMesT.length > 3 ? `Ver as ${doMesT.length}` : 'Ver tudo'}</button></div>${prox.map(tkLinha).join('') || vazio(['circle-check', '#7cf0a8', '#15a352'], `Nada pendente em ${u.nomeMes(m).toLowerCase()}. Tudo em dia!`)}</section>
-      ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#ffd36b', '#c07a12'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
+      ${(() => { const n = c.totalRevisar(); return n ? `<button type="button" class="rv-aviso" data-a="irRevisar">${u.ti(['sparkles', '#a9d1f5', '#3a6ea5'])}<span><b>${n} lançamento${n > 1 ? 's' : ''} para revisar</b><small>Sem banco, sem categoria ou para conferir. Conserte vários de uma vez.</small></span>${u.svg('chevron-right')}</button>` : ''; })()}
       <section class="sec"><div class="sec-h"><h2>Para onde foi</h2><span class="c-muted num" style="font-size:.86rem">${r.cats.length} categorias</span></div>
         <div class="panel">${r.cats.length ? ondeFoi(r) : vazio(['shopping-bag', '#c2a8ff', '#6b34e0'], 'Nenhum gasto neste mês.')}</div></section>
       <section class="sec"><div class="sec-h"><h2>Lançamentos de ${u.nomeMes(m).toLowerCase()}</h2><button class="more" type="button" data-a="irExtrato">Ver extrato</button></div>
@@ -1475,7 +1488,8 @@
   const TABS = [['inicio', 'Início', 'house'], ['trabalhos', 'Trabalhos', 'clapperboard'], ['tarefas', 'Tarefas', 'list-checks'], ['equip', 'Equipamentos', 'camera'], ['fin', 'Finanças', 'wallet']];
   function nav() {
     const urg = c.urgentes();
-    $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
+    $('tabbar').innerHTML = TABS.filter(([k]) => !['tarefas', 'equip'].includes(k)).map(([k, n, i]) => `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('')
+      + `<button class="tab" type="button" data-a="mais" ${['tarefas', 'equip'].includes(ui.view) ? 'aria-current="page"' : ''} aria-label="Mais: tarefas, equipamentos e outros${urg ? ` (${urg} tarefa${urg > 1 ? 's' : ''} para hoje)` : ''}">${u.svg('layers')}${urg ? `<span class="cnt">${urg}</span>` : ''}<span>Mais</span></button>`;
     const nov = c.novidades().novas.length;
     $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="novidades">${u.svg('bell')}Novidades do banco${nov ? `<span class="cnt">${nov}</span>` : ''}</button><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
     const lv = c.nivel(c.xp());
@@ -1534,6 +1548,10 @@
     ocultar: () => { ui.oculto = !ui.oculto; try { localStorage.setItem('df-oculto', ui.oculto ? '1' : '0'); } catch (e) { /* sem armazenamento */ } render(false); },
     irBancos: () => { ui.fseg = 'bancos'; go('fin'); },
     irRevisar: () => { ui.fseg = 'revisar'; go('fin'); },
+    irMetas: () => { ui.fseg = 'metas'; go('fin'); },
+    maisIr: b => { fechar(); go(b.dataset.v); },
+    mais: () => { const urg = c.urgentes(), nov = c.novidades().novas.length, it = (a, v, ic, t, sub) => `<button type="button" class="mais-i" data-a="${a}" ${v ? `data-v="${v}"` : ''}>${u.ti(ic)}<span><b>${t}</b><small>${sub}</small></span>${u.svg('chevron-right')}</button>`;
+      abrir(`<h3 style="margin:0 0 12px">Mais</h3><div class="mais">${it('maisIr', 'tarefas', ['list-checks', '#a9d1f5', '#3a6ea5'], 'Tarefas', urg ? `${urg} para hoje ou atrasada${urg > 1 ? 's' : ''}` : 'contas, faturas e lembretes do mês')}${it('maisIr', 'equip', ['camera', '#a9d1f5', '#3a6ea5'], 'Equipamentos', 'quanto paguei e quanto vale')}${it('novidades', '', ['bell', '#a9d1f5', '#3a6ea5'], 'Novidades do banco', nov ? `${nov} nova${nov > 1 ? 's' : ''}` : 'o que o banco trouxe')}${it('irRel', 'mes', ['chart-column', '#a9d1f5', '#3a6ea5'], 'Relatórios', 'mês a mês e o ano')}${it('conta', '', ['user', '#a9d1f5', '#3a6ea5'], 'Sua conta', 'senha, aparelho e backup')}</div>`); },
     tMes: b => { ui.tmes = b.dataset.v; ui.tdia = null; render(false); },
     tDia: b => { ui.tdia = b.dataset.v && ui.tdia !== b.dataset.v ? b.dataset.v : null; render(false); },
     rvMarcaG: b => { const ids = b.dataset.ids.split(','), tudo = ids.every(id => ui.rvsel.has(id)); ids.forEach(id => tudo ? ui.rvsel.delete(id) : ui.rvsel.add(id)); render(false); },

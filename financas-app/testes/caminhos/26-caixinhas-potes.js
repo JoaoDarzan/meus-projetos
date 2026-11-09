@@ -94,6 +94,24 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await p.fill('#gPc', '50'); await clica(p, '#s2 .save'); await calmo(p);
     certo(st.linhas('metas').find(m => m.id === 'M8').obs === '50% da caixinha', 'salvou 50%: ' + st.linhas('metas').find(m => m.id === 'M8').obs);
   }],
+  ['tela inicial nova: dinheiro nos bancos em cima, 6 atalhos, caixinhas e metas deslizando; a barra tem 4 abas e "Mais" leva às Tarefas', async (st, abrir) => {
+    caixinhaComFotos(st);
+    st.tabelas.metas.push({ id: 'M7', user_id: 'u-joao', meta: 'Meta inicial teste', valor_alvo: 1000, ja_guardado: 250, onde_esta: 'Caixinha Reserva', prazo: null, obs: '' });
+    const p = await abrir({ aparelho: 'iphone-15' });
+    const B = await p.evaluate(() => A.c.bancosComConta().map(A.c.resumoBanco).reduce((t, x) => t + x.bruto, 0));
+    const topo = await txt(p, '#view .hero .bal');
+    certo(/Dinheiro nos bancos/.test(topo) && await p.$eval('#view .hero .bal .big', e => +e.dataset.cnt) === Math.round(B * 100) / 100, 'o número grande é o dinheiro nos bancos: ' + topo);
+    certo(await p.$$eval('#view .atalhos .at', a => a.length) === 6, 'seis atalhos');
+    const rail = await txt(p, '#hCaixinhas');
+    certo(/Meta inicial teste\s*R\$ 250,00/.test(rail) && /25% de/.test(rail) && /Reserva\s*R\$ 5\.000,00/.test(rail), 'metas e caixinhas na tela inicial: ' + rail);
+    certo(await p.$$eval('#tabbar .tab', t => t.length) === 4 && !(await p.$('#tabbar [data-v=tarefas]')), 'a barra tem 4 abas');
+    await clica(p, '#tabbar [data-a=mais]');
+    await clica(p, '#s2 [data-a=maisIr][data-v=tarefas]');
+    certo(await p.evaluate(() => A.ui.view) === 'tarefas' && await p.$eval('#tabbar [data-a=mais]', e => e.getAttribute('aria-current')) === 'page', 'Mais leva às Tarefas e fica marcado');
+    await clica(p, '#tabbar [data-a=go][data-v=inicio]');
+    await clica(p, '#view .atalhos [data-a=novoL][data-t=saida]');
+    certo(await p.isVisible('#s2 #fV'), 'o atalho Lançar gasto abre o formulário');
+  }],
   ['lembrete do mês: com caixinhas que rendem no banco, o app cria "Conferir as caixinhas" no dia 1º (uma vez só) e dá para marcar como feito', async (st, abrir) => {
     const m0 = HOJE.slice(0, 7);
     Object.assign(st.tabelas.contas.find(c => c.conta === 'Caixinha Reserva'), { obs: 'Rende 100% do CDI' });
