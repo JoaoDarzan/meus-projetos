@@ -504,7 +504,7 @@ window.A = window.A || {};
     Object.entries(aRec).forEach(([e, x]) => T.push({ id: 'w:' + e, grupo: 'receber', titulo: `Receber ${e} · ${x.n} ${x.n > 1 ? 'dias trabalhados' : 'dia trabalhado'}`, valor: u.r2(x.v), data: x.data, feita: false, icone: ['calendar-days', '#9cc6ff', '#2a62e0'], xp: c.XP.receber }));
     /* cliente sem responder há 3 dias ou mais: lembrar de chamar de novo (marcar = "chamei hoje") */
     c.trabalhos().forEach(j => { const n = c.semResposta(j); if (n == null || n < c.DIAS_RESPOSTA) return;
-      T.push({ id: 'v:' + j.ID, grupo: 'darzan', titulo: `Chamar ${c.primeiroNome(j)} de novo`, nota: `${j['ETAPA'] === 'Novo contato' ? 'sem orçamento' : 'orçamento sem resposta'} há ${n} dias`, valor: 0, data: u.addDias(String(c.crm(j).contato), c.DIAS_RESPOSTA), feita: false, icone: ['message-circle', '#7cf0a8', '#15a352'], xp: c.XP.darzan }); });
+      T.push({ id: 'v:' + j.ID, grupo: 'darzan', titulo: `Chamar ${c.primeiroNome(j)} de novo`, nota: `orçamento sem resposta há ${n} dias`, valor: 0, data: u.addDias(String(c.crm(j).contato), c.DIAS_RESPOSTA), feita: false, icone: ['message-circle', '#7cf0a8', '#15a352'], xp: c.XP.darzan }); });
     const jaTem = (d, v) => v && T.some(x => x.data === d && Math.abs(x.valor - v) < 0.01);
     db.linhas('TAREFAS').filter(t => t['TAREFA']).forEach(t => {
       if (jaTem(String(t['DATA'] || ''), c.num(t['VALOR']))) return; /* a mesma conta já aparece pelo extrato */
@@ -513,6 +513,14 @@ window.A = window.A || {};
     });
     return T.sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
   };
+  /* novidades do banco: o que o robô do Open Finance trouxe (linha nova "LOF-" ou conferida, com a marca "OF <id>"; as escondidas LOFP/LOFS/LOFI/LOFD não contam).
+     O que já foi visto fica guardado no aparelho; na primeira vez, só os últimos 3 dias contam como novos */
+  const VISTO = 'df-visto';
+  const lerVisto = () => { try { const o = JSON.parse(localStorage.getItem(VISTO) || 'null'); if (o && o.ini) return { ini: o.ini, ids: new Set(o.ids || []) }; } catch (e) { /* sem armazenamento */ } return { ini: u.addDias(u.hoje(), -3), ids: new Set() }; };
+  c.doRobo = () => c.lancs().filter(l => !/^LOF[PSID]-/.test(l.id) && (/^LOF-/.test(l.id) || /\bOF [0-9a-f-]{20,}/i.test(l.obs))).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : a.id < b.id ? 1 : -1);
+  c.novidades = () => { const v = lerVisto(), ls = c.doRobo(); return { novas: ls.filter(l => l.data >= v.ini && !v.ids.has(l.id)), vistas: ls.filter(l => l.data < v.ini || v.ids.has(l.id)) }; };
+  c.marcarVisto = () => { const ini = u.addDias(u.hoje(), -60), v = lerVisto(), ids = c.doRobo().filter(l => l.data >= ini).map(l => l.id);
+    try { localStorage.setItem(VISTO, JSON.stringify({ ini: v.ini < ini ? ini : v.ini, ids: [...new Set([...v.ids].concat(ids))].filter(id => ids.includes(id)) })); } catch (e) { /* sem armazenamento */ } };
   c.urgentes = () => c.tarefas().filter(t => !t.feita && u.ateHoje(t.data) <= 1).length;
 
   /* ---------- equipamentos ---------- */
@@ -520,6 +528,13 @@ window.A = window.A || {};
   c.compraDo = e => { const m = String(e['OBS'] || '').match(/Compra (P[\w-]+)/); return m ? m[1] : null; };
   c.lancDo = e => { const m = String(e['OBS'] || '').match(/Lançamento (L[\w-]+)/); return m ? m[1] : null; };
   c.linhasDaCompra = pid => { const re = new RegExp('Compra ' + pid + '(?![\\w-])'); return c.lancs().filter(l => re.test(l.obs)); };
+  /* quanto o equipamento vale hoje: o que o João anotou ("Vale hoje 1234.56 em AAAA-MM-DD" na OBS) ou uma estimativa
+     (perde uns 20% por ano desde a compra, nunca abaixo de 25% do que pagou). Vendido não vale mais nada para você */
+  c.valeHoje = e => { const pago = c.num(e['VALOR']) || 0, m = String(e['OBS'] || '').match(/Vale hoje (\d+(?:\.\d+)?)(?: em (\d{4}-\d{2}-\d{2}))?/);
+    if (e['ESTADO'] === 'Vendido') return { v: 0, estimado: false, vendido: true, pago };
+    if (m) return { v: +m[1], data: m[2] || '', estimado: false, pago };
+    const d = String(e['DATA DA COMPRA'] || '').slice(0, 10), anos = /^\d{4}-\d{2}-\d{2}$/.test(d) ? Math.max(0, -u.ateHoje(d) / 365.25) : 0;
+    return { v: u.r2(pago * Math.max(0.25, Math.pow(0.8, anos))), estimado: true, pago }; };
   c.faltaPagar = e => { const p = c.compraDo(e); return p ? u.r2(-u.sum(c.linhasDaCompra(p).filter(l => l.status === 'Previsto' || l.data > u.hoje()))) : 0; };
 
   /* ---------- trabalhos ---------- */
@@ -550,6 +565,8 @@ window.A = window.A || {};
   /* ---------- vendas (CRM): do primeiro contato até fechar ---------- */
   /* etapas antes de fechar: o cliente chamou ("Novo contato"), recebeu o orçamento ("Orçamento") ou não fechou ("Perdido") */
   c.ETAPAS_VENDA = ['Novo contato', 'Orçamento', 'Perdido'];
+  /* etapa no quadro: "Novo contato" (antigo) conta como Orçamento */
+  c.etapaQuadro = j => { const e = j['ETAPA'] || 'Orçamento'; return e === 'Novo contato' ? 'Orçamento' : e; };
   c.naoFechado = j => c.ETAPAS_VENDA.includes(j['ETAPA'] || 'Orçamento');
   c.crm = j => { try { const o = JSON.parse((j && j['CRM']) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } };
   c.semCrm = () => !!(TAB.falta.TRABALHOS && TAB.falta.TRABALHOS.has('crm')); /* falta rodar a atualização no Supabase */
@@ -558,10 +575,10 @@ window.A = window.A || {};
   c.DIAS_RESPOSTA = 3;
   /* números do mês: quantos clientes chamaram, quantos orçamentos foram, quantos fecharam e quantos não */
   c.funil = m => { const js = c.trabalhos(), em = k => js.filter(j => String(c.crm(j)[k] || '').slice(0, 7) === m).length;
-    return { novos: em('criado'), enviados: em('enviado'), fechados: em('fechado'), perdidos: em('perdido'), esperando: js.filter(j => (c.semResposta(j) || 0) >= c.DIAS_RESPOSTA).length }; };
+    return { novos: em('criado'), enviados: js.filter(j => String(c.crm(j).enviado || c.crm(j).criado || '').slice(0, 7) === m).length, fechados: em('fechado'), perdidos: em('perdido'), esperando: js.filter(j => (c.semResposta(j) || 0) >= c.DIAS_RESPOSTA).length }; };
   c.primeiroNome = j => { const n = String(j['CLIENTE'] || '').replace(/\s*\(.*?\)\s*/g, ' ').trim(); return / e /i.test(n) ? n : n.split(' ')[0]; };
   c.linkConversa = (j, texto) => { const f = c.foneWhats(j['TELEFONE']); return f ? `https://wa.me/${f}?text=${encodeURIComponent(texto)}` : null; };
-  c.msgRetorno = j => j['ETAPA'] === 'Novo contato'
+  c.msgRetorno = j => j['ETAPA'] === 'Novo contato' && !c.crm(j).enviado
     ? `Oi, ${c.primeiroNome(j)}! Tudo bem? Aqui é o João, da Darzan Produções. Passando para retomar a nossa conversa${j['TIPO DE EVENTO'] ? ` sobre o seu ${String(j['TIPO DE EVENTO']).toLowerCase()}` : ''}. Posso te ajudar com mais alguma informação?`
     : `Oi, ${c.primeiroNome(j)}! Tudo bem? Passando para saber se você conseguiu ver o orçamento que te mandei. Se quiser, posso ajustar alguma coisa para caber certinho no que você imaginou.`;
 
@@ -606,6 +623,14 @@ window.A = window.A || {};
       empresas: Object.values(emp).map(x => Object.assign(x, { valor: u.r2(x.valor), aReceber: u.r2(x.aReceber) })).sort((a, b) => b.n - a.n),
       valor, aReceber: u.r2(u.sum(ds.filter(d => !c.diaPago(d)), d => d.valor)), media: comValor.length ? u.r2(u.sum(comValor, d => d.valor) / comValor.length) : 0 };
   };
+  /* produção do cliente recorrente (ex.: Kellen): quantos vídeos e captações em cada mês, guardados no CRM do trabalho
+     ({ prod: { "2026-11": { video: 3, captacao: 1 } }, precos: { video: 100, captacao: 200 } }). Falta receber = o que foi feito − o que entrou desde o primeiro mês contado */
+  c.PRECOS_PROD = { video: 100, captacao: 200 };
+  c.producao = j => { const k = c.crm(j), pr = Object.assign({}, c.PRECOS_PROD, k.precos || {}), prod = k.prod && typeof k.prod === 'object' ? k.prod : {}, g = c.ganhosPorMes(j);
+    const meses = Object.keys(prod).filter(m => /^\d{4}-\d{2}$/.test(m) && ((+prod[m].video || 0) || (+prod[m].captacao || 0))).sort();
+    const linha = m => { const x = prod[m] || {}, v = Math.max(0, +x.video || 0), cp = Math.max(0, +x.captacao || 0); return { m, video: v, captacao: cp, valor: u.r2(v * pr.video + cp * pr.captacao), recebido: g[m] || 0 }; };
+    const lista = meses.map(linha), feito = u.r2(u.sum(lista, x => x.valor)), recebido = meses.length ? u.r2(u.sum(Object.keys(g).filter(m => m >= meses[0]), m => g[m])) : 0;
+    return { precos: pr, prod, lista, linha, feito, recebido, falta: u.r2(Math.max(0, feito - recebido)), videos: u.sum(lista, x => x.video), captacoes: u.sum(lista, x => x.captacao) }; };
   c.ganhosPorMes = j => { const o = {}; c.recebimentos(j).forEach(l => { const m = u.mes(l.data); o[m] = u.r2((o[m] || 0) + l.valor); }); return o; };
   /* balanço da Darzan num ano: por mês, o que faturou (trabalhos e recorrentes) e quais trabalhos aconteceram */
   c.anosDarzan = () => [...new Set(c.lancs().filter(l => l.cat === 'Darzan Produções').map(l => l.data.slice(0, 4)).concat(c.trabalhos().map(j => String(j['DATA DO EVENTO'] || '').slice(0, 4)).filter(a => a && a <= u.hoje().slice(0, 4))))].sort();

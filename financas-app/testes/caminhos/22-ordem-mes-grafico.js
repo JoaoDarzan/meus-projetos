@@ -5,11 +5,6 @@ const m0 = HOJE.slice(0, 7);
 const addMes = (m, n) => { const d = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 const addDias = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const L = (id, extra) => Object.assign({ id, user_id: 'u-joao', data: HOJE, banco: 'PicPay', descricao: id, grupo: 'Desejos', tipo: 'conta', valor: -10, categoria: 'Lazer', subcategoria: 'Passeios e cinema', status: 'Pago', parcela: '', obs: '' }, extra);
-const dadosRosca = p => p.evaluate(() => { const r = A.c.resumo(A.ui.mes), tot = r.cats.reduce((s, x) => s + x.valor, 0); return { cats: r.cats.map(x => x.cat), pcts: r.cats.slice(0, 6).map(x => Math.round(x.valor / tot * 100)) }; });
-/* o ponto da tela no meio do arco da fatia i (onde o dedo ou o mouse encosta) */
-const pontoFatia = async (p, i) => { await p.$eval('#view .rosca', e => e.scrollIntoView({ block: 'center' })); return p.$$eval('#view .rosca .fatia', (fs, i) => { const f = fs[i], len = parseFloat(f.getAttribute('stroke-dasharray')), ini = -parseFloat(f.getAttribute('stroke-dashoffset')); const pt = f.getPointAtLength(ini + len / 2), m = f.getScreenCTM(); const q = new DOMPoint(pt.x, pt.y).matrixTransform(m); return { x: q.x, y: q.y }; }, i); };
-const textosMeio = p => p.$$eval('#view .rosca svg > text', ts => ts.map(t => t.textContent).join(' | '));
-const meio = p => p.$eval('#view .rosca .rv', t => t.textContent);
 const ordemDe = (p, sel, ids) => p.$$eval(sel, (bs, ids) => bs.map(b => b.dataset.id).filter(id => ids.includes(id)), ids);
 
 module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
@@ -41,45 +36,19 @@ module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
     ts = await titulos();
     certo(tem(ts, 'mês que vem') && !tem(ts, 'deste mês') && !tem(ts, 'atrasada'), 'no mês que vem: só a do mês que vem: ' + ts);
   }],
-  ['Para onde foi: anel limpo, sem porcentagem fixa; no celular, tocar ou arrastar o dedo na fatia mostra a porcentagem no meio', async (st, abrir) => {
+  ['Para onde foi: barras com a parte do total e a diferença para o mês anterior (a mais em vermelho, a menos em verde)', async (st, abrir) => {
+    const ant = addMes(m0, -1);
+    st.tabelas.extrato.push(L('LG1', { categoria: 'Teste Sobe', valor: -300 }), L('LG2', { categoria: 'Teste Desce', valor: -50 }),
+      L('LG3', { categoria: 'Teste Sobe', valor: -100, data: ant + '-10' }), L('LG4', { categoria: 'Teste Desce', valor: -200, data: ant + '-10' }));
     const p = await abrir({ aparelho: 'iphone-15' });
-    const d = await dadosRosca(p);
-    certo(!(await p.$('#view .rosca .pf')) && !/%/.test(await textosMeio(p)), 'sem porcentagem antes de tocar');
-    mesmo(await p.textContent('#view .rosca .rl'), 'saiu no mês', 'no meio, o total do mês');
-    /* arrastar o dedo: encosta na 1ª fatia e vai até a 2ª (sem soltar) */
-    const cdp = await p.context().newCDPSession(p), [a, b] = [await pontoFatia(p, 0), await pontoFatia(p, 1)];
-    const toque = (type, pt) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pt ? [{ x: pt.x, y: pt.y }] : [] });
-    await toque('touchStart', a); await p.waitForTimeout(80);
-    mesmo(await meio(p), d.pcts[0] + '%', 'encostou na 1ª fatia: mostra a porcentagem dela');
-    certo(await p.$eval('#view .ondefoi', e => e.classList.contains('foco')) && await p.$eval(`#view .rosca .fatia[data-v="${d.cats[0]}"]`, e => e.classList.contains('on')), 'a fatia fica em destaque e as outras apagam');
-    for (let i = 1; i <= 8; i++) { await toque('touchMove', { x: a.x + (b.x - a.x) * i / 8, y: a.y + (b.y - a.y) * i / 8 }); await p.waitForTimeout(20); }
-    mesmo(await meio(p), d.pcts[1] + '%', 'arrastou até a 2ª fatia: troca para a dela');
-    certo((await textosMeio(p)).includes(d.cats[1].slice(0, 15)), 'e o nome da categoria');
-    await toque('touchEnd'); await calmo(p);
-    /* tocar: abre as subcategorias e o meio fica com a categoria tocada */
-    await p.touchscreen.tap(a.x, a.y); await calmo(p);
-    certo(await p.getAttribute(`#view .catl[data-v="${d.cats[0]}"]`, 'aria-expanded') === 'true', 'tocar na fatia abre as subcategorias');
-    mesmo(await meio(p), d.pcts[0] + '%', 'o meio mostra a porcentagem da categoria aberta');
-    await conferirLayout(p, 'para onde foi tocando');
-  }],
-  ['Para onde foi no computador: passar o mouse na fatia ou na linha mostra a porcentagem; tirar o mouse volta ao total', async (st, abrir) => {
-    const p = await abrir({ aparelho: 'notebook' });
-    const d = await dadosRosca(p), b = await pontoFatia(p, 1);
-    await p.mouse.move(b.x, b.y); await p.waitForTimeout(80);
-    mesmo(await meio(p), d.pcts[1] + '%', 'mouse na 2ª fatia');
-    await p.mouse.move(5, 5); await p.waitForTimeout(80);
-    mesmo(await p.textContent('#view .rosca .rl'), 'saiu no mês', 'tirou o mouse: volta ao total');
-    certo(!(await p.$eval('#view .ondefoi', e => e.classList.contains('foco'))), 'e nada fica apagado');
-    await p.hover(`#view .catl[data-v="${d.cats[2]}"]`); await p.waitForTimeout(80);
-    mesmo(await meio(p), d.pcts[2] + '%', 'mouse na linha da 3ª categoria também mostra');
-    await clica(p, `#view .catl[data-v="${d.cats[2]}"]`); await p.mouse.move(5, 5); await p.waitForTimeout(80);
-    mesmo(await meio(p), d.pcts[2] + '%', 'clicou para abrir e tirou o mouse: o meio fica com a categoria aberta');
-    await p.mouse.move(b.x, b.y); await p.mouse.move(5, 5); await p.waitForTimeout(80);
-    mesmo(await meio(p), d.pcts[2] + '%', 'passou em outra fatia e saiu: volta para a aberta, não para o total');
-    certo(await p.$eval(`#view .rosca .fatia[data-v="${d.cats[2]}"]`, e => e.classList.contains('on')) && await p.$eval('#view .ondefoi', e => e.classList.contains('foco')), 'a fatia aberta continua em destaque');
-    await p.evaluate(c => { A.ui.cexp = c; A.render(false); }, d.cats[1]);
-    mesmo(await meio(p), d.pcts[1] + '%', 'categoria aberta, antes de mexer o mouse: o meio já mostra a porcentagem dela');
-    await conferirLayout(p, 'para onde foi com o mouse');
+    const tx = async cat => p.textContent(`#view .catl[data-v="${cat}"] small`);
+    certo(/▲ R\$ 200,00 a mais/.test(await tx('Teste Sobe')) && await p.$eval('#view .catl[data-v="Teste Sobe"] small .c-out', e => !!e), 'gastou mais que no mês passado: em vermelho: ' + await tx('Teste Sobe'));
+    certo(/▼ R\$ 150,00 a menos/.test(await tx('Teste Desce')) && await p.$eval('#view .catl[data-v="Teste Desce"] small .c-in', e => !!e), 'gastou menos: em verde: ' + await tx('Teste Desce'));
+    certo(/\d+% do total/.test(await tx('Teste Sobe')), 'mostra a parte do total');
+    certo(/a (mais|menos) que|igual a/.test(await p.textContent('#view .ofcmp')), 'o total do mês também compara com o mês anterior');
+    await conferirLayout(p, 'para onde foi em barras');
+    await clica(p, '#view .catl[data-v="Teste Sobe"]');
+    certo(await p.getAttribute('#view .catl[data-v="Teste Sobe"]', 'aria-expanded') === 'true' && await p.isVisible('#view .ofsubs'), 'tocar abre as subcategorias');
   }],
   ['escolher o mês direto: tocar no nome do mês abre os 12 meses; vai de outubro para janeiro num toque; mês sem nada fica apagado', async (st, abrir) => {
     const p = await abrir({ aparelho: 'iphone-15' });

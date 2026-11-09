@@ -4,20 +4,20 @@ const A_brl = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFraction
 const estado = p => p.evaluate(() => [A.ui.view, A.ui.fseg, A.ui.jseg, A.ui.filtro].join('|'));
 
 module.exports = { etapa: 'Voltar e Para onde foi', testes: [
-  ['Para onde foi: a rosca soma o que saiu, tocar abre as subcategorias e leva aos lançamentos; voltar desfaz o caminho', async (st, abrir) => {
-    /* muitas categorias no mês: as 6 maiores aparecem e o resto vira "Outras" */
+  ['Para onde foi: as barras somam o que saiu, todas as categorias aparecem em ordem, tocar abre as subcategorias e leva aos lançamentos; voltar desfaz o caminho', async (st, abrir) => {
+    /* muitas categorias no mês: todas aparecem, da maior para a menor (sem juntar em "Outras") */
     ['Teste A', 'Teste B', 'Teste C', 'Teste D', 'Teste E', 'Teste F', 'Teste G', 'Teste H'].forEach((cat, i) => st.tabelas.extrato.push({ id: 'LCAT-' + i, user_id: 'u-joao', data: HOJE, banco: 'Nubank', descricao: 'gasto ' + cat, grupo: 'Desejos', tipo: 'conta', valor: -(5 + i), categoria: cat, subcategoria: 'Sub', status: 'Pago', parcela: '', obs: '' }));
     const p = await abrir({ aparelho: 'iphone-15' });
     certo(!(await p.$('#view [data-a=voltar]')), 'na tela inicial, sem botão de voltar');
     const r = await p.evaluate(() => { const r = A.c.resumo(A.ui.mes); return { saiu: r.saiu, cats: r.cats.map(x => [x.cat, x.valor, Object.values(x.subs).reduce((s, v) => s + v, 0)]) }; });
     certo(r.cats.length >= 2, 'dados de exemplo com gastos');
-    const n = await p.$$eval('#view .rosca .fatia', f => f.length);
-    igual(n, Math.min(r.cats.length, 7), 'uma fatia por categoria (até 6 + "Outras")');
-    const linhas = await p.$$eval('#view .catl', ls => ls.map(l => +l.querySelector('b').firstChild.textContent.replace(/[^\d,]/g, '').replace(',', '.')));
-    igual(linhas.reduce((s, v) => s + v, 0), r.saiu, 'a lista soma o total que saiu');
-    certo(r.cats.length > 7 && await p.isVisible('#view .catl[data-v="Outras"]'), 'mais de 6 categorias: o resto fica em "Outras"');
-    await clica(p, '#view .catl[data-v="Outras"]');
-    igual(await p.$$eval('#view .ofsubs .ofsub', x => x.length), r.cats.length - 6, '"Outras" abre mostrando as categorias que estão dentro');
+    const linhas = await p.$$eval('#view .catl', ls => ls.map(l => [l.dataset.v, +l.querySelector('b').textContent.replace(/[^\d,]/g, '').replace(',', '.')]));
+    igual(linhas.length, r.cats.length, 'uma barra por categoria');
+    certo(linhas.every((x, i) => x[0] === r.cats[i][0]) && !linhas.some(x => x[0] === 'Outras'), 'na ordem do maior para o menor, sem "Outras"');
+    igual(linhas.reduce((s, x) => s + x[1], 0), r.saiu, 'a lista soma o total que saiu');
+    igual(await p.$$eval('#view .ofbar i', x => x.length), r.cats.length, 'a faixa de cima tem um pedaço por categoria');
+    const larg = await p.$$eval('#view .catl .ofb i', x => x.map(i => parseFloat(i.style.width)));
+    certo(larg[0] === 100 && larg.every((w, i) => !i || w <= larg[i - 1]), 'a maior barra é cheia e as outras diminuem: ' + larg.join(','));
     const [cat, valor, somaSubs] = r.cats[0];
     igual(somaSubs, valor, 'subcategorias somam a categoria');
     await clica(p, `#view .catl[data-v="${cat}"]`);

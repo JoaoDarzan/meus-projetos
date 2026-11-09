@@ -9,7 +9,7 @@ const job = (st, id) => st.linhas('trabalhos').find(j => j.id === id);
 const crm = (st, id) => JSON.parse(job(st, id).crm || '{}');
 const irQuadro = async p => { await p.evaluate(() => { A.ui.view = 'trabalhos'; A.ui.jseg = 'quadro'; A.render(false); }); await p.waitForSelector('#view .board'); };
 module.exports = { etapa: 'Vendas (CRM)', testes: [
-  ['cliente novo: entra em "Novo contato" com WhatsApp, de onde veio e o dia em que chamou; conta nos números do mês', async (st, abrir) => {
+  ['cliente novo: entra direto em "Orçamento" (todo contato novo já recebe orçamento) com WhatsApp, de onde veio e o dia em que chamou; conta nos números do mês', async (st, abrir) => {
     const p = await abrir({ aparelho: 'iphone-15' });
     await irQuadro(p);
     await clica(p, '#view [data-a=novoLead]'); await p.waitForSelector('#s2 #nN');
@@ -19,17 +19,20 @@ module.exports = { etapa: 'Vendas (CRM)', testes: [
     await conferirLayout(p, 'novo cliente');
     await clica(p, '#s2 .save'); await calmo(p);
     const j = st.linhas('trabalhos').find(x => x.cliente === 'Mariana Souza'), k = JSON.parse(j.crm);
-    certo(j.etapa === 'Novo contato' && j.telefone === '(19) 97777-2222' && j.briefing === 'filme da igreja e festa', 'gravou o cliente em Novo contato: ' + JSON.stringify(j));
-    certo(k.origem === 'Indicação' && k.criado === HOJE && k.contato === HOJE, 'de onde veio e quando chamou: ' + j.crm);
-    certo(await p.isVisible(`#view .col[data-etapa="Novo contato"] .job[data-id="${j.id}"]`), 'aparece na coluna Novo contato');
+    certo(j.etapa === 'Orçamento' && j.telefone === '(19) 97777-2222' && j.briefing === 'filme da igreja e festa', 'gravou o cliente em Orçamento: ' + JSON.stringify(j));
+    certo(k.origem === 'Indicação' && k.criado === HOJE && k.enviado === HOJE && k.contato === HOJE, 'de onde veio e quando chamou: ' + j.crm);
+    certo(await p.isVisible(`#view .col[data-etapa="Orçamento"] .job[data-id="${j.id}"]`) && !(await p.$('#view .col[data-etapa="Novo contato"]')), 'aparece na coluna Orçamento (não existe mais a coluna Novo contato)');
     igual(await p.evaluate(m => A.c.funil(m).novos, m0), 1, '1 cliente novo no mês');
+    igual(await p.evaluate(m => A.c.funil(m).enviados, m0), 1, 'e 1 orçamento no mês');
     certo(await p.evaluate(id => !A.c.eventosDoMes(A.ui.mes).some(x => x.ID === id) && !A.c.proximosTrabalhos(50).some(x => x.job && x.job.ID === id), j.id), 'quem ainda não fechou não entra no calendário');
   }],
-  ['"Mandei o orçamento" (ou arrastar para Orçamento) conta como orçamento do mês, sem gerar nada; a ficha tem o WhatsApp para retomar a conversa e anota que chamou', async (st, abrir) => {
+  ['quem estava em "Novo contato" (antigo) aparece em Orçamento; sem botão "Mandei o orçamento"; a ficha tem o WhatsApp para retomar a conversa e anota que chamou', async (st, abrir) => {
     st.tabelas.trabalhos.push(LEAD('JL1', { etapa: 'Novo contato' }, { contato: addDias(HOJE, -2) }), LEAD('JL4', { etapa: 'Novo contato', cliente: 'Bruna Arrastada' }));
     const p = await abrir({ aparelho: 'iphone-15' });
     await irQuadro(p);
+    certo(await p.isVisible('#view .col[data-etapa="Orçamento"] .job[data-id="JL1"]') && await p.isVisible('#view .col[data-etapa="Orçamento"] .job[data-id="JL4"]'), 'os antigos de Novo contato estão em Orçamento');
     await clica(p, '#view [data-a=editJ][data-id="JL1"]'); await p.waitForSelector('#s2 #jVenda');
+    certo(!(await p.$('#s2 [data-a=enviouOrc]')) && await p.getAttribute('#s2 .etapas [data-v="Orçamento"]', 'aria-pressed') === 'true' && !(await p.$('#s2 .etapas [data-v="Novo contato"]')), 'sem "Mandei o orçamento"; a etapa marcada é Orçamento');
     certo(!(await p.$('#s2 [data-a=mandarOrc]')) && !(await p.$('#s2 .oit')), 'nada de montar ou gerar orçamento no app');
     const href = decodeURIComponent(await p.getAttribute('#s2 #jVenda a.whats', 'href'));
     certo(href.startsWith('https://wa.me/5519988881111?text=Oi, Ana e Pedro!') && /retomar a nossa conversa sobre o seu casamento/.test(href), 'WhatsApp para retomar a conversa: ' + href);
@@ -37,7 +40,7 @@ module.exports = { etapa: 'Vendas (CRM)', testes: [
     await clica(p, '#s2 #jVenda a.whats'); await calmo(p);
     mesmo(crm(st, 'JL1').contato, HOJE, 'tocar no WhatsApp anota que chamou hoje');
     await clica(p, '#s2 [data-a=fechar]');
-    await clica(p, '#view [data-a=editJ][data-id="JL1"]'); await clica(p, '#s2 [data-a=enviouOrc]'); await calmo(p);
+    await p.evaluate(() => { const b = document.createElement('button'); b.dataset.a = 'enviouOrc'; b.dataset.id = 'JL1'; document.body.appendChild(b); b.click(); b.remove(); }); await calmo(p); /* o mesmo caminho do arrastar: moverJob */
     const k = crm(st, 'JL1');
     certo(job(st, 'JL1').etapa === 'Orçamento' && k.enviado === HOJE && k.contato === HOJE, 'passou para Orçamento e anotou o envio: ' + job(st, 'JL1').crm);
     certo(await p.isVisible('#view .col[data-etapa="Orçamento"] .job[data-id="JL1"]'), 'está na coluna Orçamento');

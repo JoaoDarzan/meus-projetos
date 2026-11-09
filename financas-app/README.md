@@ -18,12 +18,15 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   app só baixa quando você abre o anexo (não entra na cópia do aparelho nem no backup). Cliente que paga por mês
   (ex.: R$ 200 todo dia 26) vira um "a receber" previsto no mês atual e no próximo, com aviso, até completar o valor.
   A atualização do Supabase para isso está em `supabase/atualizacao-trabalhos.sql`; antes dela o app funciona e avisa.
-- **Vendas (CRM)** (Trabalhos › Quadro): "Novo cliente" entra em "Novo contato" (nome, WhatsApp, evento, de onde veio); o orçamento o João faz por fora e marca "Mandei o orçamento" (ou arrasta para Orçamento), o que conta nos números do mês; na ficha tem o WhatsApp com a mensagem pronta para retomar a conversa; quem não responde há 3 dias vira "Chamar de novo" no Pra fazer; "Fechou!" leva para Fechado (parcelas automáticas) e "Não fechou" guarda o motivo. Precisa rodar uma vez `supabase/atualizacao-crm.sql`.
+- **Vendas (CRM)** (Trabalhos › Quadro): "Novo cliente" entra direto em "Orçamento" (todo contato novo já recebe orçamento; a antiga etapa "Novo contato" aparece junto), com nome, WhatsApp, evento e de onde veio; conta nos números do mês; na ficha tem o WhatsApp com a mensagem pronta para perguntar se viu o orçamento, e os botões Fechou / Não fechou.
 - **Calendário dos dias trabalhados** (Trabalhos › Calendário): marca os dias (JPL SOM, Darzan, outros) e liga um pagamento a vários dias (o app divide o valor). Precisa rodar uma vez `supabase/atualizacao-novembro.sql` no Supabase; antes disso o calendário mostra o passo a passo.
   No quadro, segurar e arrastar o cartão muda a etapa (ou pelos botões de etapa dentro do trabalho). Cliente recorrente
   (etapa "Recorrente", ex.: social media) sai do quadro e ganha a aba Recorrentes, com quanto rendeu em cada mês; a aba
   Balanço mostra os trabalhos e o faturamento da Darzan por mês e no ano. Anexo aceita qualquer arquivo (foto vira JPEG
   leve; PDF e outros vão como estão, até 8 MB); abre em tela cheia com zoom e dá para compartilhar ou salvar.
+- **Sininho (Início)**: mostra o que o robô do Open Finance trouxe de novo (lançamentos `LOF-…` e os conferidos com "OF <id>"), com quanto entrou e saiu; o que já foi visto fica guardado no aparelho.
+- **Produção do recorrente** (Trabalhos › Recorrentes): vídeos (R$ 100) e captações (R$ 200) de cada mês com + e −, guardados no CRM do trabalho (`prod` e `precos`); "falta receber" = o que foi feito − o que entrou desde o primeiro mês contado.
+- **Equipamentos**: quanto paguei (VALOR) e quanto vale hoje (anotado na OBS como "Vale hoje 900 em AAAA-MM-DD"; sem anotação, estimado: perde uns 20% por ano, no mínimo 25% do que pagou).
 - **Holerites** (Finanças › Relatórios › Meu trabalho): o João manda a foto do holerite para o Claude na conversa; o
   Claude lança o salário dividido (salário, vale-refeição, vale-transporte, bonificação, horas extras; `LCLT-AAAA-MM-…`)
   e guarda o holerite inteiro.
