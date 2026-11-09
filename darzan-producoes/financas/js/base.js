@@ -203,6 +203,11 @@ window.A = window.A || {};
       });
     });
     ops.push(...parcelasDosTrabalhos(m0));
+    /* lembrete do mês: conferir as caixinhas no app do banco (o Open Finance só manda o total de cada banco; conferir à mão deixa a divisão
+       entre as caixinhas igual à do banco). Uma tarefa por mês, no dia 1º, com ID fixo para não repetir em dois aparelhos */
+    const cxsBanco = A.c.caixinhas().filter(x => /rende/i.test(x['OBS'] || '') && !/emprest/i.test((x['OBS'] || '') + ' ' + (x['CONTA'] || '')));
+    if (cxsBanco.length && !db.achar('TAREFAS', `TCX-${m0}`)) ops.push({ op: 'salvar', aba: 'TAREFAS', registro: { ID: `TCX-${m0}`, 'TAREFA': 'Conferir as caixinhas no app do banco', 'DATA': `${m0}-01`, 'VALOR': '', 'TIPO': 'Pessoal', 'FEITA': false,
+      'OBS': `Em Bancos, toque em “Conferir saldo” e digite o valor de cada caixinha (${[...new Set(cxsBanco.map(x => x['BANCO']))].join(' e ')}). Assim a divisão entre elas fica igual à do banco.` } });
     if (!db.linhas('CATEGORIAS').some(x => x['SUB-CATEGORIA'] === 'Pagamento de fatura') && db.linhas('CATEGORIAS').length) ops.push({ op: 'salvar', aba: 'CATEGORIAS', registro: { ID: 'G-PAGFATURA', 'CATEGORIA': 'Transferência', 'SUB-CATEGORIA': 'Pagamento de fatura', 'GRUPO': 'Transferência' } });
     if (ops.length) db.lote(ops);
     return ops.length;

@@ -57,4 +57,20 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     certo(await p.inputValue('#fX') === 'Caixinha Reserva' && await p.inputValue('#fPt') === 'M9' && !/Pote|Para/.test(await p.inputValue('#fO')), 'editar mantém a caixinha e o pote, e a anotação fica limpa');
     await conferirLayout(p, 'guardei com pote');
   }],
+  ['lembrete do mês: com caixinhas que rendem no banco, o app cria "Conferir as caixinhas" no dia 1º (uma vez só) e dá para marcar como feito', async (st, abrir) => {
+    const m0 = HOJE.slice(0, 7);
+    Object.assign(st.tabelas.contas.find(c => c.conta === 'Caixinha Reserva'), { obs: 'Rende 100% do CDI' });
+    const p = await abrir({ aparelho: 'iphone-15' }); await calmo(p);
+    const T = () => st.linhas('tarefas').filter(t => t.id === `TCX-${m0}`);
+    certo(T().length === 1 && T()[0].data === `${m0}-01` && T()[0].tarefa === 'Conferir as caixinhas no app do banco' && /Nubank/.test(T()[0].obs), 'criou o lembrete do mês: ' + JSON.stringify(T()));
+    await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
+    await clica(p, `#view [data-a=tarefa][data-id="t:TCX-${m0}"]`); await calmo(p);
+    certo(T()[0].feita === true, 'marcou como feito');
+    await p.reload(); await calmo(p);
+    certo(st.linhas('tarefas').filter(t => /^TCX-/.test(t.id)).length === 1 && T()[0].feita === true, 'abrir de novo não repete nem desmarca');
+  }],
+  ['sem caixinha que rende no banco, não aparece lembrete de conferir caixinhas', async (st, abrir) => {
+    const p = await abrir({ aparelho: 'iphone-15' }); await calmo(p);
+    certo(!st.linhas('tarefas').some(t => /^TCX-/.test(t.id)), 'não criou lembrete à toa');
+  }],
 ] };
