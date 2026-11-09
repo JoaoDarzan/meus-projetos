@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido } from './regras.mjs';
+import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -140,7 +140,7 @@ async function principal() {
 /* conferência de todo dia: a conta que bateu com o banco fica "conferida hoje"; as caixinhas que rendem ficam iguais ao total
    que o banco informou; e o saldo de cada conta e caixinha vai para a foto diária (tabela saldos), que mostra quanto rendeu */
 async function conferenciaDiaria(saldos, caixas, contasApp, extrato) {
-  const ops = [], dataDe = em => String(em || '').slice(0, 10) || hoje, ajustado = new Map();
+  const ops = [], dataDe = em => diaNoBrasil(em, hoje), ajustado = new Map();
   console.log('\nConferência do dia:');
   saldos.forEach(({ banco, saldo, em }) => {
     const cx = contasApp.find(c => c.banco === banco && String(c.conta).toLowerCase() === 'conta'), d = dataDe(em);

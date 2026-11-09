@@ -263,3 +263,7 @@ export function ajustarCaixinhas(totalBanco, caixinhas, extrato, data, hoje) {
 /* cada banco mostra a caixinha de um jeito: o PicPay mostra o valor líquido (já sem o imposto), o Nubank mostra o bruto.
    Basta uma caixinha do banco com "mostra líquido" na OBS para o robô seguir o líquido daquele banco; sem isso, segue o bruto */
 export const mostraLiquido = caixinhas => caixinhas.some(c => /mostra (o valor )?l[ií]quido/i.test(c.obs || ''));
+/* o dia (no horário de Brasília) de uma data que o banco mandou: a atualização das 22h39 de 08/11 chega como 01:39Z de 09/11,
+   e anotar 09/11 faria os lançamentos de 09/11 ficarem de fora da conta. Data sem horário (posição das caixinhas) fica como veio */
+export const diaNoBrasil = (em, seVazio = '') => { const t = String(em || ''); if (!t) return seVazio; if (!/T\d{2}:\d{2}/.test(t) || /T00:00(:00(\.0+)?)?Z?$/.test(t)) return t.slice(0, 10);
+  const ms = Date.parse(t); return isNaN(ms) ? t.slice(0, 10) : new Date(ms - 3 * 3600e3).toISOString().slice(0, 10); };

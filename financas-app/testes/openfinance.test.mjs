@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -14,12 +14,12 @@ const CHAVE = 'dfc_chave-de-teste-open-finance';
 
 /* Pluggy de mentira: 1 banco com conta e cartão */
 const ITEM = '11111111-2222-3333-4444-555555555555';
-function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined, investimentos = [] } = {}) {
+function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined, investimentos = [], atualizado = '2026-10-27T09:00:00Z' } = {}) {
   const s = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), json = (c, b) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(b)); };
     if (u.pathname === '/auth') { let b = ''; req.on('data', d => b += d); return req.on('end', () => JSON.parse(b).clientSecret === 'segredo-certo' ? json(200, { apiKey: 'k1' }) : json(401, { message: 'no' })); }
     if (req.headers['x-api-key'] !== 'k1') return json(403, {});
-    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z', connector: { name: conector } });
+    if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: atualizado, connector: { name: conector } });
     if (u.pathname === '/accounts') return json(200, { results: [{ id: 'conta1', type: 'BANK', subtype: 'CHECKING_ACCOUNT', balance: 500, name: nomeConta }, { id: 'cartao1', type: 'CREDIT', subtype: 'CREDIT_CARD', balance: 300 }] });
     if (u.pathname === '/investments') return json(200, { results: investimentos });
     if (u.pathname === '/bills') return json(200, { results: [{ id: 'fat-nov', dueDate: '2026-11-07T00:00:00Z' }] });
@@ -266,6 +266,18 @@ test('caixinhas: saldo do jeito do app, só as que rendem no banco, e a diferen�
   assert.deepEqual([mostraLiquido([{ obs: 'Rende 102% do CDI · o app do PicPay mostra o valor líquido' }]), mostraLiquido([{ obs: 'mostra liquido' }]), mostraLiquido([{ obs: 'Rende 100% do CDI' }])], [true, true, false]);
   assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-11-05')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência mais nova que a do banco: não volta no tempo');
   assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-10-27')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência do mesmo dia da posição do banco: a sua vale mais');
+});
+
+test('dia do banco no horário de Brasília: atualização à noite não vira o dia seguinte (senão os lançamentos do dia ficam de fora da conferência)', async () => {
+  assert.deepEqual([diaNoBrasil('2026-11-09T01:39:01.493Z'), diaNoBrasil('2026-11-09T14:00:00Z'), diaNoBrasil('2026-11-09T00:00:00.000Z'), diaNoBrasil('2026-11-09'), diaNoBrasil('', '2026-11-10')],
+    ['2026-11-08', '2026-11-09', '2026-11-09', '2026-11-09', '2026-11-10'], 'meia-noite em ponto é data sem horário (posição das caixinhas): fica como veio');
+  const { st, env, fim } = await preparar({ atualizado: '2026-10-28T01:30:00Z' });
+  try {
+    st.tabelas.contas.push({ id: 'CB', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Conta', saldo_conferido: 262.4, data_da_conferencia: '2026-10-01' });
+    const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(i.codigo, 0, i.saida);
+    assert.equal(st.linhas('contas').find(x => x.id === 'CB').data_da_conferencia, '2026-10-27', 'o banco atualizou às 22h30 de 27/10 (01:30Z de 28/10): conferida em 27/10');
+  } finally { await fim(); }
 });
 
 test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam iguais ao total do banco, e a foto do dia vai para a tabela saldos', async () => {
