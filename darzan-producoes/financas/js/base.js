@@ -256,21 +256,33 @@ window.A = window.A || {};
   c.categorias = () => db.linhas('CATEGORIAS');
   c.listaCats = () => [...new Set(c.categorias().map(x => x['CATEGORIA']).filter(Boolean))];
   c.subsDe = cat => c.categorias().filter(x => x['CATEGORIA'] === cat).map(x => x['SUB-CATEGORIA']);
-  c.grupoDe = cat => (c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
+  /* o grupo vem da subcategoria quando ela tem um próprio (ex.: Alimentação > Mercado é necessidade, Alimentação > Delivery é desejo) */
+  c.grupoDe = (cat, sub) => ((sub && c.categorias().find(x => x['CATEGORIA'] === cat && x['SUB-CATEGORIA'] === sub)) || c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
   c.BANCOS = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Banco Pan', 'Não informado'];
   c.CORBANCO = Object.assign(Object.create(null), { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Banco Pan': ['#9be7ff', '#0a8fc7'], 'Não informado': ['#b5bfd6', '#5c6886'] });
   c.GRAD = Object.assign(Object.create(null), { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' });
   const ICAT = {
-    'Alimentação': ['shopping-cart', '#4ee0a0', '#05905c'], 'Alimentação fora': ['utensils', '#ff8aa0', '#d61c4e'], 'Transporte': ['car', '#6cc8ff', '#1f5fe0'],
-    'Casa': ['house', '#5ff0d6', '#0b8a78'], 'Saúde e beleza': ['pill', '#7cf0a8', '#15a352'], 'Trabalho': ['camera', '#8fb6ff', '#2148d6'],
+    'Alimentação': ['utensils', '#ff8aa0', '#d61c4e'], 'Carro e transporte': ['car', '#6cc8ff', '#1f5fe0'], 'Casa': ['house', '#5ff0d6', '#0b8a78'],
+    'Saúde': ['pill', '#7cf0a8', '#15a352'], 'Cuidados pessoais': ['sparkles', '#f2a0ff', '#a51fc4'], 'Trabalho': ['camera', '#8fb6ff', '#2148d6'],
     'Assinaturas': ['tv', '#9aa5ff', '#4a46e0'], 'Lazer': ['party-popper', '#cf9cff', '#7a35e6'], 'Compras': ['shopping-bag', '#c2a8ff', '#6b34e0'],
-    'Doações': ['hand-heart', '#ffd97a', '#d0780a'], 'Dívidas': ['hand-coins', '#ffaab8', '#c0183f'], 'Guardado': ['piggy-bank', '#7cf0c0', '#068a5a'],
+    'Presentes e doações': ['gift', '#ffd97a', '#d0780a'], 'Dívidas e taxas': ['hand-coins', '#ffaab8', '#c0183f'], 'Guardado': ['piggy-bank', '#7cf0c0', '#068a5a'],
     'Transferência': ['arrow-left-right', '#b9c3ff', '#5a5fe0'], 'Salário CLT': ['briefcase', '#7fb0ff', '#2a5fd6'], 'Darzan Produções': ['clapperboard', '#f2c46d', '#a86b16'],
-    'JPL SOM': ['speaker', '#d79bf0', '#8a3fb0'], 'Outras rendas': ['banknote', '#a7b3cf', '#56627f'], 'Outros': ['circle-help', '#b5bfd6', '#5c6886'],
+    'JPL SOM': ['speaker', '#d79bf0', '#8a3fb0'], 'Renda extra': ['banknote', '#a7b3cf', '#56627f'], 'Reembolso': ['undo-2', '#9ad8ff', '#2a7ad0'], 'Outros': ['circle-help', '#b5bfd6', '#5c6886'],
   };
-  const ISUB = { 'iFood': ['pizza', '#ff8a7a', '#d42a1f'], 'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'], 'Mercado': ['shopping-cart', '#4ee0a0', '#05905c'], 'Farmácia': ['pill', '#7cf0a8', '#15a352'], 'Presente': ['gift', '#ff9cd0', '#d2257f'], 'Equipamentos': ['camera', '#8fb6ff', '#2148d6'], 'Cursos': ['graduation-cap', '#9cc6ff', '#2a62e0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Streaming': ['tv', '#9aa5ff', '#4a46e0'], 'Apps': ['cloud', '#9cd3ff', '#2a7ad0'], 'Eletrônicos': ['cpu', '#5fe3f5', '#0a8bb0'], 'Roupas': ['shirt', '#9ad8ff', '#2a7ad0'], 'Futebol': ['volleyball', '#8ff0a0', '#1a9a3c'], 'Corte de cabelo': ['scissors', '#f2a0ff', '#a51fc4'], 'Pagamento de fatura': ['credit-card', '#b9c3ff', '#5a5fe0'] };
+  const ISUB = { 'Mercado': ['shopping-cart', '#4ee0a0', '#05905c'], 'Padaria': ['shopping-bag', '#ffc996', '#d0621e'], 'Almoço do trabalho': ['briefcase', '#ff8aa0', '#d61c4e'], 'Delivery': ['pizza', '#ff8a7a', '#d42a1f'],
+    'Contas da casa': ['lightbulb', '#ffe066', '#b98a00'], 'Limpeza e higiene': ['sparkles', '#5ff0d6', '#0b8a78'], 'Móveis e eletros': ['zap', '#5ff0d6', '#0b8a78'],
+    'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Manutenção': ['wrench', '#6cc8ff', '#1f5fe0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'IPVA e licenciamento': ['file-text', '#6cc8ff', '#1f5fe0'], 'Multas': ['receipt', '#ffaab8', '#c0183f'], 'Pedágio': ['map-pin', '#9cc6ff', '#2a62e0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'],
+    'Farmácia': ['pill', '#7cf0a8', '#15a352'], 'Consultas e exames': ['heart', '#7cf0a8', '#15a352'], 'Academia e esporte': ['trophy', '#7cf0a8', '#15a352'],
+    'Cabelo e barba': ['scissors', '#f2a0ff', '#a51fc4'], 'Tatuagem e estética': ['palette', '#f2a0ff', '#a51fc4'],
+    'Streaming': ['tv', '#9aa5ff', '#4a46e0'], 'Apps': ['cloud', '#9cd3ff', '#2a7ad0'],
+    'Roupas e calçados': ['shirt', '#9ad8ff', '#2a7ad0'], 'Eletrônicos': ['smartphone', '#5fe3f5', '#0a8bb0'], 'Colecionáveis': ['star', '#c2a8ff', '#6b34e0'], 'Para casa': ['house', '#c2a8ff', '#6b34e0'],
+    'Passeios e cinema': ['video', '#cf9cff', '#7a35e6'], 'Viagens': ['plane', '#cf9cff', '#7a35e6'], 'Futebol': ['volleyball', '#8ff0a0', '#1a9a3c'], 'Apostas e loteria': ['coins', '#cf9cff', '#7a35e6'],
+    'Igreja': ['hand-heart', '#ffd97a', '#d0780a'], 'Caridade': ['hand-heart', '#ffd97a', '#d0780a'], 'Ajuda à família': ['heart', '#ffd97a', '#d0780a'],
+    'Equipamentos': ['camera', '#8fb6ff', '#2148d6'], 'Software': ['cpu', '#8fb6ff', '#2148d6'], 'Equipe e freelancers': ['user', '#8fb6ff', '#2148d6'], 'Viagem de trabalho': ['plane', '#8fb6ff', '#2148d6'], 'Cursos': ['graduation-cap', '#9cc6ff', '#2a62e0'], 'Impostos e MEI': ['landmark', '#8fb6ff', '#2148d6'],
+    'Juros e multas': ['receipt', '#ffaab8', '#c0183f'], 'Tarifas de banco': ['landmark', '#ffaab8', '#c0183f'],
+    'Pagamento de fatura': ['credit-card', '#b9c3ff', '#5a5fe0'] };
   c.icone = (cat, sub) => ISUB[sub] || ICAT[cat] || ICAT['Outros'];
-  c.FONTES = { 'Salário CLT': '--s-clt', 'Darzan Produções': '--s-dz', 'JPL SOM': '--s-jpl', 'Outras rendas': '--s-out' };
+  c.FONTES = { 'Salário CLT': '--s-clt', 'Darzan Produções': '--s-dz', 'JPL SOM': '--s-jpl', 'Renda extra': '--s-out' };
 
   /* lançamento do EXTRATO em forma fácil */
   c.l = r => ({ id: r.ID, data: String(r['DATA'] || ''), banco: r['BANCO'] || '', desc: String(r['DESCRIÇÃO'] || ''), grupo: r['GRUPO'] || '', tipo: /cart/i.test(r['TIPO']) ? 'cartão' : 'conta', valor: c.num(r['VALOR']), cat: r['CATEGORIA'] || '', sub: r['SUB-CATEGORIA'] || '', status: r['STATUS'] || 'Pago', parcela: r['PARCELA'] || '', obs: String(r['OBS'] || ''), r });
@@ -289,8 +301,8 @@ window.A = window.A || {};
     const L = c.doMes(m);
     /* dinheiro previsto (ex.: parcela que o cliente ainda vai pagar) não conta como "entrou": fica em "a receber" até você marcar que chegou */
     const ent = L.filter(l => l.grupo === 'Renda' && l.status !== 'Previsto'), aRec = L.filter(l => l.grupo === 'Renda' && l.status === 'Previsto'), gastos = L.filter(c.ehGasto), guard = L.filter(l => l.grupo === 'Guardado');
-    const fonte = { 'Salário CLT': 0, 'Darzan Produções': 0, 'JPL SOM': 0, 'Outras rendas': 0 };
-    ent.forEach(l => { fonte[fonte[l.cat] !== undefined ? l.cat : 'Outras rendas'] += l.valor; });
+    const fonte = { 'Salário CLT': 0, 'Darzan Produções': 0, 'JPL SOM': 0, 'Renda extra': 0 };
+    ent.forEach(l => { fonte[fonte[l.cat] !== undefined ? l.cat : 'Renda extra'] += l.valor; });
     const cats = {};
     gastos.forEach(l => { const k = l.cat || 'Outros'; const x = cats[k] || (cats[k] = { cat: k, valor: 0, n: 0, subs: {} }); x.valor -= l.valor; x.n++; x.subs[l.sub || '—'] = (x.subs[l.sub || '—'] || 0) - l.valor; });
     const entr = u.r2(u.sum(ent)), saiu = u.r2(-u.sum(gastos)), guardou = u.r2(-u.sum(guard));
@@ -670,10 +682,12 @@ window.A = window.A || {};
   /* ---------- dicas ---------- */
   c.dicas = m => {
     const r = c.resumo(m), o = [], mm = u.nomeMes(m).toLowerCase(), cat = n => r.cats.find(x => x.cat === n) || { valor: 0, n: 0 };
-    const comer = cat('Alimentação fora');
-    const mc = c.media(x => (x.cats.find(k => k.cat === 'Alimentação fora') || { valor: 0 }).valor, m);
+    /* comer fora = restaurante, lanche e delivery (mercado, padaria e almoço do trabalho não entram) */
+    const FORA = ['Restaurante e lanche', 'Delivery'], fora = x => { const k = x.cats.find(k => k.cat === 'Alimentação'); return k ? u.sum(FORA.map(s => k.subs[s] || 0)) : 0; };
+    const comer = { valor: u.r2(fora(r)), n: r.gastos.filter(l => l.cat === 'Alimentação' && FORA.includes(l.sub)).length };
+    const mc = c.media(fora, m);
     if (comer.valor > 150) o.push({ w: comer.valor, t: `Comer fora levou ${u.k0(comer.valor)}`, s: `${comer.n} pedidos e lanches em ${mm}${mc ? ` (média de ${u.k0(mc)})` : ''}. Pela metade, sobram uns ${u.k0(comer.valor / 2)} por mês.` });
-    const carro = cat('Transporte');
+    const carro = cat('Carro e transporte');
     if (carro.valor > 300 && r.entr) o.push({ w: carro.valor * .8, t: `O carro custou ${u.k0(carro.valor)}`, s: `Gasolina, manutenção, seguro e Uber: ${u.pct(carro.valor / r.entr)} do que entrou. Inclua o deslocamento nos orçamentos.` });
     const meta = .3 * r.entr;
     if (r.entr && r.guardou < meta) o.push({ w: meta - r.guardou + 200, t: `Faltaram ${u.k0(meta - r.guardou)} para guardar 30%`, s: `Você guardou ${u.k0(r.guardou)} (${u.pct(r.guardou / r.entr)} da renda).${r.sobra > 0 ? ` Sobraram ${u.k0(r.sobra)}: dá para mandar a diferença pra reserva.` : ''}` });

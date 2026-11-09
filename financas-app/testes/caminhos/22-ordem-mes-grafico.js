@@ -4,7 +4,7 @@ const mesmo = (a, b, msg) => certo(a === b, `${msg}: esperava ${b}, veio ${a}`);
 const m0 = HOJE.slice(0, 7);
 const addMes = (m, n) => { const d = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 const addDias = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
-const L = (id, extra) => Object.assign({ id, user_id: 'u-joao', data: HOJE, banco: 'PicPay', descricao: id, grupo: 'Desejos', tipo: 'conta', valor: -10, categoria: 'Lazer', subcategoria: 'Outros', status: 'Pago', parcela: '', obs: '' }, extra);
+const L = (id, extra) => Object.assign({ id, user_id: 'u-joao', data: HOJE, banco: 'PicPay', descricao: id, grupo: 'Desejos', tipo: 'conta', valor: -10, categoria: 'Lazer', subcategoria: 'Passeios e cinema', status: 'Pago', parcela: '', obs: '' }, extra);
 const dadosRosca = p => p.evaluate(() => { const r = A.c.resumo(A.ui.mes), tot = r.cats.reduce((s, x) => s + x.valor, 0); return { cats: r.cats.map(x => x.cat), pcts: r.cats.slice(0, 6).map(x => Math.round(x.valor / tot * 100)) }; });
 /* o ponto da tela no meio do arco da fatia i (onde o dedo ou o mouse encosta) */
 const pontoFatia = async (p, i) => { await p.$eval('#view .rosca', e => e.scrollIntoView({ block: 'center' })); return p.$$eval('#view .rosca .fatia', (fs, i) => { const f = fs[i], len = parseFloat(f.getAttribute('stroke-dasharray')), ini = -parseFloat(f.getAttribute('stroke-dashoffset')); const pt = f.getPointAtLength(ini + len / 2), m = f.getScreenCTM(); const q = new DOMPoint(pt.x, pt.y).matrixTransform(m); return { x: q.x, y: q.y }; }, i); };

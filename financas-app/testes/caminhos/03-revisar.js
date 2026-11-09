@@ -32,15 +32,15 @@ module.exports = { etapa: 'Revisar', testes: [
   ['sem categoria: usar as sugestões do histórico', async (st, abrir) => {
     const p = await abrir();
     await preparar(p, [
-      ...[1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Teste Uber Trip', 'CATEGORIA': 'Transporte', 'SUB-CATEGORIA': 'Uber/99', 'GRUPO': 'Necessidades', 'DATA': `2026-08-0${i}` })),
+      ...[1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Teste Uber Trip', 'CATEGORIA': 'Carro e transporte', 'SUB-CATEGORIA': 'Uber/99', 'GRUPO': 'Necessidades', 'DATA': `2026-08-0${i}` })),
       ...[1, 2].map(i => ({ 'DESCRIÇÃO': 'UBER teste uber trip', 'CATEGORIA': 'Outros', 'SUB-CATEGORIA': 'Outros', 'DATA': `2026-09-1${i}` })),
     ]);
     await abrirRevisar(p, 'categoria', 'uber trip');
-    certo((await p.textContent('#view')).includes('Sugestão: Transporte'), 'não mostrou a sugestão');
+    certo((await p.textContent('#view')).includes('Sugestão: Carro e transporte'), 'não mostrou a sugestão');
     await clica(p, '[data-a=rvTodos]');
     await clica(p, '[data-a=rvSugestoes]'); await calmo(p);
     const L = st.linhas('extrato').filter(r => r.descricao === 'UBER teste uber trip');
-    certo(L.length === 2 && L.every(r => r.categoria === 'Transporte' && r.subcategoria === 'Uber/99' && r.grupo === 'Necessidades'), 'sugestão aplicada errada: ' + JSON.stringify(L.map(r => [r.categoria, r.subcategoria, r.grupo])));
+    certo(L.length === 2 && L.every(r => r.categoria === 'Carro e transporte' && r.subcategoria === 'Uber/99' && r.grupo === 'Necessidades'), 'sugestão aplicada errada: ' + JSON.stringify(L.map(r => [r.categoria, r.subcategoria, r.grupo])));
   }],
   ['para conferir: marcar como conferido tira o aviso', async (st, abrir) => {
     const p = await abrir();

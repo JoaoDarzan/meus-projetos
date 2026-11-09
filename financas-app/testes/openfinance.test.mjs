@@ -49,7 +49,7 @@ async function preparar(opcoes) {
   st.tabelas.acesso_claude.push({ id: 'u-joao', user_id: 'u-joao', hash: crypto.createHash('sha256').update(CHAVE).digest('hex') });
   st.tabelas.cartoes.push({ id: 'K1', user_id: 'u-joao', cartao: 'BancoTeste', fecha_dia: 31, vence_dia: 7 });
   st.tabelas.extrato.push(
-    { id: 'LMAO', user_id: 'u-joao', data: '2026-10-19', banco: 'BancoTeste', descricao: 'gasolina', grupo: 'Necessidades', tipo: 'conta', valor: -42.5, categoria: 'Transporte', subcategoria: 'Gasolina', status: 'Pago', obs: '' },
+    { id: 'LMAO', user_id: 'u-joao', data: '2026-10-19', banco: 'BancoTeste', descricao: 'gasolina', grupo: 'Necessidades', tipo: 'conta', valor: -42.5, categoria: 'Carro e transporte', subcategoria: 'Gasolina', status: 'Pago', obs: '' },
     { id: 'LPAD', user_id: 'u-joao', data: '2026-09-02', banco: 'BancoTeste', descricao: 'padaria pao quente', grupo: 'Necessidades', tipo: 'conta', valor: -12, categoria: 'Alimentação', subcategoria: 'Padaria', status: 'Pago', obs: '' });
   const pg = await pluggyFalsa(LANCS, opcoes);
   const env = { MODO: '', DESDE: '2026-09-01', PLUGGY_CLIENT_ID: 'id', PLUGGY_CLIENT_SECRET: 'segredo-certo', PLUGGY_ITEMS: `BancoTeste=${ITEM}`, DF_CLAUDE_CHAVE: CHAVE,
@@ -93,9 +93,9 @@ test('regras: itens, fatura e formato do app', () => {
   const ln = (desc, valor, tipo = 'conta', propria = false) => { const l = linhaNova({ pid: 'x', data: '2026-11-01', banco: 'B', tipo, valor, desc, parcela: '', propria }, new Map()); return [l.grupo, l.categoria, l.subcategoria]; };
   assert.deepEqual(ln('Pix enviado - eu', -100, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas']);
   assert.deepEqual(ln('Salário recebido - Portabilidade', 5000), ['Renda', 'Salário CLT', 'Salário']);
-  assert.deepEqual(ln('Rendimento de Conta de Pagamento', 3), ['Renda', 'Outras rendas', 'Rendimentos']);
-  assert.deepEqual(ln('IOF DIARIO DB PF', -0.2, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
-  assert.deepEqual(ln('Juros do rotativo', -2.8, 'cartão'), ['Necessidades', 'Dívidas', 'Juros e multas']);
+  assert.deepEqual(ln('Rendimento de Conta de Pagamento', 3), ['Renda', 'Renda extra', 'Rendimentos']);
+  assert.deepEqual(ln('IOF DIARIO DB PF', -0.2, 'cartão'), ['Necessidades', 'Dívidas e taxas', 'Juros e multas']);
+  assert.deepEqual(ln('Juros do rotativo', -2.8, 'cartão'), ['Necessidades', 'Dívidas e taxas', 'Juros e multas']);
   assert.deepEqual(ln('AJUSTE A CREDITO', 5.26, 'cartão'), ['Reembolso', 'Reembolso', 'Compra devolvida']);
   /* redistribuir o salário não é renda nova nem gasto */
   assert.deepEqual(ln('Aplicação Cofrinho', -500), ['Guardado', 'Guardado', 'Reserva'], 'mandar para o cofrinho é guardar');
@@ -103,7 +103,7 @@ test('regras: itens, fatura e formato do app', () => {
   assert.deepEqual(ln('Resgate Meu Porquinho', 200), ['Guardado', 'Guardado', 'Reserva'], 'tirar do cofrinho também não é renda');
   assert.deepEqual(ln('Pix recebido', 1000, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas'], 'vindo de outra conta minha');
   assert.deepEqual((l => [l.grupo, l.subcategoria])(linhaNova({ pid: 'y', data: '2026-11-01', banco: 'B', tipo: 'conta', valor: 800, desc: 'Pix recebido', parcela: '', categoriaPluggy: 'Same person transfer' }, new Map())), ['Transferência', 'Entre minhas contas'], 'o banco diz que é a mesma pessoa');
-  assert.deepEqual(ln('Rendimento da aplicação', 1.2), ['Renda', 'Outras rendas', 'Rendimentos'], 'o rendimento continua sendo renda');
+  assert.deepEqual(ln('Rendimento da aplicação', 1.2), ['Renda', 'Renda extra', 'Rendimentos'], 'o rendimento continua sendo renda');
   assert.deepEqual(ln('Padaria', -10), ['Desejos', '', ''], 'o resto vai para o Revisar');
 });
 

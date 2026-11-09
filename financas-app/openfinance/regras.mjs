@@ -107,12 +107,12 @@ export function regraFixa(p) {
   const d = sem(p.desc);
   if (p.propria) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
   if (p.valor > 0 && /salario/.test(d)) return { grupo: 'Renda', categoria: 'Salário CLT', subcategoria: 'Salário' };
-  if (p.valor > 0 && /rendimento/.test(d)) return { grupo: 'Renda', categoria: 'Outras rendas', subcategoria: 'Rendimentos' };
+  if (p.valor > 0 && /rendimento/.test(d)) return { grupo: 'Renda', categoria: 'Renda extra', subcategoria: 'Rendimentos' };
   /* o salário cai no Inter e o João redistribui: dinheiro para cofrinho/caixinha (ou de volta) é "guardado", e para outra conta dele é
      transferência. Nenhum dos dois é renda nova nem gasto. */
   if (/same (person|owner)|mesma titularidade/i.test(p.categoriaPluggy || '')) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
   if (/cofrinho|caixinha|porquinho|dinheiro guardado|guardad[oa] |aplicacao|resgate|\brdb\b|\bcdb\b|poupanca|meu porquinho/.test(d)) return { grupo: 'Guardado', categoria: 'Guardado', subcategoria: 'Reserva' };
-  if (p.valor < 0 && /\b(iof|juros|multa|encargos?|mora|rotativo)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Dívidas', subcategoria: 'Juros e multas' };
+  if (p.valor < 0 && /\b(iof|juros|multa|encargos?|mora|rotativo)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Dívidas e taxas', subcategoria: 'Juros e multas' };
   if (p.reembolso || (p.valor > 0 && (p.tipo === 'cartão' ? /estorno|ajuste a credito|devolu|reembolso|cancelamento/ : /estorno|devolu/).test(d))) return { grupo: 'Reembolso', categoria: 'Reembolso', subcategoria: 'Compra devolvida' };
   return null;
 }

@@ -538,7 +538,7 @@
       if (mud.banco) reg['BANCO'] = mud.banco;
       if (mud.cat) {
         reg['CATEGORIA'] = mud.cat; reg['SUB-CATEGORIA'] = mud.sub || '';
-        const g = mud.grupo || c.grupoDe(mud.cat);
+        const g = mud.grupo || c.grupoDe(mud.cat, mud.sub);
         if (['Necessidades', 'Desejos'].includes(r['GRUPO']) && ['Necessidades', 'Desejos'].includes(g)) reg['GRUPO'] = g;
       }
       if (mud.conferido) reg['OBS'] = String(r['OBS'] || '').replace(/\s*·?\s*conferir[^·]*/ig, '').replace(/^\s*·\s*/, '').trim();
@@ -598,7 +598,7 @@
         const d = val('xD').trim(), v = u.num(val('xV')); if (!d) return false;
         if (!(v > 0)) { toast('Digite o valor, por exemplo 19,90'); return false; }
         const cat = val('xC');
-        db.salvar('FIXAS', Object.assign(f ? { ID: f.ID } : {}, { 'DESCRIÇÃO': d, 'VALOR': v, 'DIA': parseInt(val('xDia'), 10) || '', 'BANCO': val('xB'), 'TIPO': val('xT'), 'GRUPO': c.grupoDe(cat) === 'Necessidades' ? 'Necessidades' : 'Desejos', 'CATEGORIA': cat, 'SUB-CATEGORIA': val('xS'), 'ATIVA': $('xA').checked ? 'Sim' : 'Não', 'OBS': val('xO').trim() }));
+        db.salvar('FIXAS', Object.assign(f ? { ID: f.ID } : {}, { 'DESCRIÇÃO': d, 'VALOR': v, 'DIA': parseInt(val('xDia'), 10) || '', 'BANCO': val('xB'), 'TIPO': val('xT'), 'GRUPO': c.grupoDe(cat, val('xS')) === 'Necessidades' ? 'Necessidades' : 'Desejos', 'CATEGORIA': cat, 'SUB-CATEGORIA': val('xS'), 'ATIVA': $('xA').checked ? 'Sim' : 'Não', 'OBS': val('xO').trim() }));
         db.garantirFixas(); fechar(); render(false); toast('Conta fixa salva');
       });
     $('xC').addEventListener('change', () => { $('xS').innerHTML = opts(c.subsDe(val('xC')), ''); });
@@ -739,7 +739,7 @@
       ${tipo === 'saida' && !ed ? `<div class="grid2" id="linhaBanco">${campo('Banco', `<select class="txt" id="fB">${opts(bancosConta, 'Nubank')}</select>`)}<div id="boxParc" hidden>${campo('Parcelas', `<select class="txt" id="fP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="avisoCartao" hidden></p>` : ''}
       ${tipo === 'guardar' ? campo('Para onde foi', `<select class="txt" id="fX">${opts(c.caixinhas().map(x => [x['CONTA'], `${x['CONTA']} (${x['BANCO']})`]).concat([['', 'Outro lugar']]), l ? (l.obs.match(/Para (.+)/) || [])[1] : '')}</select>`) : ''}
       ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), l ? l.sub : '')}</select>`)}</div>` : ''}
-      ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0)) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0)) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
+      ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0, l ? l.sub : c.subsDe(cat0)[0])) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0, l ? l.sub : c.subsDe(cat0)[0])) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? obsLivre(l.obs) : '')}" placeholder="opcional">`)}
       ${l && /conferir/i.test(l.obs) ? `<div class="checkline"><input type="checkbox" id="fOk" checked><label for="fOk">Já conferi (sai do Revisar)</label></div>` : ''}
@@ -752,8 +752,10 @@
   function ligarForm(tipo) {
     const fC = $('fC'), fS = $('fS'), fF = $('fF');
     let mexeuNaCategoria = false;
-    if (fC) fC.addEventListener('change', () => { mexeuNaCategoria = true; fS.innerHTML = opts(c.subsDe(fC.value), ''); const g = c.grupoDe(fC.value); const r = $('fG3') && $('fG3').checked ? null : document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; });
-    if (fS) fS.addEventListener('change', () => { mexeuNaCategoria = true; });
+    /* trocou a categoria ou a subcategoria: necessidade/desejo segue o que a subcategoria costuma ser (menos se marcou "Reembolsado") */
+    const grupoSugerido = () => { const g = c.grupoDe(fC.value, fS && fS.value); const r = $('fG3') && $('fG3').checked ? null : document.querySelector(`input[name=fG][value="${g === 'Necessidades' ? 'Necessidades' : 'Desejos'}"]`); if (r) r.checked = true; };
+    if (fC) fC.addEventListener('change', () => { mexeuNaCategoria = true; fS.innerHTML = opts(c.subsDe(fC.value), ''); grupoSugerido(); });
+    if (fS) fS.addEventListener('change', () => { mexeuNaCategoria = true; if (fC) grupoSugerido(); });
     /* novo lançamento: escreveu "gasolina"? o app já põe a categoria que você costuma usar */
     const fD = $('fD'), novo = !!$('fF') || tipo === 'entrada';
     if (fD && fC && novo) fD.addEventListener('input', () => {

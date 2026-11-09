@@ -113,13 +113,33 @@ module.exports = { etapa: 'Lançamentos', testes: [
   }],
   ['ao escrever o que foi, o app já põe a categoria que você costuma usar', async (st, abrir) => {
     const p = await abrir();
-    await preparar(p, [1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Teste Posto Ipiranga', 'CATEGORIA': 'Transporte', 'SUB-CATEGORIA': 'Gasolina', 'GRUPO': 'Necessidades', 'DATA': `2026-09-0${i}` })));
+    await preparar(p, [1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Teste Posto Ipiranga', 'CATEGORIA': 'Carro e transporte', 'SUB-CATEGORIA': 'Gasolina', 'GRUPO': 'Necessidades', 'DATA': `2026-09-0${i}` })));
     await clica(p, '#view [data-a=novoL][data-t=saida]');
     await p.fill('#fV', '120'); await p.type('#fD', 'PIX teste posto ipiranga');
-    certo(await p.inputValue('#fC') === 'Transporte' && await p.inputValue('#fS') === 'Gasolina', `sugeriu ${await p.inputValue('#fC')} / ${await p.inputValue('#fS')}`);
+    certo(await p.inputValue('#fC') === 'Carro e transporte' && await p.inputValue('#fS') === 'Gasolina', `sugeriu ${await p.inputValue('#fC')} / ${await p.inputValue('#fS')}`);
     certo(await p.isVisible('#avisoSug'), 'não avisou que a categoria veio do histórico');
     /* se você escolheu outra categoria, o app não troca mais */
     await p.selectOption('#fC', 'Lazer'); await p.type('#fD', ' 2');
     certo(await p.inputValue('#fC') === 'Lazer', 'trocou a categoria que você escolheu');
+  }],
+  ['categorias novas: comida é uma categoria só; mercado é necessidade e delivery é desejo (o grupo segue a subcategoria)', async (st, abrir) => {
+    const p = await abrir();
+    await clica(p, '#view [data-a=novoL][data-t=saida]');
+    const cats = await p.$$eval('#fC option', os => os.map(o => o.value));
+    certo(cats.includes('Alimentação') && !cats.some(c => /Alimentação fora|^Outros$|Outras/.test(c)), 'lista de categorias: ' + cats.join(', '));
+    await p.selectOption('#fC', 'Alimentação');
+    const subs = await p.$$eval('#fS option', os => os.map(o => o.value));
+    certo(['Mercado', 'Restaurante e lanche', 'Delivery'].every(x => subs.includes(x)), 'subcategorias: ' + subs.join(', '));
+    await p.selectOption('#fS', 'Delivery');
+    certo(await p.isChecked('#fG2'), 'delivery não ficou como desejo');
+    await p.selectOption('#fS', 'Mercado');
+    certo(await p.isChecked('#fG1'), 'mercado não ficou como necessidade');
+    await p.fill('#fV', '45'); await p.fill('#fD', 'Teste delivery'); await p.selectOption('#fS', 'Delivery');
+    await clica(p, '#s2 .save'); await calmo(p);
+    const L = st.linhas('extrato').filter(r => r.descricao === 'Teste delivery');
+    certo(L.length === 1 && L[0].categoria === 'Alimentação' && L[0].subcategoria === 'Delivery' && L[0].grupo === 'Desejos', 'gravou: ' + JSON.stringify(L.map(r => [r.categoria, r.subcategoria, r.grupo])));
+    /* a dica de comer fora soma restaurante e delivery (não o mercado) */
+    const dica = await p.evaluate(m => { const r = A.c.resumo(m), k = r.cats.find(x => x.cat === 'Alimentação'); return { fora: (k.subs['Restaurante e lanche'] || 0) + (k.subs['Delivery'] || 0), dicas: A.c.dicas(m).map(d => d.t) }; }, HOJE.slice(0, 7));
+    certo(dica.fora >= 45, 'comer fora: ' + JSON.stringify(dica));
   }],
 ] };

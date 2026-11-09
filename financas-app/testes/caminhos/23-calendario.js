@@ -4,7 +4,7 @@ const m0 = HOJE.slice(0, 7);
 const addDias = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const mesmo = (a, b, msg) => certo(a === b, `${msg}: esperava ${b}, veio ${a}`);
 const SAB = addDias(HOJE, -3), DOM = addDias(HOJE, -2); /* um fim de semana antes de hoje, no mesmo mês */
-const L = (id, extra) => Object.assign({ id, user_id: 'u-joao', data: addDias(HOJE, -1), banco: 'PicPay', descricao: id, grupo: 'Renda', tipo: 'conta', valor: 500, categoria: 'JPL SOM', subcategoria: 'Serviço', status: 'Pago', parcela: '', obs: '' }, extra);
+const L = (id, extra) => Object.assign({ id, user_id: 'u-joao', data: addDias(HOJE, -1), banco: 'PicPay', descricao: id, grupo: 'Renda', tipo: 'conta', valor: 500, categoria: 'JPL SOM', subcategoria: 'Diária de som', status: 'Pago', parcela: '', obs: '' }, extra);
 const irCalendario = async p => { await p.evaluate(() => { A.ui.view = 'trabalhos'; A.ui.jseg = 'calendario'; A.render(false); }); await p.waitForSelector('#view .cal'); };
 const dias = st => st.linhas('dias').sort((a, b) => a.data < b.data ? -1 : 1);
 

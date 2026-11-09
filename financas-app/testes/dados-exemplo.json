@@ -41,7 +41,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -54,7 +54,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -183,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -82,8 +82,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -153,7 +153,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -166,7 +166,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -184,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -194,8 +194,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -265,7 +265,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -278,7 +278,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -185,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -306,8 +306,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -377,7 +377,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -390,7 +390,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -186,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -418,8 +418,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -489,7 +489,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -502,7 +502,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -187,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -530,8 +530,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -601,7 +601,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -614,7 +614,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -188,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -642,8 +642,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -713,7 +713,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -726,7 +726,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -189,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -754,8 +754,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -825,7 +825,7 @@
     "TIPO": "conta",
     "VALOR": 400,
     "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "SUB-CATEGORIA": "Diária de som",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -838,7 +838,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -190,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Gasolina",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -866,8 +866,8 @@
     "GRUPO": "Desejos",
     "TIPO": "cartão",
     "VALOR": -64.9,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -908,7 +908,7 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -15,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Estacionamento",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -922,8 +922,8 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -16,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "Comida fora",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Restaurante e lanche",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -936,7 +936,7 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -17,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Estacionamento",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -950,8 +950,8 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -18,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "Comida fora",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Restaurante e lanche",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -964,7 +964,7 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -19,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Estacionamento",
     "STATUS": "Pago",
     "PARCELA": "",
@@ -978,8 +978,8 @@
     "GRUPO": "Desejos",
     "TIPO": "conta",
     "VALOR": -20,
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "Comida fora",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Restaurante e lanche",
     "STATUS": "Pago",
     "PARCELA": "",
     "OBS": ""
@@ -1020,7 +1020,7 @@
     "GRUPO": "Necessidades",
     "TIPO": "conta",
     "VALOR": -115,
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Seguro",
     "STATUS": "Previsto",
     "PARCELA": "",
@@ -1035,7 +1035,7 @@
     "TIPO": "conta",
     "VALOR": -140,
     "CATEGORIA": "Casa",
-    "SUB-CATEGORIA": "Contas",
+    "SUB-CATEGORIA": "Contas da casa",
     "STATUS": "Previsto",
     "PARCELA": "",
     "OBS": ""
@@ -1186,7 +1186,7 @@
     "BANCO": "Nubank",
     "TIPO": "conta",
     "GRUPO": "Necessidades",
-    "CATEGORIA": "Transporte",
+    "CATEGORIA": "Carro e transporte",
     "SUB-CATEGORIA": "Seguro",
     "ATIVA": "Sim",
     "OBS": ""
@@ -1266,242 +1266,452 @@
    {
     "ID": "G0079",
     "CATEGORIA": "Salário CLT",
-    "SUB-CATEGORIA": "Comissão",
+    "SUB-CATEGORIA": "Vale-refeição",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0080",
     "CATEGORIA": "Salário CLT",
-    "SUB-CATEGORIA": "Benefícios",
+    "SUB-CATEGORIA": "Vale-transporte",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0081",
-    "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Storymaker",
+    "CATEGORIA": "Salário CLT",
+    "SUB-CATEGORIA": "Bonificação",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0082",
-    "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Casamento",
+    "CATEGORIA": "Salário CLT",
+    "SUB-CATEGORIA": "Horas extras",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0083",
-    "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Social media",
+    "CATEGORIA": "Salário CLT",
+    "SUB-CATEGORIA": "Comissão",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0084",
-    "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Evento",
+    "CATEGORIA": "Salário CLT",
+    "SUB-CATEGORIA": "13º e férias",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0085",
     "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Palestra",
+    "SUB-CATEGORIA": "Storymaker",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0086",
     "CATEGORIA": "Darzan Produções",
-    "SUB-CATEGORIA": "Outros",
+    "SUB-CATEGORIA": "Social media",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0087",
-    "CATEGORIA": "JPL SOM",
-    "SUB-CATEGORIA": "Serviço",
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "Casamento",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0088",
-    "CATEGORIA": "Outras rendas",
-    "SUB-CATEGORIA": "Venda",
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "Evento",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0089",
-    "CATEGORIA": "Outras rendas",
-    "SUB-CATEGORIA": "Outros",
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "Palestra",
     "GRUPO": "Renda"
    },
    {
     "ID": "G0090",
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "HUB Darzan",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0091",
+    "CATEGORIA": "Darzan Produções",
+    "SUB-CATEGORIA": "Vídeo avulso",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0092",
+    "CATEGORIA": "JPL SOM",
+    "SUB-CATEGORIA": "Diária de som",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0093",
+    "CATEGORIA": "Renda extra",
+    "SUB-CATEGORIA": "Venda",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0094",
+    "CATEGORIA": "Renda extra",
+    "SUB-CATEGORIA": "Play One",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0095",
+    "CATEGORIA": "Renda extra",
+    "SUB-CATEGORIA": "Apps e pesquisas",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0096",
+    "CATEGORIA": "Renda extra",
+    "SUB-CATEGORIA": "Latinha",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0097",
+    "CATEGORIA": "Renda extra",
+    "SUB-CATEGORIA": "Rendimentos",
+    "GRUPO": "Renda"
+   },
+   {
+    "ID": "G0098",
     "CATEGORIA": "Alimentação",
     "SUB-CATEGORIA": "Mercado",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0091",
+    "ID": "G0099",
     "CATEGORIA": "Alimentação",
     "SUB-CATEGORIA": "Padaria",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0092",
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "iFood",
+    "ID": "G0100",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Almoço do trabalho",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0101",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Restaurante e lanche",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0093",
-    "CATEGORIA": "Alimentação fora",
-    "SUB-CATEGORIA": "Comida fora",
+    "ID": "G0102",
+    "CATEGORIA": "Alimentação",
+    "SUB-CATEGORIA": "Delivery",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0094",
-    "CATEGORIA": "Transporte",
-    "SUB-CATEGORIA": "Gasolina",
+    "ID": "G0103",
+    "CATEGORIA": "Casa",
+    "SUB-CATEGORIA": "Contas da casa",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0095",
-    "CATEGORIA": "Transporte",
-    "SUB-CATEGORIA": "Uber/99",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0096",
-    "CATEGORIA": "Transporte",
-    "SUB-CATEGORIA": "Manutenção",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0097",
-    "CATEGORIA": "Transporte",
-    "SUB-CATEGORIA": "Seguro",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0098",
-    "CATEGORIA": "Transporte",
-    "SUB-CATEGORIA": "Estacionamento",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0099",
+    "ID": "G0104",
     "CATEGORIA": "Casa",
     "SUB-CATEGORIA": "Moradia",
     "GRUPO": "Necessidades"
    },
    {
-    "ID": "G0100",
-    "CATEGORIA": "Casa",
-    "SUB-CATEGORIA": "Contas",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0101",
-    "CATEGORIA": "Saúde e beleza",
-    "SUB-CATEGORIA": "Farmácia",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0102",
-    "CATEGORIA": "Saúde e beleza",
-    "SUB-CATEGORIA": "Corte de cabelo",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0103",
-    "CATEGORIA": "Trabalho",
-    "SUB-CATEGORIA": "Equipamentos",
-    "GRUPO": "Necessidades"
-   },
-   {
-    "ID": "G0104",
-    "CATEGORIA": "Trabalho",
-    "SUB-CATEGORIA": "Cursos",
-    "GRUPO": "Necessidades"
-   },
-   {
     "ID": "G0105",
-    "CATEGORIA": "Trabalho",
-    "SUB-CATEGORIA": "Software",
+    "CATEGORIA": "Casa",
+    "SUB-CATEGORIA": "Limpeza e higiene",
     "GRUPO": "Necessidades"
    },
    {
     "ID": "G0106",
+    "CATEGORIA": "Casa",
+    "SUB-CATEGORIA": "Móveis e eletros",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0107",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Gasolina",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0108",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Manutenção",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0109",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Seguro",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0110",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "IPVA e licenciamento",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0111",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Multas",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0112",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Pedágio",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0113",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Estacionamento",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0114",
+    "CATEGORIA": "Carro e transporte",
+    "SUB-CATEGORIA": "Uber/99",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0115",
+    "CATEGORIA": "Saúde",
+    "SUB-CATEGORIA": "Farmácia",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0116",
+    "CATEGORIA": "Saúde",
+    "SUB-CATEGORIA": "Consultas e exames",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0117",
+    "CATEGORIA": "Saúde",
+    "SUB-CATEGORIA": "Academia e esporte",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0118",
+    "CATEGORIA": "Cuidados pessoais",
+    "SUB-CATEGORIA": "Cabelo e barba",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0119",
+    "CATEGORIA": "Cuidados pessoais",
+    "SUB-CATEGORIA": "Perfume e cosméticos",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0120",
+    "CATEGORIA": "Cuidados pessoais",
+    "SUB-CATEGORIA": "Tatuagem e estética",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0121",
     "CATEGORIA": "Assinaturas",
     "SUB-CATEGORIA": "Streaming",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0107",
+    "ID": "G0122",
     "CATEGORIA": "Assinaturas",
     "SUB-CATEGORIA": "Apps",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0108",
-    "CATEGORIA": "Lazer",
-    "SUB-CATEGORIA": "Lazer",
+    "ID": "G0123",
+    "CATEGORIA": "Compras",
+    "SUB-CATEGORIA": "Roupas e calçados",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0109",
-    "CATEGORIA": "Lazer",
-    "SUB-CATEGORIA": "Presente",
-    "GRUPO": "Desejos"
-   },
-   {
-    "ID": "G0110",
-    "CATEGORIA": "Lazer",
-    "SUB-CATEGORIA": "Viagem",
-    "GRUPO": "Desejos"
-   },
-   {
-    "ID": "G0111",
+    "ID": "G0124",
     "CATEGORIA": "Compras",
     "SUB-CATEGORIA": "Eletrônicos",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0112",
+    "ID": "G0125",
     "CATEGORIA": "Compras",
-    "SUB-CATEGORIA": "Roupas",
+    "SUB-CATEGORIA": "Colecionáveis",
     "GRUPO": "Desejos"
    },
    {
-    "ID": "G0113",
+    "ID": "G0126",
+    "CATEGORIA": "Compras",
+    "SUB-CATEGORIA": "Para casa",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0127",
+    "CATEGORIA": "Lazer",
+    "SUB-CATEGORIA": "Bares e festas",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0128",
+    "CATEGORIA": "Lazer",
+    "SUB-CATEGORIA": "Passeios e cinema",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0129",
+    "CATEGORIA": "Lazer",
+    "SUB-CATEGORIA": "Viagens",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0130",
+    "CATEGORIA": "Lazer",
+    "SUB-CATEGORIA": "Futebol",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0131",
+    "CATEGORIA": "Lazer",
+    "SUB-CATEGORIA": "Apostas e loteria",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0132",
+    "CATEGORIA": "Presentes e doações",
+    "SUB-CATEGORIA": "Presentes",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0133",
+    "CATEGORIA": "Presentes e doações",
+    "SUB-CATEGORIA": "Igreja",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0134",
+    "CATEGORIA": "Presentes e doações",
+    "SUB-CATEGORIA": "Caridade",
+    "GRUPO": "Desejos"
+   },
+   {
+    "ID": "G0135",
+    "CATEGORIA": "Presentes e doações",
+    "SUB-CATEGORIA": "Ajuda à família",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0136",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Equipamentos",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0137",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Software",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0138",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Equipe e freelancers",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0139",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Viagem de trabalho",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0140",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Cursos",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0141",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Impostos e MEI",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0142",
+    "CATEGORIA": "Dívidas e taxas",
+    "SUB-CATEGORIA": "Juros e multas",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0143",
+    "CATEGORIA": "Dívidas e taxas",
+    "SUB-CATEGORIA": "Tarifas de banco",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0144",
+    "CATEGORIA": "Dívidas e taxas",
+    "SUB-CATEGORIA": "Pagamento de dívida",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0145",
+    "CATEGORIA": "Reembolso",
+    "SUB-CATEGORIA": "Compra devolvida",
+    "GRUPO": "Reembolso"
+   },
+   {
+    "ID": "G0146",
+    "CATEGORIA": "Reembolso",
+    "SUB-CATEGORIA": "Família",
+    "GRUPO": "Reembolso"
+   },
+   {
+    "ID": "G0147",
+    "CATEGORIA": "Reembolso",
+    "SUB-CATEGORIA": "JPL SOM",
+    "GRUPO": "Reembolso"
+   },
+   {
+    "ID": "G0148",
+    "CATEGORIA": "Reembolso",
+    "SUB-CATEGORIA": "Amigos",
+    "GRUPO": "Reembolso"
+   },
+   {
+    "ID": "G0149",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Reserva",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0114",
+    "ID": "G0150",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Caixinha",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0115",
+    "ID": "G0151",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Investimento",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0116",
+    "ID": "G0152",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Entre minhas contas",
     "GRUPO": "Transferência"
    },
    {
-    "ID": "G0117",
+    "ID": "G0153",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Pagamento de fatura",
     "GRUPO": "Transferência"
-   },
-   {
-    "ID": "G0118",
-    "CATEGORIA": "Outros",
-    "SUB-CATEGORIA": "Outros",
-    "GRUPO": "Desejos"
    }
   ]
  }

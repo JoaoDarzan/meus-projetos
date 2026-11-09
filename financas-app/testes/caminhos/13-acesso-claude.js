@@ -30,16 +30,16 @@ module.exports = { etapa: 'Acesso do Claude', testes: [
     /* o Claude corrige (só a categoria de um lançamento) */
     const alvo = lido.find(l => l.grupo === 'Renda');
     const arq = path.join(CAPTURAS, 'mudancas.json');
-    fs.writeFileSync(arq, JSON.stringify([{ tabela: 'extrato', op: 'salvar', linha: { id: alvo.id, categoria: 'Outras rendas', subcategoria: 'Venda' } }, { tabela: 'extrato', op: 'salvar', linha: { id: 'L-DO-OUTRO', valor: 0 } }]));
+    fs.writeFileSync(arq, JSON.stringify([{ tabela: 'extrato', op: 'salvar', linha: { id: alvo.id, categoria: 'Renda extra', subcategoria: 'Venda' } }, { tabela: 'extrato', op: 'salvar', linha: { id: 'L-DO-OUTRO', valor: 0 } }]));
     r = await claude(st, chave, 'gravar', arq, '--sim');
     certo(r.status === 0, 'gravar: ' + r.stderr);
     const depois = st.linhas('extrato').find(l => l.id === alvo.id);
-    certo(depois.categoria === 'Outras rendas' && depois.valor === alvo.valor && depois.descricao === alvo.descricao, 'a correção mexeu no que não devia');
+    certo(depois.categoria === 'Renda extra' && depois.valor === alvo.valor && depois.descricao === alvo.descricao, 'a correção mexeu no que não devia');
     certo(st.tabelas.extrato.find(l => l.id === 'L-DO-OUTRO').valor === -1, 'mexeu nos dados de outra pessoa');
     /* o João volta para o app: aparece a correção */
     await p.keyboard.press('Escape');
     await p.evaluate(() => { A.db.quando = 0; document.dispatchEvent(new Event('visibilitychange')); });
-    await p.waitForFunction(id => A.db.achar('EXTRATO', id)['CATEGORIA'] === 'Outras rendas', alvo.id, { timeout: 8000 });
+    await p.waitForFunction(id => A.db.achar('EXTRATO', id)['CATEGORIA'] === 'Renda extra', alvo.id, { timeout: 8000 });
     /* trocar a chave: a antiga para de funcionar */
     await clica(p, '#view [data-a=conta]'); await p.waitForSelector('#clChave');
     await clica(p, '#s2 [data-a=claudeCriar]');

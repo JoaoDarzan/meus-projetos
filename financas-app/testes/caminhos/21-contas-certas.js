@@ -58,7 +58,7 @@ module.exports = { etapa: 'Contas certas (revisão)', testes: [
     st.tabelas.extrato.push(L('LAP', { grupo: 'Renda', valor: 500, descricao: 'Ana e Pedro - sinal', categoria: 'Darzan Produções', subcategoria: 'Casamento' }),
       L('LANA', { grupo: 'Renda', valor: 100, descricao: 'ana - entrada', categoria: 'Darzan Produções', subcategoria: 'Casamento' }),
       L('LLIG', { grupo: 'Renda', valor: 70, descricao: 'Ana extra', categoria: 'Darzan Produções', subcategoria: 'Casamento', obs: 'Trabalho JA2' }),
-      L('LBANANA', { grupo: 'Renda', valor: 9, descricao: 'venda de banana', categoria: 'Outras rendas', subcategoria: 'Outros' }));
+      L('LBANANA', { grupo: 'Renda', valor: 9, descricao: 'venda de banana', categoria: 'Renda extra', subcategoria: 'Venda' }));
     const p = await abrir();
     const r = await p.evaluate(() => ['JA1', 'JA2'].map(id => A.c.recebido(A.db.achar('TRABALHOS', id))));
     certo(r[0] === 100 && r[1] === 570, 'Ana 100 e Ana e Pedro 570 (500 pelo nome + 70 ligado): ' + JSON.stringify(r));
@@ -66,7 +66,7 @@ module.exports = { etapa: 'Contas certas (revisão)', testes: [
   ['conta fixa no cartão cai na fatura certa; conta fixa excluída não volta sozinha', async (st, abrir) => {
     st.tabelas.cartoes.push({ id: 'KNU', user_id: 'u-joao', cartao: 'Cartão Fecha31', limite: 1000, fecha_dia: 31, vence_dia: 7, paga_pela_conta: 'Nubank · Conta' });
     st.tabelas.fixas.push({ id: 'FNET', user_id: 'u-joao', descricao: 'Streaming teste', valor: 40, dia: 15, banco: 'Cartão Fecha31', tipo: 'cartão', grupo: 'Desejos', categoria: 'Assinaturas', subcategoria: 'Streaming', ativa: 'Sim' },
-      { id: 'FAGUA', user_id: 'u-joao', descricao: 'Conta de água teste', valor: 80, dia: 20, banco: 'Nubank', tipo: 'conta', grupo: 'Necessidades', categoria: 'Casa', subcategoria: 'Contas', ativa: 'Sim' });
+      { id: 'FAGUA', user_id: 'u-joao', descricao: 'Conta de água teste', valor: 80, dia: 20, banco: 'Nubank', tipo: 'conta', grupo: 'Necessidades', categoria: 'Casa', subcategoria: 'Contas da casa', ativa: 'Sim' });
     const p = await abrir(); await calmo(p);
     const n = st.linhas('extrato').find(l => l.id === 'LFX-FNET-' + m0);
     certo(n && n.data === addMes(m0, 1) + '-15', 'compra do dia 15 num cartão que fecha dia 31 vai para a fatura do mês seguinte: ' + (n && n.data));

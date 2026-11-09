@@ -34,7 +34,7 @@ module.exports = { etapa: 'Transferências e correções', testes: [
     const arq = path.join(CAPTURAS, 'correcoes.json');
     fs.writeFileSync(arq, JSON.stringify({ app: 'Darzan Finanças', descricao: 'Teste de correções', abas: { EXTRATO: [
       { ID: 'LCOR-1', 'DATA': '2026-09-04', 'BANCO': 'Nubank', 'DESCRIÇÃO': 'Teste salário que faltou', 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': 3000, 'CATEGORIA': 'Salário CLT', 'SUB-CATEGORIA': 'Salário', 'STATUS': 'Pago', 'PARCELA': '', 'OBS': 'correção' },
-      { ID: existente.id, 'CATEGORIA': 'Outras rendas', 'SUB-CATEGORIA': 'Venda' },
+      { ID: existente.id, 'CATEGORIA': 'Renda extra', 'SUB-CATEGORIA': 'Venda' },
     ] } }));
     await clica(p, '#view [data-a=conta]'); await clica(p, '#s2 [data-a=correcoes]');
     await p.setInputFiles('#corArq', arq);
@@ -44,7 +44,7 @@ module.exports = { etapa: 'Transferências e correções', testes: [
     await clica(p, '#corOk'); await calmo(p);
     const novo = st.linhas('extrato').find(r => r.id === 'LCOR-1'), mud = st.linhas('extrato').find(r => r.id === existente.id);
     certo(novo && novo.valor === 3000 && novo.grupo === 'Renda', 'não adicionou');
-    certo(mud.categoria === 'Outras rendas' && mud.subcategoria === 'Venda' && mud.valor === existente.valor && mud.descricao === existente.descricao, 'correção mexeu no que não devia: ' + JSON.stringify(mud));
+    certo(mud.categoria === 'Renda extra' && mud.subcategoria === 'Venda' && mud.valor === existente.valor && mud.descricao === existente.descricao, 'correção mexeu no que não devia: ' + JSON.stringify(mud));
     await clica(p, '#view [data-a=conta]'); await clica(p, '#s2 [data-a=correcoes]');
     await p.setInputFiles('#corArq', arq);
     await p.waitForFunction(() => /Nada para mudar/.test(document.getElementById('corRes').textContent));

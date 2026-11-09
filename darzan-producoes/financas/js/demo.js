@@ -60,28 +60,28 @@ window.A = window.A || {};
     for (let k = -6; k <= 0; k++) {
       const D = d => dia(k, d), ok = d => k < 0 || d <= dHoje;
       renda(D(5), 'Inter', 'Salário', 2950, 'Salário CLT', 'Salário');
-      renda(D(5), 'Inter', 'Vale-refeição e transporte', 650, 'Salário CLT', 'Benefícios');
+      renda(D(5), 'Inter', 'Vale-refeição', 650, 'Salário CLT', 'Vale-refeição');
       transf(D(6), 'Inter', 'PicPay', 2600);
       transf(D(6), 'Inter', 'Nubank', 700);
       L(D(6), 'Nubank', 'Guardado', 'Guardado', -500, 'Guardado', 'Caixinha', { 'OBS': 'Para Caixinha Reserva' });
       L(D(8), 'PicPay', 'Guardado', 'Guardado', -800, 'Guardado', 'Caixinha', { 'OBS': 'Para Cofrinho Viagem' });
       renda(D(9), 'PicPay', ['Mercado Sol - storymaker', 'Clínica Sorriso - 3 vídeos', 'Pizzaria Forno - storymaker'][(k + 6) % 3], 450 + ((k + 6) % 3) * 120, 'Darzan Produções', 'Storymaker');
-      renda(D(18), 'PicPay', 'JPL SOM evento', 400, 'JPL SOM', 'Serviço');
+      renda(D(18), 'PicPay', 'JPL SOM evento', 400, 'JPL SOM', 'Diária de som');
       renda(D(21), 'PicPay', ['Academia Fit - storymaker', 'Café Central - vídeos', 'Barbearia Navalha - storymaker'][(k + 6) % 3], 380 + ((k + 6) % 2) * 150, 'Darzan Produções', 'Storymaker');
-      if (k < 0) renda(D(28), 'PicPay', 'Rendimento da conta', 22 + (k + 6) * 6.35, 'Outras rendas', 'Rendimentos');
+      if (k < 0) renda(D(28), 'PicPay', 'Rendimento da conta', 22 + (k + 6) * 6.35, 'Renda extra', 'Rendimentos');
       [[3, 182.4], [11, 96.3], [19, 241.75], [26, 128.9]].forEach(([d, v], i) => { if (ok(d)) gasto(D(d), 'PicPay', i === 1 ? 'Padaria' : 'Mercado', v + k * 3, 'Alimentação', i === 1 ? 'Padaria' : 'Mercado', 'Necessidades'); });
-      [2, 9, 16, 23].forEach(d => { if (ok(d)) gasto(D(d), 'PicPay', 'Gasolina', 100, 'Transporte', 'Gasolina', 'Necessidades'); });
-      [[7, 42.9], [14, 61.5], [22, 37.8]].forEach(([d, v]) => { if (ok(d)) gasto(D(d), 'PicPay', 'iFood', v, 'Alimentação fora', 'iFood'); });
-      [[12, 68.0], [25, 54.9]].forEach(([d, v]) => { if (ok(d)) gasto(D(d), 'PicPay', d === 12 ? 'Restaurante' : 'Lanchonete', v, 'Alimentação fora', 'Comida fora'); });
-      if (ok(15)) gasto(D(15), 'PicPay', 'Uber', 23.4, 'Transporte', 'Uber/99', 'Necessidades');
-      if (ok(17)) gasto(D(17), 'PicPay', 'Farmácia', 38.9, 'Saúde e beleza', 'Farmácia', 'Necessidades');
-      if (ok(20)) gasto(D(20), 'PicPay', 'Corte de cabelo', 35, 'Saúde e beleza', 'Corte de cabelo', 'Necessidades');
-      if (ok(10)) gasto(D(10), 'PicPay', 'Internet', 99.9, 'Casa', 'Contas', 'Necessidades').OBS = 'Fixa · débito automático';
+      [2, 9, 16, 23].forEach(d => { if (ok(d)) gasto(D(d), 'PicPay', 'Gasolina', 100, 'Carro e transporte', 'Gasolina', 'Necessidades'); });
+      [[7, 42.9], [14, 61.5], [22, 37.8]].forEach(([d, v]) => { if (ok(d)) gasto(D(d), 'PicPay', 'iFood', v, 'Alimentação', 'Delivery'); });
+      [[12, 68.0], [25, 54.9]].forEach(([d, v]) => { if (ok(d)) gasto(D(d), 'PicPay', d === 12 ? 'Restaurante' : 'Lanchonete', v, 'Alimentação', 'Restaurante e lanche'); });
+      if (ok(15)) gasto(D(15), 'PicPay', 'Uber', 23.4, 'Carro e transporte', 'Uber/99', 'Necessidades');
+      if (ok(17)) gasto(D(17), 'PicPay', 'Farmácia', 38.9, 'Saúde', 'Farmácia', 'Necessidades');
+      if (ok(20)) gasto(D(20), 'PicPay', 'Corte de cabelo', 35, 'Cuidados pessoais', 'Cabelo e barba', 'Necessidades');
+      if (ok(10)) gasto(D(10), 'PicPay', 'Internet', 99.9, 'Casa', 'Contas da casa', 'Necessidades').OBS = 'Fixa · débito automático';
       if (ok(15)) gasto(D(15), 'PicPay', 'Netflix', 22.45, 'Assinaturas', 'Streaming').OBS = 'Fixa · débito automático';
-      if (ok(27)) gasto(D(27), 'PicPay', 'Seguro do carro', 115, 'Transporte', 'Seguro', 'Necessidades').OBS = 'Fixa';
+      if (ok(27)) gasto(D(27), 'PicPay', 'Seguro do carro', 115, 'Carro e transporte', 'Seguro', 'Necessidades').OBS = 'Fixa';
       if (ok(27)) compra(D(27), 'Mercado Pago', 21.9, 1, 'Spotify', 'Assinaturas', 'Streaming');
-      if (ok(13)) compra(D(13), 'Nubank', 89.9 + (k + 6) * 12, 1, ['Roupa', 'Tênis', 'Presente'][(k + 6) % 3], (k + 6) % 3 === 2 ? 'Lazer' : 'Compras', (k + 6) % 3 === 2 ? 'Presente' : 'Roupas');
-      if (ok(24)) compra(D(24), 'Inter', 64.5, 1, 'Cinema', 'Lazer', 'Lazer');
+      if (ok(13)) compra(D(13), 'Nubank', 89.9 + (k + 6) * 12, 1, ['Roupa', 'Tênis', 'Presente'][(k + 6) % 3], (k + 6) % 3 === 2 ? 'Presentes e doações' : 'Compras', (k + 6) % 3 === 2 ? 'Presentes' : 'Roupas e calçados');
+      if (ok(24)) compra(D(24), 'Inter', 64.5, 1, 'Cinema', 'Lazer', 'Passeios e cinema');
     }
     /* trabalhos da Darzan e o que já entrou de cada um */
     const J = (cliente, tipo, data, local, fechado, valor, entrega, etapa, obs, mais2) => { const j = Object.assign({ ID: id('J'), 'CLIENTE': cliente, 'TIPO DE EVENTO': tipo, 'DATA DO EVENTO': data, 'LOCAL': local, 'O QUE FOI FECHADO': fechado, 'VALOR TOTAL': valor, 'ENTREGA': entrega, 'ETAPA': etapa, 'TELEFONE': '(19) 90000-0000', 'CONTRATO': '', 'OBS': obs, 'BRIEFING': '', 'ENTREGAS': '', 'PARCELA MENSAL': '', 'DIA DA PARCELA': '' }, mais2); abas.TRABALHOS.push(j); return j; };
@@ -113,7 +113,7 @@ window.A = window.A || {};
     [['Câmera ZV-E10 + 16-50mm', 'Câmera', 4800, 'Semi-novo'], ['Gimbal', 'Estabilizador', 2300, 'Novo'], ['SSD externo 1TB', 'Armazenamento', 620, 'Novo'], ['Cartão de memória 256GB', 'Armazenamento', 250, 'Novo'], ['Bateria extra', 'Acessório', 180, 'Novo']]
       .forEach(([nome, tipo, valor, estado], i) => abas.EQUIPAMENTOS.push({ ID: id('E'), 'NOME': nome, 'TIPO': tipo, 'VALOR': valor, 'DATA DA COMPRA': dia(-14 + i, 10), 'COMO PAGOU': 'Já tinha', 'ESTADO': estado, 'Nº DE SÉRIE': '', 'OBS': '', 'FOTO': '' }));
     /* reembolso: a produtora pagou a viagem de volta */
-    gasto(dia(-1, 16), 'PicPay', 'Hotel da viagem do evento', 220, 'Trabalho', 'Negócio').GRUPO = 'Reembolso';
+    gasto(dia(-1, 16), 'PicPay', 'Hotel da viagem do evento', 220, 'Trabalho', 'Viagem de trabalho').GRUPO = 'Reembolso';
     L(dia(-1, 19), 'PicPay', 'Reembolso da viagem (produtora)', 'Reembolso', 220, 'Reembolso', 'JPL SOM');
     /* faturas que já venceram: pagas pela conta do cartão */
     Object.entries(CART).forEach(([nome, [, vence, paga]]) => {
@@ -135,20 +135,28 @@ window.A = window.A || {};
     const conf = dia(0, 1);
     [['Nubank', 'Conta', 640], ['Nubank', 'Caixinha Reserva', 9500, 'Reserva de emergência'], ['PicPay', 'Conta', 3850], ['PicPay', 'Cofrinho Viagem', 3200, 'Viagem'], ['Inter', 'Conta', 1200, 'Salário CLT'], ['Mercado Pago', 'Conta', 0, 'Cartão de crédito']]
       .forEach(([banco, conta, saldo, para], i) => abas.CONTAS.push({ ID: 'CD' + (i + 1), 'BANCO': banco, 'CONTA': conta, 'SALDO CONFERIDO': saldo, 'DATA DA CONFERÊNCIA': conf, 'PARA QUÊ': para || 'Dia a dia', 'OBS': '' }));
-    [['Netflix', 22.45, 15, 'PicPay', 'débito automático', 'Desejos', 'Assinaturas', 'Streaming'], ['Internet', 99.9, 10, 'PicPay', 'débito automático', 'Necessidades', 'Casa', 'Contas'],
-      ['Spotify', 21.9, 27, 'Mercado Pago', 'cartão', 'Desejos', 'Assinaturas', 'Streaming'], ['Seguro do carro', 115, 27, 'PicPay', 'conta', 'Necessidades', 'Transporte', 'Seguro']]
+    [['Netflix', 22.45, 15, 'PicPay', 'débito automático', 'Desejos', 'Assinaturas', 'Streaming'], ['Internet', 99.9, 10, 'PicPay', 'débito automático', 'Necessidades', 'Casa', 'Contas da casa'],
+      ['Spotify', 21.9, 27, 'Mercado Pago', 'cartão', 'Desejos', 'Assinaturas', 'Streaming'], ['Seguro do carro', 115, 27, 'PicPay', 'conta', 'Necessidades', 'Carro e transporte', 'Seguro']]
       .forEach(([desc, valor, d, banco, tipo, grupo, cat, sub], i) => abas.FIXAS.push({ ID: 'FD' + (i + 1), 'DESCRIÇÃO': desc, 'VALOR': valor, 'DIA': d, 'BANCO': banco, 'TIPO': tipo, 'GRUPO': grupo, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'ATIVA': 'Sim', 'OBS': '' }));
     [['Backup dos cartões de memória', mais(1), '', 'Darzan'], ['Mandar orçamento para a Empresa Alfa', hoje, '', 'Darzan'], ['Renovar a CNH', mais(12), '', 'Pessoal'], ['Pagar IPVA', mais(70), 1200, 'Conta']]
       .forEach(([tarefa, data, valor, tipo], i) => abas.TAREFAS.push({ ID: 'TD' + (i + 1), 'TAREFA': tarefa, 'DATA': data, 'VALOR': valor, 'TIPO': tipo, 'FEITA': false, 'OBS': '' }));
     [['Viagem para o Chile', 8000, 3200, 'PicPay · Cofrinho Viagem', mais(240)], ['Reserva de emergência', 15000, 9500, 'Nubank · Caixinha Reserva', ''], ['Lente 24-70mm', 6000, 1200, '', mais(180)]]
       .forEach(([meta, alvo, ja, onde, prazo], i) => abas.METAS.push({ ID: 'MD' + (i + 1), 'META': meta, 'VALOR ALVO': alvo, 'JÁ GUARDADO': ja, 'ONDE ESTÁ': onde, 'PRAZO': prazo, 'OBS': '' }));
-    [['Salário CLT', ['Salário', 'Comissão', 'Benefícios'], 'Renda'], ['Darzan Produções', ['Storymaker', 'Casamento', 'Social media', 'Evento', 'Palestra', 'Outros'], 'Renda'],
-      ['JPL SOM', ['Serviço'], 'Renda'], ['Outras rendas', ['Venda', 'Rendimentos', 'Outros'], 'Renda'], ['Alimentação', ['Mercado', 'Padaria'], 'Necessidades'],
-      ['Alimentação fora', ['iFood', 'Comida fora'], 'Desejos'], ['Transporte', ['Gasolina', 'Uber/99', 'Manutenção', 'Seguro', 'Estacionamento'], 'Necessidades'],
-      ['Casa', ['Moradia', 'Contas'], 'Necessidades'], ['Saúde e beleza', ['Farmácia', 'Corte de cabelo'], 'Necessidades'], ['Trabalho', ['Equipamentos', 'Cursos', 'Software', 'Negócio'], 'Necessidades'],
-      ['Assinaturas', ['Streaming', 'Apps'], 'Desejos'], ['Lazer', ['Lazer', 'Presente', 'Viagem'], 'Desejos'], ['Compras', ['Eletrônicos', 'Roupas'], 'Desejos'],
-      ['Guardado', ['Reserva', 'Caixinha', 'Investimento'], 'Guardado'], ['Transferência', ['Entre minhas contas', 'Pagamento de fatura'], 'Transferência'],
-      ['Reembolso', ['JPL SOM', 'Família', 'Compra devolvida', 'Outros'], 'Reembolso'], ['Outros', ['Outros'], 'Desejos']]
+    [['Salário CLT', ['Salário', 'Vale-refeição', 'Vale-transporte', 'Bonificação', 'Horas extras', 'Comissão', '13º e férias'], 'Renda'],
+      ['Darzan Produções', ['Storymaker', 'Social media', 'Casamento', 'Evento', 'Palestra', 'HUB Darzan', 'Vídeo avulso'], 'Renda'], ['JPL SOM', ['Diária de som'], 'Renda'],
+      ['Renda extra', ['Venda', 'Play One', 'Apps e pesquisas', 'Latinha', 'Rendimentos'], 'Renda'],
+      ['Alimentação', ['Mercado', 'Padaria', 'Almoço do trabalho'], 'Necessidades'], ['Alimentação', ['Restaurante e lanche', 'Delivery'], 'Desejos'],
+      ['Casa', ['Contas da casa', 'Moradia', 'Limpeza e higiene'], 'Necessidades'], ['Casa', ['Móveis e eletros'], 'Desejos'],
+      ['Carro e transporte', ['Gasolina', 'Manutenção', 'Seguro', 'IPVA e licenciamento', 'Multas', 'Pedágio', 'Estacionamento', 'Uber/99'], 'Necessidades'],
+      ['Saúde', ['Farmácia', 'Consultas e exames'], 'Necessidades'], ['Saúde', ['Academia e esporte'], 'Desejos'],
+      ['Cuidados pessoais', ['Cabelo e barba'], 'Necessidades'], ['Cuidados pessoais', ['Perfume e cosméticos', 'Tatuagem e estética'], 'Desejos'],
+      ['Assinaturas', ['Streaming', 'Apps'], 'Desejos'], ['Compras', ['Roupas e calçados', 'Eletrônicos', 'Colecionáveis', 'Para casa'], 'Desejos'],
+      ['Lazer', ['Bares e festas', 'Passeios e cinema', 'Viagens', 'Futebol', 'Apostas e loteria'], 'Desejos'],
+      ['Presentes e doações', ['Presentes', 'Igreja', 'Caridade'], 'Desejos'], ['Presentes e doações', ['Ajuda à família'], 'Necessidades'],
+      ['Trabalho', ['Equipamentos', 'Software', 'Equipe e freelancers', 'Viagem de trabalho', 'Cursos', 'Impostos e MEI'], 'Necessidades'],
+      ['Dívidas e taxas', ['Juros e multas', 'Tarifas de banco', 'Pagamento de dívida'], 'Necessidades'],
+      ['Reembolso', ['Compra devolvida', 'Família', 'JPL SOM', 'Amigos'], 'Reembolso'],
+      ['Guardado', ['Reserva', 'Caixinha', 'Investimento'], 'Guardado'], ['Transferência', ['Entre minhas contas', 'Pagamento de fatura'], 'Transferência']]
       .forEach(([cat, subs, grupo]) => subs.forEach(sub => abas.CATEGORIAS.push({ ID: id('G'), 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'GRUPO': grupo })));
     return { app: 'Darzan Finanças', demo: true, abas };
   };
