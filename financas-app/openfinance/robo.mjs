@@ -38,7 +38,7 @@ async function principal() {
   else console.log(`  ✓ PLUGGY_ITEMS: ${itens.length} número(s) de conexão no formato certo`);
   if (!ok) throw new Error('arrume o segredo marcado com ✗ e rode de novo (nada foi gravado)');
   let abertos = 0, semNome = 0;
-  const saldos = [];
+  const saldos = [], caixas = [];
   const propostas = [];
   for (const [i, item] of itens.entries()) {
     const id = item.id;
@@ -57,6 +57,11 @@ async function principal() {
     if (!como) semNome++;
     console.log(`\n${banco}${como ? ` (reconhecido pelo ${como})` : ' ✗ não reconheci qual banco é'}: conexão ${it.status}${it.lastUpdatedAt ? ' · atualizada em ' + String(it.lastUpdatedAt).slice(0, 10) : ''} · ${contas.length} conta(s)`);
     contas.filter(c => c.type === 'BANK' && c.subtype !== 'SAVINGS_ACCOUNT').slice(0, 1).forEach(c => saldos.push({ banco, saldo: c.balance, em: it.lastUpdatedAt || '' }));
+    /* caixinhas e cofrinhos: o banco manda como investimento (ou poupança); guarda o saldo de cada um para o app conferir todo dia */
+    const invs = await pg.investimentos(id);
+    invs.filter(v => v.status !== 'TOTAL_WITHDRAWAL').forEach(v => caixas.push({ banco, nome: v.name || v.code || 'Investimento', saldo: v.balance, tipo: [v.type, v.subtype].filter(Boolean).join('/'), em: v.date || it.lastUpdatedAt || '' }));
+    contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT').forEach(c => caixas.push({ banco, nome: c.name || 'Poupança', saldo: c.balance, tipo: 'SAVINGS_ACCOUNT', em: it.lastUpdatedAt || '' }));
+    console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => v.type || '?')).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
@@ -87,6 +92,10 @@ async function principal() {
   const opsSaldo = saldos.filter(x => x.saldo != null).map(({ banco, saldo, em }) => ({ tabela: 'extrato', op: 'salvar', linha: {
     id: 'LOFS-' + sem(banco).replace(/[^a-z0-9]+/g, '-'), data: String(em).slice(0, 10) || hoje, banco, descricao: 'Saldo no banco (Open Finance)', grupo: 'Transferência', tipo: 'conta',
     valor: Math.round(+saldo * 100) / 100, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: `Open Finance · saldo informado pelo banco em ${em || hoje} · só para conferência` } }));
+  /* o saldo de cada caixinha que o banco informou, escondido do mesmo jeito (o app usa para conferir e para a foto diária) */
+  caixas.filter(x => x.saldo != null).forEach(x => opsSaldo.push({ tabela: 'extrato', op: 'salvar', linha: {
+    id: ('LOFI-' + sem(x.banco) + '-' + sem(x.nome)).replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').slice(0, 100), data: String(x.em).slice(0, 10) || hoje, banco: x.banco, descricao: String(x.nome).slice(0, 120), grupo: 'Guardado', tipo: 'conta',
+    valor: Math.round(+x.saldo * 100) / 100, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: `Open Finance · caixinha/aplicação (${x.tipo}) · saldo informado pelo banco em ${x.em || hoje} · só para conferência` } }));
   if (opsSaldo.length) await gravar(opsSaldo);
 
   if (MODO === 'previa') {

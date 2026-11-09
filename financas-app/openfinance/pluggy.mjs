@@ -18,6 +18,8 @@ export function criarPluggy({ clientId, clientSecret, base = 'https://api.pluggy
     entrar: async () => { await pedir('items/teste-de-entrada').catch(e => { if (/recusou as credenciais/.test(e.message)) throw e; }); },
     item: id => pedir(`items/${id}`),
     contas: itemId => pedir('accounts', { itemId }).then(r => r.results || []),
+    /* caixinhas, cofrinhos e outras aplicações aparecem como investimentos (GET /investments) */
+    investimentos: itemId => pedir('investments', { itemId, pageSize: 500 }).then(r => r.results || []).catch(() => []),
     faturas: accountId => pedir('bills', { accountId }).then(r => r.results || []).catch(() => []),
     /* todos os lançamentos de uma conta desde uma data (paginação por cursor, GET /v2/transactions) */
     async lancamentos(accountId, dateFrom) {
