@@ -126,15 +126,6 @@ window.A = window.A || {};
     linhas.forEach(l => { const k = Object.keys(l).sort().join(','); (grupos[k] = grupos[k] || []).push(l); });
     for (const g of Object.values(grupos)) for (let i = 0; i < g.length; i += 500) await rest('POST', `${tabela}?on_conflict=id`, g.slice(i, i + 500), 'resolution=merge-duplicates,return=minimal');
   };
-  /* holerite pela foto: a função "ler-holerite" do Supabase manda a foto ao Claude e devolve os números (a foto não fica guardada) */
-  n.lerHolerite = async (imagem, tipo) => {
-    if (n.ehDemo()) throw new ErroNuvem('A demonstração não lê holerite', 400);
-    const faz = async () => chamar('/functions/v1/ler-holerite', { method: 'POST', headers: { apikey: CONFIG.chave, Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ imagem, tipo }) });
-    try { return (await faz()).corpo.holerite; } catch (e) {
-      if (e.status !== 401) throw e;
-      await n.renovar(); return (await faz()).corpo.holerite;
-    }
-  };
   /* arquivo de um anexo (foto ou PDF em "data:..."); vai e vem direto, sem esperar na fila, porque é pesado */
   n.arquivo = async id => {
     if (n.ehDemo()) { const x = (demo.banco().anexos || []).find(l => l.id === id); return x ? x.conteudo || null : null; }

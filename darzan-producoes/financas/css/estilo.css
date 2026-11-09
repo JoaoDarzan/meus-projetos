@@ -847,10 +847,9 @@ details.perd{margin-top:14px;border:1px solid var(--stroke);border-radius:16px;p
 details.perd summary{cursor:pointer;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px;padding:6px 0;list-style:none}
 details.perd summary svg{width:16px;height:16px}
 
-/* holerite pela foto */
+/* holerite detalhado */
 .hls{padding:4px 12px}
 .hl{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)}
 .hl>span{min-width:0}.hl small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}.hl b{white-space:nowrap;text-align:right}
 .hl:first-child{border-top:0}
 .hok{display:flex;gap:8px;align-items:center;font-size:.88rem;margin:0 0 12px}.hok svg{width:18px;height:18px;flex:none}
-#hProb ul{margin:6px 0 0;padding-left:18px}

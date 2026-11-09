@@ -16,7 +16,7 @@ function criar(op = {}) {
   /* acesso do Claude (tabela fora do app: só a impressão digital da chave) */
   tabelas.acesso_claude = []; colunas.acesso_claude = { id: 'text', user_id: 'uuid', hash: 'text', ultimo_uso: 'text', criado_em: 'text' };
   const tokens = {}; /* token → {user, vence} */
-  const st = { holerite: null, pedidosClaude: [], pushes: [], pushStatus: {}, tabelas, tokens, pedidos: [], fora: false, falharProximo: 0, duracaoToken: op.duracaoToken || 3600, sinal: null };
+  const st = { pushes: [], pushStatus: {}, tabelas, tokens, pedidos: [], fora: false, falharProximo: 0, duracaoToken: op.duracaoToken || 3600, sinal: null };
   let seq = 0;
   const novoToken = u => { const a = `acc-${u.id}-${++seq}`, r = `ref-${u.id}-${seq}`; tokens[a] = { u, vence: Date.now() / 1000 + st.duracaoToken }; tokens['R' + r] = { u }; return { access_token: a, refresh_token: r, expires_in: st.duracaoToken, expires_at: Math.floor(Date.now() / 1000 + st.duracaoToken), token_type: 'bearer', user: { id: u.id, email: u.email } }; };
   const json = (res, status, corpo) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(corpo === undefined ? '' : JSON.stringify(corpo)); };
@@ -54,17 +54,6 @@ function criar(op = {}) {
         const id = p.slice(8), status = st.pushStatus[id] || 201;
         st.pushes.push({ id, headers: req.headers, corpo: bruto, status });
         res.writeHead(status); return res.end();
-      }
-      /* função "ler-holerite": roda o código de verdade (supabase/functions/ler-holerite/index.ts) com um Claude de mentira.
-         st.holerite = null → a função ainda não foi ligada no Supabase (404) */
-      if (p === '/functions/v1/ler-holerite') {
-        if (!st.holerite) return json(res, 404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
-        return import(path.resolve(__dirname, '../supabase/functions/ler-holerite/index.ts')).then(async f => {
-          const pedido = new Request('http://x' + req.url, { method: req.method, headers: req.headers, body: bruto.length ? bruto : undefined });
-          const r = await f.tratar(pedido, { origens: [req.headers.origin], usuario: async t => { const x = tokens[t]; return x && x.vence > Date.now() / 1000 ? x.u : null; },
-            claude: async params => { st.pedidosClaude.push(params); return st.holerite(params); } });
-          res.writeHead(r.status, Object.fromEntries(r.headers)); res.end(await r.text());
-        });
       }
       if (!p.startsWith('/auth/') && !p.startsWith('/rest/')) {
         const arq = path.join(SITE, decodeURIComponent(p.endsWith('/') ? p + 'index.html' : p));

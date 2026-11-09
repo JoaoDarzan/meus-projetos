@@ -11,7 +11,6 @@ anexados, CPF e endereço). Aqui está o que protege esses dados, como isso é t
 | Comprovantes e contratos (arquivos) | Supabase, tabela `anexos` (coluna `conteudo`) | só o João; o arquivo só é baixado quando ele abre |
 | Cópia para abrir sem internet | o próprio aparelho (navegador) | quem estiver com o aparelho desbloqueado; "Sair deste aparelho" apaga |
 | Planilha de backup | Google Drive do João (sem os arquivos dos anexos) | o João (e quem ele compartilhar a planilha) |
-| Foto do holerite | não é guardada: vai do app para a função `ler-holerite` do Supabase e dela para o Claude (Anthropic), que lê e devolve só os números | só o João logado; a chave do Claude fica nos Secrets do Supabase |
 | Avisos no celular | Supabase (`avisos`) e o serviço de notificação do aparelho, cifrado | o aparelho cadastrado |
 
 O código fica num repositório **público** no GitHub. Por isso, nunca vão para lá: senhas, chaves, CPF ou dados de clientes.
@@ -32,9 +31,6 @@ O vigia de segredos (`ferramentas/vigia_segredos.py`) confere isso a cada mudan�
   guardada no aparelho; não grava avisos; no máximo 1000 mudanças por vez; trocar ou desligar no app corta na hora.
 - **Arquivos de importação** ("Trazer correções"): só as abas de dados, só colunas conhecidas, só ids válidos.
   Aparelhos, avisos e anexos nunca vêm de arquivo.
-- **Leitura de holerite** (função `ler-holerite`): só atende quem está logado (o Supabase confere o login), só de dentro do
-  app (endereços do app), só foto (JPG, PNG, WEBP) de tamanho limitado; o Claude devolve um formato fixo sem nome nem CPF;
-  a chave do Claude (`ANTHROPIC_API_KEY`) fica só nos Secrets do Supabase, nunca no app nem no GitHub.
 - **Avisos**: só abrem endereços do próprio app (um aviso falso não leva para site de golpe).
 - **Planilha de backup**: texto que parece fórmula (`=`, `+`, `-`, `@`) vai como texto, para não vazar dados.
 - **LGPD**: excluir um trabalho apaga junto os comprovantes e contratos dele (no app e no banco).
@@ -71,7 +67,7 @@ O vigia de segredos (`ferramentas/vigia_segredos.py`) confere isso a cada mudan�
 ## O que só o João pode fazer (painel do Supabase e contas)
 
 1. Rodar `supabase/atualizacao-novembro.sql` uma vez (SQL Editor → New query → colar → Run). Ele traz as defesas de segurança e a tabela do calendário dos dias trabalhados.
-   Depois, `supabase/atualizacao-holerites.sql` (tabela dos holerites detalhados e fecha a última função do banco que respondia a estranhos).
+   Depois, `supabase/atualizacao-holerites.sql` (tabela dos holerites detalhados e fecha a última função do banco que respondia a estranhos). Já rodado.
 2. Supabase → Authentication → **Sign In / Providers** (ou "Policies"): ligar *Secure password change* e *Secure email change*.
 3. Supabase → Authentication → **Multi-Factor**: o app ainda não pede o segundo fator; próximo passo sugerido.
 4. Usar uma senha longa (12 ou mais caracteres) e única para o app, e bloqueio de tela no celular.

@@ -386,59 +386,13 @@ window.A = window.A || {};
   });
   /* o holerite de um pagamento (mês em que caiu) */
   c.holeriteDoMes = m => c.holerites().find(h => u.mes(h.pagamento) === m) || null;
-  /* para guardar: o que a foto leu vira uma linha da tabela HOLERITES */
-  c.registroHolerite = (h, data, banco) => ({ ID: `H${h.competencia_ano}-${String(h.competencia_mes).padStart(2, '0')}`, 'COMPETÊNCIA': `${h.competencia_ano}-${String(h.competencia_mes).padStart(2, '0')}`,
-    'EMPRESA': String(h.empresa || ''), 'PAGAMENTO': data, 'BANCO': banco, 'LÍQUIDO': u.r2(+h.liquido || 0),
-    'DADOS': JSON.stringify({ itens: (h.itens || []).map(i => ({ codigo: i.codigo || '', descricao: i.descricao || '', referencia: i.referencia || '', vencimento: i.vencimento == null ? null : +i.vencimento, desconto: i.desconto == null ? null : +i.desconto })),
-      total_vencimentos: h.total_vencimentos, total_descontos: h.total_descontos, salario_base: h.salario_base, base_inss: h.base_inss, base_fgts: h.base_fgts == null ? null : h.base_fgts,
-      fgts_mes: h.fgts_mes, base_irrf: h.base_irrf == null ? null : h.base_irrf, faixa_irrf: h.faixa_irrf == null ? null : h.faixa_irrf }) });
-
-  /* ---------- holerite lido pela foto → as mesmas linhas que o Claude lança à mão ----------
-     Vale-refeição, vale-transporte, bonificação e horas extras (com o DSR delas) viram linhas próprias; o resto
-     (salário, adicionais, diferenças, arredondamentos) menos os descontos (INSS, IR...) fica em "Salário", que fecha no líquido. */
-  c.BANCO_SALARIO = 'Inter'; /* conta principal: o salário cai aqui e depois é redistribuído (transferências e cofrinhos, não é renda nova) */
+  /* em que parte do salário entra cada item do holerite: vale-refeição, vale-transporte, bonificação, horas extras (com o DSR delas) ou o resto ("Salário") */
   c.parteHolerite = d => { const t = u.sem(d);
     if (/refei|alimenta|\bv\.?r\b/.test(t)) return 'VR';
     if (/passe|transporte|\bv\.?t\b/.test(t)) return 'VT';
     if (/bonifica|premio|comiss|gratifica|\bplr\b|participacao/.test(t)) return 'BON';
     if (/hora.*extra|extra.*hora|\bh\.?e\.?\b/.test(t)) return 'HE';
     return 'SAL'; };
-  c.holeriteLinhas = (h, data, banco) => {
-    const itens = (h.itens || []).map(i => ({ d: String(i.descricao || ''), ref: String(i.referencia || ''), v: u.r2(+i.vencimento || 0), x: u.r2(+i.desconto || 0) }));
-    const venc = u.r2(u.sum(itens, i => i.v)), desc = u.r2(u.sum(itens, i => i.x)), liq = u.r2(+h.liquido || 0);
-    const soma = { VR: 0, VT: 0, BON: 0, HE: 0 };
-    itens.forEach(i => { const k = c.parteHolerite(i.d); if (k !== 'SAL') soma[k] = u.r2(soma[k] + i.v - i.x); });
-    Object.keys(soma).forEach(k => { if (soma[k] <= 0) soma[k] = 0; });
-    const sal = u.r2(liq - soma.VR - soma.VT - soma.BON - soma.HE);
-    const nomeComp = u.MESES[(+h.competencia_mes || 1) - 1].toLowerCase(), comp = `${nomeComp}/${h.competencia_ano}`;
-    const m = u.mes(data), emp = String(h.empresa || '').replace(/\s+(ltda|s\.?a\.?|eireli|me|epp)\.?$/i, '').trim() || 'empresa';
-    const nota = `holerite ${emp} (lido pela foto)`;
-    const de = re => u.r2(u.sum(itens.filter(i => re.test(u.sem(i.d))), i => i.x));
-    const inss = de(/inss/), irrf = de(/irrf|imposto de renda|\bi\.?r\.?r?\.?f?\b/);
-    const horas = u.r2(u.sum(itens.filter(i => c.parteHolerite(i.d) === 'HE' && !/d\.?s\.?r|repouso/.test(u.sem(i.d))), i => u.num(i.ref)));
-    const vSal = itens.filter(i => c.parteHolerite(i.d) === 'SAL' && /^sal[aá]rio$/i.test(i.d.trim()));
-    const outros = itens.filter(i => c.parteHolerite(i.d) === 'SAL' && i.v && !vSal.includes(i));
-    const obsSal = [`Holerite de ${comp}`,
-      [vSal.length ? `salário ${u.reais(u.sum(vSal, i => i.v))}${vSal[0].ref ? ` (${vSal[0].ref.replace(/[.,]00$/, '')} dias)` : ''}` : '', ...outros.map(i => `${u.cap(i.d.toLowerCase())} ${u.reais(i.v)}`)].filter(Boolean).join(' + ')
-        + itens.filter(i => c.parteHolerite(i.d) === 'SAL' && i.x).map(i => ` − ${/inss/.test(u.sem(i.d)) ? 'INSS' : /irrf|imposto/.test(u.sem(i.d)) ? 'IRRF' : u.cap(i.d.toLowerCase())} ${u.reais(i.x)}`).join(''),
-      `bruto ${u.reais(venc)}`, inss ? `INSS ${u.reais(inss)}` : '', irrf ? `IRRF ${u.reais(irrf)}` : '', `líquido ${u.reais(liq)}`,
-      h.fgts_mes ? `FGTS ${u.reais(h.fgts_mes)}` : '', h.salario_base ? `salário base ${u.reais(h.salario_base)}` : '', nota].filter(Boolean).join(' · ');
-    const he = itens.filter(i => c.parteHolerite(i.d) === 'HE' && i.v);
-    const L = (k, valor, desc, sub, obs) => ({ ID: `LCLT-${m}-${k}`, 'DATA': data, 'BANCO': banco, 'DESCRIÇÃO': desc, 'GRUPO': 'Renda', 'TIPO': 'conta', 'VALOR': valor, 'CATEGORIA': 'Salário CLT', 'SUB-CATEGORIA': sub, 'STATUS': data >= u.hoje() ? 'Previsto' : 'Pago', /* o robô dos bancos troca para Pago quando o depósito aparece */ 'PARCELA': '', 'OBS': obs });
-    const linhas = [L('SAL', sal, `Salário (${nomeComp})`, 'Salário', obsSal)];
-    if (soma.VR) linhas.push(L('VR', soma.VR, `Vale-refeição (${nomeComp})`, 'Vale-refeição', nota));
-    if (soma.VT) linhas.push(L('VT', soma.VT, `Vale-transporte (${nomeComp})`, 'Vale-transporte', nota));
-    if (soma.BON) linhas.push(L('BON', soma.BON, `Bonificação (${nomeComp})`, 'Bonificação', nota));
-    if (soma.HE) linhas.push(L('HE', soma.HE, `Horas extras (${nomeComp})${horas ? ` · ${String(horas).replace('.', ',')} h` : ''}`, 'Horas extras', he.map(i => `${u.cap(i.d.toLowerCase())} ${u.reais(i.v)}${i.ref ? ` (${i.ref} h)` : ''}`).join(' + ') + ' · ' + nota));
-    /* a leitura confere? (somas dos itens = totais impressos = líquido) */
-    const probs = [];
-    if (h.total_vencimentos != null && Math.abs(venc - h.total_vencimentos) > .009) probs.push(`os vencimentos somam ${u.reais(venc)}, mas o total impresso é ${u.reais(h.total_vencimentos)}`);
-    if (h.total_descontos != null && Math.abs(desc - h.total_descontos) > .009) probs.push(`os descontos somam ${u.reais(desc)}, mas o total impresso é ${u.reais(h.total_descontos)}`);
-    if (Math.abs(venc - desc - liq) > .009) probs.push(`vencimentos menos descontos dá ${u.reais(venc - desc)}, mas o líquido é ${u.reais(liq)}`);
-    if (!(sal > 0)) probs.push('o salário ficou zerado ou negativo');
-    const jaTem = c.lancs().filter(l => l.id.indexOf(`LCLT-${m}-`) === 0);
-    return { linhas, liq, venc, desc, comp, bate: !probs.length, probs, jaTem, irrf, inss };
-  };
 
   /* ---------- contas fixas ---------- */
   /* TIPO: "cartão", "débito automático", "conta" (pagar na mão) viram lançamento todo mês;

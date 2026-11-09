@@ -644,8 +644,7 @@
   const CLT_COR = [['sal', 'Salário e horas extras', '--clt-sal'], ['ben', 'Vale-transporte e refeição', '--clt-ben'], ['bon', 'Bonificação', '--clt-bon']];
   const semHolerites = () => db.faltando && db.faltando.has('HOLERITES');
   REL.clt = () => {
-    const botao = `<button type="button" class="btn2 pri" data-a="holeriteFoto" style="width:100%;justify-content:center">${u.svg('camera')}Lançar o salário pela foto do holerite</button>`;
-    const ps = c.clt(); if (!ps.length) return `<section class="sec">${botao}</section>` + vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
+    const ps = c.clt(); if (!ps.length) return vazio(['briefcase', '#9cc6ff', '#2a62e0'], 'Nenhum salário CLT lançado ainda.');
     const ult = ps[ps.length - 1], recebidos = ps.filter(p => !p.prev), tot = u.sum(recebidos, p => p.liq), fgts = u.sum(ps, p => p.fgts || 0), inss = u.sum(ps, p => p.inss || 0);
     const nomeComp = p => p.comp ? u.cap(p.comp.replace('/', ' de ')) : 'pago em ' + u.nomeMes(p.m).toLowerCase();
     const dest = [];
@@ -660,7 +659,7 @@
     const irrf = u.sum(ps, p => p.irrf || 0);
     if (irrf) dest.push(['landmark', `<b>Imposto de renda</b> descontado: ${u.k0(irrf)} no total (entra na declaração do ano que vem).`]);
     const lista = ps.slice().reverse().map(p => `<button type="button" class="it btn" data-a="verHolerite" data-v="${u.esc(p.m)}"><span>${u.ti(['briefcase', '#9cc6ff', '#2a62e0'])}</span><div style="min-width:0"><div class="t">${nomeComp(p)}</div><div class="m">${[p.bruto ? 'bruto ' + u.k0(p.bruto) : '', p.inss ? 'INSS ' + u.k0(p.inss) : '', p.irrf ? 'IR ' + u.k0(p.irrf) : '', p.bon > p.com ? 'bônus ' + u.k0(p.bon - p.com) : '', p.com ? 'comissão ' + u.k0(p.com) : '', p.horas ? String(p.horas).replace('.', ',') + ' h extras' : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('<span>·</span>')}</div></div><div class="v num">${u.brl(p.liq)}<small>${p.prev ? 'a receber' : 'recebido'} ${u.dm(p.data)}</small></div></button>`).join('');
-    return `<section class="sec">${botao}</section><section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})${ult.prev ? ` · a receber ${u.dm(ult.data)}` : ''}</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
+    return `<section class="sec"><div style="display:flex;gap:14px;align-items:center">${u.ti(['briefcase', '#9cc6ff', '#2a62e0'], 'xl')}<div><div class="sub">Último salário (${nomeComp(ult).toLowerCase()})${ult.prev ? ` · a receber ${u.dm(ult.data)}` : ''}</div><div class="bignum num">${u.big(ult.liq)}</div></div></div></section>
       <section class="sec"><div class="kpis"><div class="kpi"><span>Recebido no ano</span><b class="num">${u.brl(tot)}</b></div><div class="kpi"><span>Média por mês</span><b class="num">${u.brl(recebidos.length ? tot / recebidos.length : 0)}</b></div>${fgts ? `<div class="kpi"><span>FGTS guardado</span><b class="num">${u.brl(fgts)}</b></div>` : ''}${ult.base ? `<div class="kpi"><span>Salário base</span><b class="num">${u.brl(ult.base)}</b></div>` : ''}</div></section>
       <section class="sec"><div class="sec-h"><h2>O que entrou de cada salário</h2></div><div class="panel"><div class="lgd">${CLT_COR.map(([, n, v]) => `<span><i style="background:var(${v})"></i>${n}</span>`).join('')}</div><div class="chart" id="chClt"></div></div></section>
       ${dest.length ? `<section class="sec"><div class="sec-h"><h2>${u.svg('sparkles')}Destaques</h2></div><div class="panel" style="display:grid;gap:12px">${dest.map(([i, t]) => `<div class="dest">${u.svg(i)}<span>${t}</span></div>`).join('')}</div></section>` : ''}
@@ -983,62 +982,12 @@
         <div class="sec-h" style="margin-top:16px"><h2>Bases e FGTS</h2></div><div class="panel hls" id="hBases">${[h.base != null ? linha('Salário base (contrato)', u.brl(h.base)) : '', h.baseInss != null ? linha('Base do INSS', u.brl(h.baseInss)) : '',
           h.baseFgts != null ? linha('Base do FGTS', u.brl(h.baseFgts)) : '', h.fgts != null ? linha('FGTS do mês', u.brl(h.fgts), 'a empresa deposita no seu FGTS; não cai na conta') : '',
           h.baseIrrf != null ? linha('Base do imposto de renda', u.brl(h.baseIrrf)) : '', h.faixaIrrf != null ? linha('Faixa do imposto de renda', h.faixaIrrf ? String(h.faixaIrrf).replace('.', ',') + '%' : 'isento') : ''].join('')}</div>`;
-    } else corpo = `<p class="aviso" style="margin-top:14px">Este mês não tem o holerite guardado item por item. Mande a foto dele para ver tudo detalhado.</p><button type="button" class="btn2" data-a="holeriteFoto" style="width:100%;justify-content:center">${u.svg('camera')}Mandar a foto deste holerite</button>`;
+    } else corpo = `<p class="aviso" style="margin-top:14px">Este mês não tem o holerite guardado item por item. Mande a foto dele para o Claude na conversa, que ele guarda tudo detalhado.</p>`;
     abrir(`<h3 style="margin:0 0 4px">${u.esc(titulo)}</h3><div class="c-muted" style="font-size:.84rem">${u.esc([h && h.empresa, `${p.prev ? 'cai' : 'caiu'} em ${u.dm(p.data)}${banco ? ' no ' + banco : ''}`].filter(Boolean).join(' · '))}</div>
       <div class="bignum num" style="margin:12px 0 2px">${u.brl(p.liq)}</div><div class="c-muted" style="font-size:.84rem">${p.prev ? 'a receber' : 'líquido que caiu na conta'}${dif != null ? ` · <span class="${dif >= 0 ? 'c-in' : 'c-out'}">${dif >= 0 ? '+' : '−'} ${u.brl(Math.abs(dif))} que no mês anterior</span>` : ''}</div>
       ${ant && p.base && ant.base && p.base !== ant.base ? `<p class="okc hok" style="margin-top:10px">${u.svg('trending-up')}Salário base subiu de ${u.brl(ant.base)} para ${u.brl(p.base)} (+${u.pct(p.base / ant.base - 1)}).</p>` : ''}
       <div class="sec-h" style="margin-top:16px"><h2>Como entrou na conta</h2></div><div class="panel hls" id="hPartes">${lancs.map(l => linha(l.desc, u.brl(l.valor), l.status === 'Previsto' ? 'a receber' : '', 'c-in')).join('')}</div>
       ${corpo}`, null, true);
-  }
-
-  /* ---------- holerite pela foto: escolhe a foto → o Claude lê (função do Supabase) → o João confere → lança ---------- */
-  function escolherHolerite() {
-    if (A.nuvem.ehDemo()) { toast('Na demonstração não dá para ler holerite'); return; }
-    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'hFoto'; inp.hidden = true;
-    inp.addEventListener('change', () => { const arq = inp.files && inp.files[0]; inp.remove(); if (arq) lerHoleriteFoto(arq); });
-    document.body.appendChild(inp); inp.click();
-  }
-  async function lerHoleriteFoto(arq) {
-    abrir(`<h3 style="margin:0 0 6px">Lendo o holerite…</h3><div class="spin" style="margin:22px auto" role="status" aria-label="Lendo"></div>
-      <p class="c-muted" style="text-align:center;font-size:.86rem">Leva uns 20 a 40 segundos. A foto vai só para o Claude ler e não fica guardada em lugar nenhum.</p>`);
-    const vez = (lerHoleriteFoto.vez = (lerHoleriteFoto.vez || 0) + 1), aindaAqui = () => vez === lerHoleriteFoto.vez && !$('scrim2').hidden;
-    let foto;
-    try { foto = await reduzirFoto(arq, 2000, 1800000); } catch (e) { if (aindaAqui()) { fechar(); toast('Não consegui abrir essa foto'); } return; }
-    try { const h = await A.nuvem.lerHolerite(foto.split(',')[1], 'image/jpeg'); if (aindaAqui()) formHolerite(h); }
-    catch (e) { if (aindaAqui()) erroHolerite(e); }
-  }
-  function erroHolerite(e) {
-    const outra = `<button type="button" class="save" data-a="holeriteFoto">${u.svg('camera')} Tentar com outra foto</button>`;
-    if (e.status === 404) return abrir(`<h3 style="margin:0 0 10px">Falta 1 passo para ler holerite pela foto</h3>
-      <p>A leitura precisa ser ligada uma vez no Supabase (e uma chave do Claude). O passo a passo está no arquivo <b>financas-app/README.md</b>, em “Ler holerite pela foto”.</p>
-      <ol class="howto"><li><div><b>Criar a chave do Claude</b><span>console.anthropic.com → API Keys → Create Key (precisa de crédito na conta).</span></div></li>
-      <li><div><b>Ligar a função no Supabase</b><span>Edge Functions → Deploy a new function → Via Editor → nome <code>ler-holerite</code> → colar o arquivo <code>financas-app/supabase/functions/ler-holerite/index.ts</code> → Deploy.</span></div></li>
-      <li><div><b>Guardar a chave</b><span>Edge Functions → Secrets → nome <code>ANTHROPIC_API_KEY</code>, valor = a chave → Save.</span></div></li></ol>`);
-    if (e.motivo === 'chave') return abrir(`<h3 style="margin:0 0 10px">A chave do Claude não funcionou</h3><p>${u.esc(e.message)}.</p><p class="c-muted">Confira em Supabase → Edge Functions → Secrets o <code>ANTHROPIC_API_KEY</code>, e se a conta em console.anthropic.com tem crédito.</p>`);
-    abrir(`<h3 style="margin:0 0 10px">Não deu para ler</h3><p>${u.esc(e.semInternet ? 'Sem internet agora. Tente de novo quando tiver conexão.' : e.message)}</p><p class="c-muted" style="font-size:.86rem">Dica: o holerite inteiro na foto, reto, com boa luz e sem sombra.</p>${outra}`);
-  }
-  function formHolerite(h) {
-    const banco0 = c.BANCO_SALARIO, r = c.holeriteLinhas(h, u.hoje(), banco0); /* o salário cai sempre no Inter (conta principal); dá para trocar */
-    const linha = (t, v, cls = '') => `<div class="hl"><span>${u.esc(t)}</span><b class="num ${cls}">${u.brl(v)}</b></div>`;
-    abrir(`<h3 style="margin:0 0 4px">Holerite de ${u.esc(r.comp)}</h3><div class="c-muted" style="font-size:.84rem">${u.esc(h.empresa || '')}</div>
-      <div class="bignum num" style="margin:12px 0 2px">${u.brl(r.liq)}</div><div class="c-muted" style="font-size:.84rem;margin-bottom:12px">líquido que cai na conta</div>
-      ${r.bate ? `<p class="okc hok">${u.svg('circle-check')}Conferi a leitura: os itens somam os totais do holerite.</p>` : `<div class="aviso" id="hProb"><b>Confira com o papel antes de lançar:</b><ul>${r.probs.map(p => `<li>${u.esc(p)}</li>`).join('')}</ul></div>`}
-      <div class="panel hls" id="hLinhas">${r.linhas.map(l => linha(l['DESCRIÇÃO'], l['VALOR'], 'c-in')).join('')}</div>
-      <p class="c-muted" style="font-size:.82rem;margin:8px 2px 14px">Bruto ${u.brl(r.venc)}${r.inss ? ` · INSS ${u.brl(r.inss)}` : ''}${r.irrf ? ` · imposto de renda ${u.brl(r.irrf)}` : ''}${h.fgts_mes ? ` · FGTS ${u.brl(h.fgts_mes)} (guardado pela empresa)` : ''}${h.salario_base ? ` · salário base ${u.brl(h.salario_base)}` : ''}</p>
-      <div class="grid2">${campo('Dia que caiu (ou vai cair)', `<input class="txt" id="hDt" type="date" value="${u.hoje()}">`)}${campo('Banco', `<select class="txt" id="hB">${opts(c.BANCOS.filter(b => b !== 'Não informado'), banco0)}</select>`)}</div>
-      ${r.jaTem.length ? `<p class="aviso">Já tem salário lançado em ${u.esc(u.nomeMes(u.mes(u.hoje())).toLowerCase())}: ele vai ser trocado por este.</p>` : ''}
-      <p class="c-muted" style="font-size:.82rem">Se ainda não caiu, fica como previsto; quando o banco mostrar o depósito, o robô marca como recebido sozinho.</p>
-      <div class="acoes"><button type="button" class="btn2" data-a="holeriteFoto">${u.svg('camera')}Outra foto</button><button class="save" type="submit">Lançar salário</button></div>`,
-      () => {
-        const data = val('hDt') || u.hoje(), banco = val('hB'), x = c.holeriteLinhas(h, data, banco), novos = new Set(x.linhas.map(l => l.ID));
-        /* se o robô já tinha conferido a linha com o banco, a marca dele fica (senão ele traria o depósito de novo) */
-        x.linhas.forEach(reg => { const old = db.achar('EXTRATO', reg.ID), of = old && (String(old['OBS'] || '').match(/OF [0-9a-f-]{20,}/i) || [])[0];
-          if (of) Object.assign(reg, { 'OBS': reg['OBS'] + ' · ' + of, 'STATUS': old['STATUS'], 'DATA': old['DATA'] }); });
-        const ops = x.jaTem.filter(l => !novos.has(l.id)).map(l => ({ op: 'apagar', aba: 'EXTRATO', id: l.id })).concat(x.linhas.map(reg => ({ op: 'salvar', aba: 'EXTRATO', registro: reg })));
-        if (!semHolerites()) ops.push({ op: 'salvar', aba: 'HOLERITES', registro: c.registroHolerite(h, data, banco) }); /* o holerite inteiro, para abrir detalhado */
-        db.lote(ops); fechar(); Object.assign(ui, { view: 'fin', fseg: 'relatorios', rseg: 'clt' }); render(false);
-        toast(`Salário de ${x.comp} lançado: ${u.brl(x.liq)}`);
-      }, true);
   }
 
   function salvarEquip(e) {
@@ -1498,7 +1447,6 @@
     irCartoes: b => { ui.fseg = 'cartoes'; if (b.dataset.v) ui.cartao = b.dataset.v; go('fin'); },
     irExtrato: () => { ui.fseg = 'extrato'; ui.filtro = 'tudo'; go('fin'); },
     irRel: b => { ui.fseg = 'relatorios'; ui.rseg = b.dataset.v || 'mes'; go('fin'); },
-    holeriteFoto: () => escolherHolerite(),
     verHolerite: b => fichaHolerite(b.dataset.v),
     abreCat: b => { ui.cexp = ui.cexp === b.dataset.v ? null : b.dataset.v; render(false); },
     filtroCat: b => { ui.fseg = 'extrato'; ui.filtro = 'cat:' + b.dataset.v; go('fin'); },

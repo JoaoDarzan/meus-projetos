@@ -24,23 +24,13 @@ equipamentos, tarefas e metas. Funciona no celular (iPhone, salvo na tela de in�
   (etapa "Recorrente", ex.: social media) sai do quadro e ganha a aba Recorrentes, com quanto rendeu em cada mês; a aba
   Balanço mostra os trabalhos e o faturamento da Darzan por mês e no ano. Anexo aceita qualquer arquivo (foto vira JPEG
   leve; PDF e outros vão como estão, até 8 MB); abre em tela cheia com zoom e dá para compartilhar ou salvar.
-- **Salário pela foto do holerite** (Finanças › Relatórios › Meu trabalho › "Lançar o salário pela foto do holerite"):
-  a foto vai para a função `ler-holerite` do Supabase (`supabase/functions/ler-holerite/index.ts`), que pede ao Claude
-  para ler os itens (formato fixo, sem nome nem CPF) e devolve os números; a foto não fica guardada. O app separa igual
-  aos meses lançados à mão (salário, vale-refeição, vale-transporte, bonificação, horas extras com o DSR delas; o resto
-  menos INSS, IR e outros descontos fica em "Salário"), confere se os itens somam os totais e o líquido, e o João
-  confere, escolhe o dia e o banco e lança (`LCLT-AAAA-MM-…`; previsto até o depósito cair, o robô dos bancos confere
-  pela soma). Lançar de novo no mesmo mês troca o anterior. **Para ligar (uma vez):**
-  1. console.anthropic.com → entrar → Billing: pôr crédito (US$ 5 dá para muitos anos; cada holerite custa uns centavos)
-     → API Keys → Create Key → copiar a chave (começa com `sk-ant-`). Não mande a chave para ninguém, nem para o Claude.
-  2. Supabase → Edge Functions → Deploy a new function → Via Editor → nome `ler-holerite` → apagar o exemplo, colar o
-     arquivo `supabase/functions/ler-holerite/index.ts` inteiro → Deploy (deixe ligada a opção de exigir login/JWT).
-  3. Supabase → Edge Functions → Secrets → Add new secret: nome `ANTHROPIC_API_KEY`, valor = a chave → Save.
-  Antes disso, o botão explica esses passos. Quando o arquivo da função mudar no GitHub, é preciso colar de novo.
+- **Holerites** (Finanças › Relatórios › Meu trabalho): o João manda a foto do holerite para o Claude na conversa; o
+  Claude lança o salário dividido (salário, vale-refeição, vale-transporte, bonificação, horas extras; `LCLT-AAAA-MM-…`)
+  e guarda o holerite inteiro.
   Cada holerite fica guardado inteiro na tabela `holerites` (todos os itens, totais, bases, FGTS e faixa do IR): no Meu
   trabalho, tocar num holerite abre tudo detalhado (como entrou na conta, cada vencimento e desconto com a referência e o que
   significa, horas, bases e FGTS, e a comparação com o mês anterior). Precisa rodar uma vez `supabase/atualizacao-holerites.sql`.
-  O salário cai no **Inter** (o banco já vem escolhido); o que o João manda depois para outras contas e cofrinhos é
+  O salário cai no **Inter**; o que o João manda depois para outras contas e cofrinhos é
   transferência ou guardado (o robô dos bancos reconhece), não renda nova.
 - **Lembrete** para o Supabase grátis não "dormir": GitHub (`.github/workflows/manter-supabase-acordado.yml`,
   a cada 3 dias).

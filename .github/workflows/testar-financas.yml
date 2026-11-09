@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 } # 22: lê o arquivo .ts da função ler-holerite nos testes
+        with: { node-version: 22 }
       - name: Navegador de teste
         run: npm install --no-save --no-package-lock playwright@1.63.0 && npx playwright install --with-deps chromium
       - name: Testes do app (dados de exemplo)
