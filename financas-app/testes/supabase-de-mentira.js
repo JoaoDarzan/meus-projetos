@@ -87,7 +87,7 @@ function criar(op = {}) {
         const ac = tabelas.acesso_claude.find(x => x.hash === h);
         if (!ac) return json(res, 400, { message: 'chave do Claude errada ou desligada' });
         ac.ultimo_uso = new Date().toISOString();
-        const ok = t => Object.values(T).some(x => x.tabela === t) && t !== 'aparelhos';
+        const ok = t => Object.values(T).some(x => x.tabela === t) && t !== 'aparelhos' && !!tabelas[t]; /* tabela que ainda não existe no Supabase: recusa, igual ao de verdade */
         if (p.endsWith('claude_ler')) { if (!ok(dados.p_tabela)) return json(res, 400, { message: 'tabela não permitida' }); return json(res, 200, tabelas[dados.p_tabela].filter(l => l.user_id === ac.user_id).map(l => { const o = Object.assign({}, l); delete o.conteudo; return o; })); }
         let n = 0;
         if (!Array.isArray(dados.p_ops) || dados.p_ops.length > 1000) return json(res, 400, { message: 'mande no máximo 1000 mudanças por vez' });

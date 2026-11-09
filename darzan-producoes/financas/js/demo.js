@@ -21,7 +21,7 @@ window.A = window.A || {};
 
   A.demo.dados = hoje => {
     const u = A.u, m0 = u.mes(hoje), dHoje = +hoje.slice(8, 10);
-    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], ANEXOS: [], DIAS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
+    const abas = { EXTRATO: [], CONTAS: [], CARTOES: [], PARCELADOS: [], FIXAS: [], EQUIPAMENTOS: [], TRABALHOS: [], ANEXOS: [], DIAS: [], SALDOS: [], TAREFAS: [], METAS: [], CATEGORIAS: [] };
     let n = 0;
     const id = p => p + 'D' + String(++n).padStart(4, '0');
     const dia = (k, d) => u.dataNoMes(u.addMes(m0, k), d);
@@ -64,7 +64,7 @@ window.A = window.A || {};
       transf(D(6), 'Inter', 'PicPay', 2600);
       transf(D(6), 'Inter', 'Nubank', 700);
       L(D(6), 'Nubank', 'Guardado', 'Guardado', -500, 'Guardado', 'Caixinha', { 'OBS': 'Para Caixinha Reserva' });
-      L(D(8), 'PicPay', 'Guardado', 'Guardado', -800, 'Guardado', 'Caixinha', { 'OBS': 'Para Cofrinho Viagem' });
+      L(D(8), 'PicPay', 'Guardado', 'Guardado', -800, 'Guardado', 'Caixinha', { 'OBS': 'Para Cofrinho Viagem' + (k === 0 ? ' · Pote MD1' : '') });
       renda(D(9), 'PicPay', ['Mercado Sol - storymaker', 'Clínica Sorriso - 3 vídeos', 'Pizzaria Forno - storymaker'][(k + 6) % 3], 450 + ((k + 6) % 3) * 120, 'Darzan Produções', 'Storymaker');
       renda(D(18), 'PicPay', 'JPL SOM evento', 400, 'JPL SOM', 'Diária de som');
       renda(D(21), 'PicPay', ['Academia Fit - storymaker', 'Café Central - vídeos', 'Barbearia Navalha - storymaker'][(k + 6) % 3], 380 + ((k + 6) % 2) * 150, 'Darzan Produções', 'Storymaker');
@@ -140,7 +140,7 @@ window.A = window.A || {};
       .forEach(([desc, valor, d, banco, tipo, grupo, cat, sub], i) => abas.FIXAS.push({ ID: 'FD' + (i + 1), 'DESCRIÇÃO': desc, 'VALOR': valor, 'DIA': d, 'BANCO': banco, 'TIPO': tipo, 'GRUPO': grupo, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'ATIVA': 'Sim', 'OBS': '' }));
     [['Backup dos cartões de memória', mais(1), '', 'Darzan'], ['Mandar orçamento para a Empresa Alfa', hoje, '', 'Darzan'], ['Renovar a CNH', mais(12), '', 'Pessoal'], ['Pagar IPVA', mais(70), 1200, 'Conta']]
       .forEach(([tarefa, data, valor, tipo], i) => abas.TAREFAS.push({ ID: 'TD' + (i + 1), 'TAREFA': tarefa, 'DATA': data, 'VALOR': valor, 'TIPO': tipo, 'FEITA': false, 'OBS': '' }));
-    [['Viagem para o Chile', 8000, 3200, 'PicPay · Cofrinho Viagem', mais(240)], ['Reserva de emergência', 15000, 9500, 'Nubank · Caixinha Reserva', ''], ['Lente 24-70mm', 6000, 1200, '', mais(180)]]
+    [['Viagem para o Chile', 8000, 3200, 'Cofrinho Viagem', mais(240)], ['Reserva de emergência', 15000, 7000, 'Caixinha Reserva', ''], ['Lente 24-70mm', 6000, 1200, 'Caixinha Reserva', mais(180)]]
       .forEach(([meta, alvo, ja, onde, prazo], i) => abas.METAS.push({ ID: 'MD' + (i + 1), 'META': meta, 'VALOR ALVO': alvo, 'JÁ GUARDADO': ja, 'ONDE ESTÁ': onde, 'PRAZO': prazo, 'OBS': '' }));
     [['Salário CLT', ['Salário', 'Vale-refeição', 'Vale-transporte', 'Bonificação', 'Horas extras', 'Comissão', '13º e férias'], 'Renda'],
       ['Darzan Produções', ['Storymaker', 'Social media', 'Casamento', 'Evento', 'Palestra', 'HUB Darzan', 'Vídeo avulso'], 'Renda'], ['JPL SOM', ['Diária de som'], 'Renda'],
@@ -158,6 +158,13 @@ window.A = window.A || {};
       ['Reembolso', ['Compra devolvida', 'Família', 'JPL SOM', 'Amigos'], 'Reembolso'],
       ['Guardado', ['Reserva', 'Caixinha', 'Investimento'], 'Guardado'], ['Transferência', ['Entre minhas contas', 'Pagamento de fatura'], 'Transferência']]
       .forEach(([cat, subs, grupo]) => subs.forEach(sub => abas.CATEGORIAS.push({ ID: id('G'), 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'GRUPO': grupo })));
+    /* foto diária das caixinhas nos últimos 45 dias (rendendo uns 0,035% ao dia), batendo com o saldo de hoje */
+    abas.CONTAS.filter(x => x['CONTA'] !== 'Conta').forEach(cx => {
+      const deps = abas.EXTRATO.filter(l => l['GRUPO'] === 'Guardado' && l['STATUS'] === 'Pago' && String(l['OBS']).split(' · ').includes('Para ' + cx['CONTA'])).map(l => ({ d: l['DATA'], v: -l['VALOR'] }));
+      const agora = cx['SALDO CONFERIDO'] + deps.filter(x => x.d > cx['DATA DA CONFERÊNCIA']).reduce((t, x) => t + x.v, 0);
+      for (let n = 45; n >= 0; n--) { const d = mais(-n), v = (agora - deps.filter(x => x.d > d && x.d <= hoje).reduce((t, x) => t + x.v, 0)) / Math.pow(1.00035, n);
+        abas.SALDOS.push({ ID: `ZD${d}-${cx.ID}`, 'DATA': d, 'BANCO': cx['BANCO'], 'CONTA': cx['CONTA'], 'SALDO': Math.round(v * 100) / 100, 'OBS': '' }); }
+    });
     return { app: 'Darzan Finanças', demo: true, abas };
   };
 })(window.A);

@@ -436,6 +436,27 @@ window.A = window.A || {};
   c.semSaldo = () => c.contas().filter(x => c.saldo(x) == null).length;
   c.caixinhas = () => c.contas().filter(x => String(x['CONTA']).toLowerCase() !== 'conta');
 
+  /* ---------- foto diária dos saldos (tabela SALDOS, gravada pelo robô do Open Finance) e quanto rendeu ---------- */
+  c.semSaldos = () => !!(db.faltando && db.faltando.has('SALDOS'));
+  c.fotos = cx => db.linhas('SALDOS').filter(z => z['BANCO'] === cx['BANCO'] && u.sem(z['CONTA']).trim() === u.sem(cx['CONTA']).trim() && /^\d{4}-\d{2}-\d{2}/.test(String(z['DATA'])))
+    .map(z => ({ data: String(z['DATA']).slice(0, 10), saldo: c.num(z['SALDO']) })).sort((a, b) => a.data < b.data ? -1 : 1);
+  /* saldo da caixinha num dia: a última foto até aquele dia (null se ainda não tinha foto) */
+  c.saldoEm = (cx, d) => { const f = c.fotos(cx).filter(z => z.data <= d); return f.length ? f[f.length - 1].saldo : null; };
+  /* o que você guardou (+) ou tirou (−) da caixinha entre dois dias (depois de "de", até "ate") */
+  c.aportes = (cx, de, ate) => { const nome = 'para ' + u.sem(cx['CONTA']).trim();
+    return u.r2(-u.sum(c.lancs().filter(l => l.grupo === 'Guardado' && c.paga(l) && l.data > de && l.data <= ate && u.sem(l.obs).split(' · ').some(p => p.trim() === nome)), l => l.valor)); };
+  /* quanto rendeu desde um dia: o que cresceu menos o que você mesmo colocou (null sem foto daquele dia) */
+  c.rendeu = (cx, de) => { const a = c.saldoEm(cx, de), h = c.saldo(cx); return a == null || h == null ? null : u.r2(h - a - c.aportes(cx, de, u.hoje())); };
+  /* a soma de todas as caixinhas por dia (para o gráfico e para o fim do mês passado) */
+  c.fotosTotal = () => { const ds = [...new Set(c.caixinhas().flatMap(cx => c.fotos(cx).map(z => z.data)))].sort();
+    return ds.map(d => ({ data: d, saldo: u.r2(u.sum(c.caixinhas(), cx => c.saldoEm(cx, d) || 0)) })); };
+  c.conferidoPeloBanco = b => db.linhas('EXTRATO').some(l => /^LOF[SI]-/.test(l.ID) && l['BANCO'] === b);
+
+  /* ---------- metas como potes: o dinheiro fica numa caixinha de verdade e o app separa quanto é de cada meta ---------- */
+  c.metas = () => db.linhas('METAS').filter(g => g['META']);
+  c.noPote = g => u.r2(c.num(g['JÁ GUARDADO']) - u.sum(c.lancs().filter(l => l.grupo === 'Guardado' && c.paga(l) && new RegExp('(^|· )Pote ' + g.ID + '( ·|$)').test(l.obs)), l => l.valor));
+  c.potesDa = cx => c.metas().filter(g => g['ONDE ESTÁ'] && u.sem(g['ONDE ESTÁ']).trim() === u.sem(cx['CONTA']).trim());
+
   /* ---------- tarefas: contas previstas + faturas + aba TAREFAS ---------- */
   c.XP = { conta: 40, fatura: 60, darzan: 30, pessoal: 20, receber: 30 };
   c.tarefas = () => {

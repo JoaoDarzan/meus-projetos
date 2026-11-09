@@ -16,7 +16,8 @@ confere(cfg.disable_signup === true, 'cadastro de contas novas desligado');
 /* 2. sem login, nenhuma tabela abre */
 for (const t of TABELAS) {
   const r = await api(`/rest/v1/${t}?select=*&limit=1`), corpo = await r.text();
-  confere(r.status === 401 || r.status === 403 || corpo.trim() === '[]', `tabela ${t} fechada sem login (${r.status})`);
+  /* 404: a tabela ainda não foi criada no Supabase (falta rodar uma atualização): não tem o que vazar */
+  confere(r.status === 401 || r.status === 403 || r.status === 404 || corpo.trim() === '[]', `tabela ${t} fechada sem login (${r.status}${r.status === 404 ? ', ainda não criada' : ''})`);
 }
 /* 3. sem login, não grava */
 const g = await api('/rest/v1/extrato', { method: 'POST', body: JSON.stringify({ id: 'VIGIA-TESTE', descricao: 'vigia', valor: 0 }) });

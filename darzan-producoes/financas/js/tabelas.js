@@ -44,6 +44,10 @@
     HOLERITES: { tabela: 'holerites', prefixo: 'H', opcional: true, colunas: [
       ['COMPETÊNCIA', 'competencia', 'text'], ['EMPRESA', 'empresa', 'text'], ['PAGAMENTO', 'pagamento', 'date'], ['BANCO', 'banco', 'text'],
       ['LÍQUIDO', 'liquido', 'numeric'], ['DADOS', 'dados', 'text']] },
+    /* foto de todo dia do saldo de cada conta e caixinha (o robô do Open Finance grava uma por conta por dia):
+       daqui sai quanto rendeu ontem, no mês e a comparação com o mês passado */
+    SALDOS: { tabela: 'saldos', prefixo: 'Z', opcional: true, colunas: [
+      ['DATA', 'data', 'date'], ['BANCO', 'banco', 'text'], ['CONTA', 'conta', 'text'], ['SALDO', 'saldo', 'numeric'], ['OBS', 'obs', 'text']] },
     TAREFAS: { tabela: 'tarefas', prefixo: 'T', colunas: [
       ['TAREFA', 'tarefa', 'text'], ['DATA', 'data', 'date'], ['VALOR', 'valor', 'numeric'], ['TIPO', 'tipo', 'text'], ['FEITA', 'feita', 'boolean'], ['OBS', 'obs', 'text']] },
     METAS: { tabela: 'metas', prefixo: 'M', colunas: [

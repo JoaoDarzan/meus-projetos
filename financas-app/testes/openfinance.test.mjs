@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -14,13 +14,14 @@ const CHAVE = 'dfc_chave-de-teste-open-finance';
 
 /* Pluggy de mentira: 1 banco com conta e cartão */
 const ITEM = '11111111-2222-3333-4444-555555555555';
-function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined } = {}) {
+function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined, investimentos = [] } = {}) {
   const s = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), json = (c, b) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(b)); };
     if (u.pathname === '/auth') { let b = ''; req.on('data', d => b += d); return req.on('end', () => JSON.parse(b).clientSecret === 'segredo-certo' ? json(200, { apiKey: 'k1' }) : json(401, { message: 'no' })); }
     if (req.headers['x-api-key'] !== 'k1') return json(403, {});
     if (u.pathname === `/items/${ITEM}`) return json(200, { id: ITEM, status: 'UPDATED', lastUpdatedAt: '2026-10-27T09:00:00Z', connector: { name: conector } });
     if (u.pathname === '/accounts') return json(200, { results: [{ id: 'conta1', type: 'BANK', subtype: 'CHECKING_ACCOUNT', balance: 500, name: nomeConta }, { id: 'cartao1', type: 'CREDIT', subtype: 'CREDIT_CARD', balance: 300 }] });
+    if (u.pathname === '/investments') return json(200, { results: investimentos });
     if (u.pathname === '/bills') return json(200, { results: [{ id: 'fat-nov', dueDate: '2026-11-07T00:00:00Z' }] });
     if (u.pathname === '/v2/transactions') {
       const conta = u.searchParams.get('accountId'), todos = lancs.filter(t => t.accountId === conta), depois = u.searchParams.get('after');
@@ -247,5 +248,54 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   assert.match((await rodar(Object.assign({}, env, { MODO: 'importar' }))).saida, /BancoTeste: ✗ diferente do banco/);
   assert.match(de2.saida, /Importado: 0 novos/);
   assert.equal(st.linhas('extrato').filter(l => !/^LOFS-/.test(l.id)).length, 5, 'rodar de novo não duplicou');
+  } finally { await fim(); }
+});
+
+test('caixinhas: saldo do jeito do app, só as que rendem no banco, e a diferença para o total do banco dividida na proporção', () => {
+  /* valores inventados */
+  const cx = (id, conta, saldo, obs = 'Rende 100% do CDI', data = '2026-10-01') => ({ id, banco: 'BancoTeste', conta, saldo_conferido: saldo, data_da_conferencia: data, obs });
+  const ex = [{ id: 'G1', grupo: 'Guardado', status: 'Pago', data: '2026-10-10', valor: -100, obs: 'Para Caixinha A' }, { id: 'G2', grupo: 'Guardado', status: 'Pago', data: '2026-09-10', valor: -999, obs: 'Para Caixinha A' },
+    { id: 'G3', grupo: 'Guardado', status: 'Previsto', data: '2026-10-11', valor: -50, obs: 'Para Caixinha A' }, { id: 'G4', grupo: 'Guardado', status: 'Pago', data: '2026-10-12', valor: -70, obs: 'Para Caixinha Aa' }];
+  assert.equal(saldoCaixinha(cx('A', 'Caixinha A', 1000), ex, '2026-10-30'), 1100, 'soma só o guardado nela, pago e depois da conferência');
+  assert.equal(saldoCaixinha(cx('A', 'Caixinha A', ''), ex, '2026-10-30'), null, 'sem saldo conferido: não inventa');
+  assert.deepEqual([cx('A', 'Caixinha A', 1), cx('E', 'Caixinha Empréstimo', 1, 'Rende os juros combinados (dinheiro emprestado)'), cx('C', 'Conta', 1), cx('X', 'Caixinha Sem Nada', 1, '')].map(caixinhaDoBanco), [true, false, false, false]);
+  const r = ajustarCaixinhas(1712.34, [cx('A', 'Caixinha A', 1000), cx('B', 'Caixinha B', 600)], ex, '2026-10-27', '2026-10-30');
+  assert.equal(r.diferenca, 12.34, 'banco 1712,34 − app (1100 + 600)');
+  assert.equal(Math.round(r.mudancas.reduce((t, n) => t + n.saldo_conferido, 0) * 100) / 100, 1712.34, 'a soma fica igual à do banco');
+  assert.deepEqual(r.mudancas.map(n => [n.id, n.saldo_conferido, n.data_da_conferencia]), [['A', 1107.98, '2026-10-27'], ['B', 604.36, '2026-10-27']], 'cada uma na proporção do saldo');
+  assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-11-05')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência mais nova que a do banco: não volta no tempo');
+});
+
+test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam iguais ao total do banco, e a foto do dia vai para a tabela saldos', async () => {
+  const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
+    { id: 'i3', type: 'FIXED_INCOME', status: 'TOTAL_WITHDRAWAL', balance: 0, name: 'CDB - BANCOTESTE' }];
+  const { st, env, fim } = await preparar({ investimentos: inv });
+  try {
+    st.tabelas.contas.push({ id: 'CB', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Conta', saldo_conferido: 262.4, data_da_conferencia: '2026-10-01' },
+      { id: 'CA', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Caixinha A', saldo_conferido: 1000, data_da_conferencia: '2026-10-01', obs: 'Rende 100% do CDI' },
+      { id: 'CC', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Caixinha B', saldo_conferido: 600, data_da_conferencia: '2026-10-01', obs: 'Rende 100% do CDI' },
+      { id: 'CE', user_id: 'u-joao', banco: 'BancoTeste', conta: 'Caixinha Empréstimo', saldo_conferido: 300, data_da_conferencia: '2026-10-01', obs: 'Dinheiro que emprestei' });
+    const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(i.codigo, 0, i.saida);
+    const c = id => st.linhas('contas').find(x => x.id === id);
+    assert.deepEqual([c('CB').saldo_conferido, c('CB').data_da_conferencia], [500, '2026-10-27'], 'a conta bateu com o banco: conferida no dia do banco');
+    assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1610.5, 'caixinhas = total do banco (a retirada total não conta)');
+    assert.ok(c('CA').data_da_conferencia === '2026-10-27' && c('CC').data_da_conferencia === '2026-10-27', 'caixinhas conferidas no dia do banco');
+    assert.deepEqual([c('CE').saldo_conferido, c('CE').data_da_conferencia], [300, '2026-10-01'], 'dinheiro emprestado não é do banco: fica como está');
+    const foto = st.linhas('saldos');
+    assert.equal(foto.length, 4, 'uma foto por conta: ' + JSON.stringify(foto));
+    assert.ok(foto.every(f => /^Z\d{4}-\d{2}-\d{2}-C[A-Z]$/.test(f.id)), 'id com o dia e a conta');
+    assert.equal(foto.find(f => f.conta === 'Caixinha A').saldo, c('CA').saldo_conferido);
+    assert.match(i.saida, /contas que bateram com o banco: 1/);
+    assert.match(i.saida, /BancoTeste: 2 caixinha\(s\) iguais ao total do banco \(diferença pequena: rendimento\)/);
+    assert.ok(!/1610|1000,5|610/.test(i.saida), 'o registro público não mostra valores');
+    /* rodar de novo no mesmo dia: troca a foto, não duplica */
+    await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(st.linhas('saldos').length, 4, 'não duplicou');
+    /* sem a tabela de saldos (falta rodar o SQL): o resto funciona e o registro avisa */
+    st.semTabela('saldos');
+    const s2 = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(s2.codigo, 0, s2.saida);
+    assert.match(s2.saida, /foto do dia: não guardada \(falta rodar financas-app\/supabase\/atualizacao-saldos\.sql/);
   } finally { await fim(); }
 });

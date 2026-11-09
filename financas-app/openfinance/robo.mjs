@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate } from './regras.mjs';
+import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -124,6 +124,38 @@ async function principal() {
     });
     await gravar(ops);
     console.log(`\nImportado: ${resumo.novo || 0} novos e ${resumo.conferir || 0} conferidos pelo banco.`);
+    await conferenciaDiaria(saldos, caixas, contasApp, depois);
   }
 }
+/* conferência de todo dia: a conta que bateu com o banco fica "conferida hoje"; as caixinhas que rendem ficam iguais ao total
+   que o banco informou; e o saldo de cada conta e caixinha vai para a foto diária (tabela saldos), que mostra quanto rendeu */
+async function conferenciaDiaria(saldos, caixas, contasApp, extrato) {
+  const ops = [], dataDe = em => String(em || '').slice(0, 10) || hoje, ajustado = new Map();
+  console.log('\nConferência do dia:');
+  saldos.forEach(({ banco, saldo, em }) => {
+    const cx = contasApp.find(c => c.banco === banco && String(c.conta).toLowerCase() === 'conta'), d = dataDe(em);
+    if (!cx || saldo == null || !saldoBate(saldo, cx, extrato) || d < String(cx.data_da_conferencia || '').slice(0, 10)) return;
+    const n = { id: cx.id, saldo_conferido: Math.round(+saldo * 100) / 100, data_da_conferencia: d }; ops.push(n); ajustado.set(cx.id, n);
+  });
+  console.log(`  · contas que bateram com o banco: ${ops.length} conferida(s) hoje`);
+  caixas.forEach(({ banco, saldo, em }) => {
+    const deste = contasApp.filter(c => c.banco === banco && caixinhaDoBanco(c));
+    if (!deste.length) return;
+    const r = ajustarCaixinhas(saldo, deste, extrato, dataDe(em), hoje);
+    r.mudancas.forEach(n => { ops.push(n); ajustado.set(n.id, n); });
+    if (r.mudancas.length) console.log(`  · ${banco}: ${r.mudancas.length} caixinha(s) iguais ao total do banco (diferença ${Math.abs(r.diferenca) <= Math.max(5, r.soma * 0.01) ? 'pequena: rendimento' : 'grande: dinheiro que entrou ou saiu das caixinhas'})`);
+  });
+  if (ops.length) await gravar(ops.map(linha => ({ tabela: 'contas', op: 'salvar', linha })));
+  /* foto do dia: o saldo de cada conta e caixinha do app depois da conferência */
+  const foto = contasApp.map(c => {
+    const a = ajustado.get(c.id), cc = a ? Object.assign({}, c, a) : c, ehConta = String(c.conta).toLowerCase() === 'conta';
+    let v = null;
+    if (ehConta) { if (cc.saldo_conferido != null && cc.saldo_conferido !== '' && cc.data_da_conferencia) { const base = String(cc.data_da_conferencia).slice(0, 10); v = Math.round((+cc.saldo_conferido + extrato.filter(l => !/^LOFP-/.test(l.id) && sem(l.banco) === sem(c.banco) && !/cart/i.test(l.tipo) && l.status !== 'Cancelado' && l.status !== 'Previsto' && String(l.data).slice(0, 10) > base).reduce((t, l) => t + (+l.valor || 0), 0)) * 100) / 100; } }
+    else v = saldoCaixinha(cc, extrato, hoje);
+    return v == null ? null : { id: `Z${hoje}-${c.id}`, data: hoje, banco: c.banco, conta: c.conta, saldo: v, obs: a ? 'conferido pelo banco (Open Finance)' : 'calculado pelo app' };
+  }).filter(Boolean);
+  try { if (foto.length) await gravar(foto.map(linha => ({ tabela: 'saldos', op: 'salvar', linha }))); console.log(`  · foto do dia: ${foto.length} saldos guardados`); }
+  catch (e) { console.log('  · foto do dia: não guardada (falta rodar financas-app/supabase/atualizacao-saldos.sql no Supabase)'); }
+}
+
 principal().catch(e => { console.error('\n✗ ' + e.message); process.exit(1); });

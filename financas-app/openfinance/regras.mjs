@@ -234,3 +234,28 @@ export function saldoBate(saldoBanco, contaApp, extrato, novas = []) {
     && l.status !== 'Cancelado' && l.status !== 'Previsto' && String(l.data).slice(0, 10) > base);
   return Math.abs(r2(+contaApp.saldo_conferido + mov.reduce((t, l) => t + (+l.valor || 0), 0)) - r2(+saldoBanco)) < 0.011;
 }
+
+/* ---------- caixinhas ---------- */
+/* saldo de uma caixinha do jeito que o app calcula: o último saldo conferido + o que foi guardado nela ("Para <caixinha>") depois */
+export function saldoCaixinha(cx, extrato, hoje) {
+  if (!cx || cx.saldo_conferido == null || cx.saldo_conferido === '' || !cx.data_da_conferencia) return null;
+  const base = String(cx.data_da_conferencia).slice(0, 10), nome = 'para ' + sem(cx.conta).trim();
+  const paga = l => l.status === 'Pago' || (/d[eé]bito autom/i.test(l.obs || '') && String(l.data).slice(0, 10) <= hoje);
+  const mov = extrato.filter(l => l.grupo === 'Guardado' && l.status !== 'Cancelado' && paga(l) && String(l.data).slice(0, 10) > base
+    && sem(l.obs).split(' · ').some(p => p.trim() === nome));
+  return r2(+cx.saldo_conferido - mov.reduce((t, l) => t + (+l.valor || 0), 0));
+}
+/* caixinha que rende no banco (as de "dinheiro emprestado" e afins são do João, não do banco: ficam de fora) */
+export const caixinhaDoBanco = cx => String(cx.conta || '').toLowerCase() !== 'conta' && /rende/i.test(cx.obs || '') && !/emprest/i.test((cx.obs || '') + ' ' + (cx.conta || ''));
+/* o Open Finance só diz o total guardado no banco (não o nome de cada caixinha): a diferença entre o total do banco e a soma
+   das caixinhas no app (o rendimento, quase sempre) é dividida entre elas na proporção do saldo de cada uma; a soma fica igual à do banco */
+export function ajustarCaixinhas(totalBanco, caixinhas, extrato, data, hoje) {
+  const cs = caixinhas.map(cx => ({ cx, s: saldoCaixinha(cx, extrato, hoje) })).filter(x => x.s != null && x.s > 0 && String(x.cx.data_da_conferencia).slice(0, 10) <= data);
+  const soma = r2(cs.reduce((t, x) => t + x.s, 0));
+  if (!cs.length || soma <= 0 || totalBanco == null) return { mudancas: [], diferenca: null };
+  const dif = r2(+totalBanco - soma);
+  const novos = cs.map(x => ({ id: x.cx.id, saldo_conferido: r2(x.s + dif * x.s / soma), data_da_conferencia: data }));
+  const resto = r2(+totalBanco - novos.reduce((t, n) => t + n.saldo_conferido, 0));
+  if (resto) { const maior = novos.reduce((a, b) => (b.saldo_conferido > a.saldo_conferido ? b : a)); maior.saldo_conferido = r2(maior.saldo_conferido + resto); }
+  return { mudancas: novos, diferenca: dif, soma };
+}

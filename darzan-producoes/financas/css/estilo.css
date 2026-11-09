@@ -853,3 +853,18 @@ details.perd summary svg{width:16px;height:16px}
 .hl>span{min-width:0}.hl small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}.hl b{white-space:nowrap;text-align:right}
 .hl:first-child{border-top:0}
 .hok{display:flex;gap:8px;align-items:center;font-size:.88rem;margin:0 0 12px}.hok svg{width:18px;height:18px;flex:none}
+/* caixinhas: quanto rendeu (gráfico do total dia a dia) e os potes (metas) dentro de cada caixinha */
+#cxRende .kpis{grid-template-columns:1fr;gap:0;margin-top:6px}
+#cxRende .kpi{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:0 12px;background:none;border:0;border-bottom:1px solid var(--stroke);border-radius:0;padding:10px 0}
+#cxRende .kpi span{font-size:.86rem}
+#cxRende .kpi b{font-size:1rem;margin:0;text-align:right}
+#cxRende .kpi small{grid-column:1/-1}
+@media (min-width:760px){#cxRende .kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#cxRende .kpi{display:block;background:var(--glass);border:1px solid var(--stroke);border-radius:18px;padding:14px}#cxRende .kpi b{text-align:left;margin-top:2px}}
+.cxg{display:block;width:100%;height:96px;margin-top:12px}
+.cxg circle{cursor:pointer}
+.cxg-l{display:flex;justify-content:space-between;font-size:.72rem;margin-top:2px}
+.potes{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pote{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--stroke);background:var(--glass);color:var(--fg);border-radius:999px;padding:4px 10px;font-size:.76rem;font-family:inherit}
+.pote svg{width:14px;height:14px;color:var(--muted)}
+.pote.livre{color:var(--muted)}
+.pote b{font-weight:600}
