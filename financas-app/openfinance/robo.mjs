@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from './regras.mjs';
+import { avisosDoBanco, sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -133,6 +133,8 @@ async function principal() {
       });
     });
     await gravar(ops);
+    /* aviso no iPhone do que entrou e saiu (se a tabela de avisos falhar, a importação já está salva) */
+    try { const av = avisosDoBanco(casados, hoje); if (av.length) await gravar(av.map(linha => ({ tabela: 'avisos', op: 'salvar', linha }))); console.log(`  · ${av.length} aviso(s) para o celular`); } catch (e) { console.log('  · avisos não gravados: ' + e.message); }
     console.log(`\nImportado: ${resumo.novo || 0} novos e ${resumo.conferir || 0} conferidos pelo banco.`);
     await conferenciaDiaria(saldos, caixas, contasApp, depois);
   }

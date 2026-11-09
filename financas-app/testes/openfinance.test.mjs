@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from '../openfinance/regras.mjs';
+import { avisosDoBanco, lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido, diaNoBrasil } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -320,4 +320,16 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.equal(s2.codigo, 0, s2.saida);
     assert.match(s2.saida, /foto do dia: não guardada \(falta rodar financas-app\/supabase\/atualizacao-saldos\.sql/);
   } finally { await fim(); }
+});
+
+test('avisos do banco: até 4 movimentos um aviso para cada (entrou/saiu, banco, descrição); mais que isso um resumo; velho e já importado não avisam', () => {
+  const H = '2026-11-09', P = (n, valor, extra) => Object.assign({ pid: `a1b2c3d4-0000-4000-8000-00000000000${n}`, acao: 'novo', data: H, banco: 'Nubank', tipo: 'conta', valor, desc: 'Teste ' + n }, extra);
+  const um = avisosDoBanco([P(1, -1234.5), P(2, 500, { acao: 'conferir', banco: 'Inter' }), P(3, -9, { acao: 'ja-importado' }), P(4, -9, { data: '2026-10-01' }), P(5, -30, { tipo: 'cartão' })], H);
+  assert.deepEqual(um.map(a => a.titulo), ['Saiu R$ 1.234,50 · Nubank', 'Entrou R$ 500,00 · Inter', 'Saiu R$ 30,00 · Nubank (cartão)']);
+  assert.ok(um.every(a => a.tipo === 'banco' && a.quando === H && a.id.startsWith('VOF-') && a.enviado === null && /^Teste/.test(a.corpo)));
+  const muitos = avisosDoBanco([1, 2, 3, 4, 5].map(n => P(n, n === 1 ? 100 : -10)), H);
+  assert.equal(muitos.length, 1);
+  assert.equal(muitos[0].titulo, '5 novidades do banco');
+  assert.equal(muitos[0].corpo, 'Entrou R$ 100,00 · Saiu R$ 40,00. Toque para ver no app.');
+  assert.ok(!/[<>"'`&\\]/.test(muitos[0].id) && muitos[0].id.length <= 120);
 });

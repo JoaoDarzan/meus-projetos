@@ -36,19 +36,19 @@ module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
     ts = await titulos();
     certo(tem(ts, 'mês que vem') && !tem(ts, 'deste mês') && !tem(ts, 'atrasada'), 'no mês que vem: só a do mês que vem: ' + ts);
   }],
-  ['Para onde foi: barras com a parte do total e a diferença para o mês anterior (a mais em vermelho, a menos em verde)', async (st, abrir) => {
+  ['Para onde foi em pizza: porcentagem dentro das fatias grandes, tocar na fatia destaca e abre as subcategorias; o total compara com o mês anterior', async (st, abrir) => {
     const ant = addMes(m0, -1);
-    st.tabelas.extrato.push(L('LG1', { categoria: 'Teste Sobe', valor: -300 }), L('LG2', { categoria: 'Teste Desce', valor: -50 }),
-      L('LG3', { categoria: 'Teste Sobe', valor: -100, data: ant + '-10' }), L('LG4', { categoria: 'Teste Desce', valor: -200, data: ant + '-10' }));
+    st.tabelas.extrato.push(L('LG1', { categoria: 'Teste Grande', valor: -3000 }), L('LG3', { categoria: 'Teste Grande', valor: -100, data: ant + '-10' }));
     const p = await abrir({ aparelho: 'iphone-15' });
-    const tx = async cat => p.textContent(`#view .catl[data-v="${cat}"] small`);
-    certo(/▲ R\$ 200,00 a mais/.test(await tx('Teste Sobe')) && await p.$eval('#view .catl[data-v="Teste Sobe"] small .c-out', e => !!e), 'gastou mais que no mês passado: em vermelho: ' + await tx('Teste Sobe'));
-    certo(/▼ R\$ 150,00 a menos/.test(await tx('Teste Desce')) && await p.$eval('#view .catl[data-v="Teste Desce"] small .c-in', e => !!e), 'gastou menos: em verde: ' + await tx('Teste Desce'));
-    certo(/\d+% do total/.test(await tx('Teste Sobe')), 'mostra a parte do total');
-    certo(/a (mais|menos) que|igual a/.test(await p.textContent('#view .ofcmp')), 'o total do mês também compara com o mês anterior');
-    await conferirLayout(p, 'para onde foi em barras');
-    await clica(p, '#view .catl[data-v="Teste Sobe"]');
-    certo(await p.getAttribute('#view .catl[data-v="Teste Sobe"]', 'aria-expanded') === 'true' && await p.isVisible('#view .ofsubs'), 'tocar abre as subcategorias');
+    const d = await p.evaluate(() => { const r = A.c.resumo(A.ui.mes), t = r.cats.reduce((s, x) => s + x.valor, 0); return { cats: r.cats.map(x => x.cat), p0: Math.round(r.cats[0].valor / t * 100) }; });
+    mesmo(d.cats[0], 'Teste Grande', 'a maior categoria vem primeiro');
+    certo((await p.$$eval('#view .pizza .pzp', t => t.map(x => x.textContent))).includes(d.p0 + '%'), 'a porcentagem aparece dentro da fatia grande');
+    certo(/a mais que|a menos que|igual a/.test(await p.textContent('#view .ofcmp')), 'o total compara com o mês anterior');
+    await p.$eval('#view .pizza', e => e.scrollIntoView({ block: 'center' }));
+    await clica(p, '#view .pizza .fat[data-v="Teste Grande"]'); await p.waitForTimeout(350);
+    certo(await p.getAttribute('#view .catl[data-v="Teste Grande"]', 'aria-expanded') === 'true' && await p.isVisible('#view .ofsubs'), 'tocar na fatia abre as subcategorias');
+    certo(await p.$eval('#view .pizza .fat[data-v="Teste Grande"]', e => e.classList.contains('on')) && await p.$eval('#view .ondefoi', e => e.classList.contains('foco')), 'a fatia aberta fica em destaque');
+    await conferirLayout(p, 'para onde foi em pizza');
   }],
   ['escolher o mês direto: tocar no nome do mês abre os 12 meses; vai de outubro para janeiro num toque; mês sem nada fica apagado', async (st, abrir) => {
     const p = await abrir({ aparelho: 'iphone-15' });

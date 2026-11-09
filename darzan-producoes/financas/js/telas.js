@@ -20,22 +20,39 @@
     const meta = [l.sub || l.cat, l.banco + (l.tipo === 'cartão' ? ' (cartão)' : ''), u.dm(l.data)].filter(Boolean).map(x => `<span>${u.esc(x)}</span>`).join('<span>·</span>');
     return `<button type="button" class="it btn" data-a="editL" data-id="${u.esc(l.id)}">${u.ti(ic)}<div style="min-width:0"><div class="t">${u.esc(u.cap(l.desc))}</div><div class="m">${meta}${l.parcela ? `<span>· ${u.esc(l.parcela)}</span>` : ''}${l.status === 'Previsto' ? '<span class="prev">previsto</span>' : ''}${l.grupo === 'Reembolso' ? '<span class="prev">reembolso</span>' : ''}</div></div><div class="v num ${renda ? 'c-in' : ''}">${l.valor > 0 ? '+ ' : l.valor < 0 ? '− ' : ''}${u.brl(Math.abs(l.valor))}</div></button>`;
   }
-  /* "Para onde foi": barras ordenadas da categoria que mais gastou para a que menos (cores validadas para o fundo escuro).
-     Em cima, a faixa com a divisão do mês; cada linha mostra o valor, a parte do total e a diferença para o mês anterior; tocar abre as subcategorias */
+  /* "Para onde foi": pizza com as 6 categorias que mais gastaram (o resto junto, que abre mostrando as de dentro), a porcentagem
+     dentro das fatias grandes e a lista ao lado. Passar o mouse ou tocar destaca a fatia (ela sai um pouco do círculo); tocar abre as subcategorias */
   const CAT_COR = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9'];
   function ondeFoi(r) {
     if (!r.cats.length) return '';
-    const tot = u.sum(r.cats, x => x.valor) || 1, mx = r.cats[0].valor || 1, mAnt = u.addMes(r.m, -1), ant = c.resumo(mAnt), temAnt = ant.saiu > 0, nAnt = u.nomeMes(mAnt).toLowerCase();
-    const antes = {}; ant.cats.forEach(x => { antes[x.cat] = x.valor; });
-    const fatias = r.cats.map((x, i) => Object.assign({ cor: CAT_COR[i] || '#6b7591' }, x));
+    const tot = u.sum(r.cats, x => x.valor) || 1, top = r.cats.slice(0, 6), resto = r.cats.slice(6);
+    const fatias = top.map((x, i) => Object.assign({ cor: CAT_COR[i] }, x));
+    if (resto.length) fatias.push({ cat: 'Outras', valor: u.r2(u.sum(resto, x => x.valor)), cor: '#6b7591', outras: resto });
     const aberta = ui.cexp && fatias.find(f => f.cat === ui.cexp);
-    const dif = (v, a, curto) => { const d = u.r2(v - a); if (Math.abs(d) < 1) return `<span>igual a ${nAnt}</span>`;
-      return `<span class="${d > 0 ? 'c-out' : 'c-in'}">${d > 0 ? '▲' : '▼'} ${u.brl(Math.abs(d))} ${d > 0 ? 'a mais' : 'a menos'}${curto ? '' : ` que ${nAnt}`}</span>`; };
-    const subs = f => Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
-    return `<div class="ondefoi"><div class="ofh"><div><span class="rl">Saiu em ${u.esc(u.nomeMes(r.m).toLowerCase())}</span><b class="rv num c-out">${u.brl(r.saiu)}</b></div>${temAnt ? `<small class="ofcmp">${dif(r.saiu, ant.saiu)}</small>` : ''}</div>
-      <div class="ofbar" role="img" aria-label="Divisão dos gastos: ${u.esc(fatias.map(f => `${f.cat} ${u.pct(f.valor / tot)}`).join(', '))}">${fatias.map(f => `<i style="width:${f.valor / tot * 100}%;background:${f.cor}" title="${u.esc(f.cat)}: ${u.pct(f.valor / tot)}"></i>`).join('')}</div>
-      <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><span class="n"><i style="background:${f.cor}"></i>${u.esc(f.cat)}</span><b class="num">${u.brl(f.valor)}</b><em class="ofb"><i style="width:${Math.max(f.valor / mx * 100, 1.5)}%;background:${f.cor}"></i></em><small class="num"><span>${u.pct(f.valor / tot)} do total</span>${temAnt ? ` · ${dif(f.valor, antes[f.cat] || 0, true)}` : ''}</small></button>${aberta === f ? (() => { const ss = subs(f), m2 = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / m2 * 100}%;background:${f.cor}"></i></em></div>`).join('')}<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button></div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div>`;
+    const mAnt = u.addMes(r.m, -1), ant = c.resumo(mAnt), nAnt = u.nomeMes(mAnt).toLowerCase(), d = u.r2(r.saiu - ant.saiu);
+    const cmp = ant.saiu > 0 ? (Math.abs(d) < 1 ? `igual a ${nAnt}` : `<span class="${d > 0 ? 'c-out' : 'c-in'}">${u.brl(Math.abs(d))} ${d > 0 ? 'a mais' : 'a menos'}</span> que ${nAnt}`) : '';
+    const R0 = 92, pt = (a, rr) => [100 + rr * Math.cos(a), 100 + rr * Math.sin(a)].map(n => n.toFixed(2));
+    let a0 = -Math.PI / 2;
+    const fat = fatias.map(f => {
+      const ang = f.valor / tot * 2 * Math.PI, a1 = a0 + ang, meio = a0 + ang / 2, p0 = pt(a0, R0), p1 = pt(a1, R0), lb = pt(meio, R0 * .64);
+      const forma = fatias.length === 1 ? `<circle cx="100" cy="100" r="${R0}"` : `<path d="M100 100L${p0[0]} ${p0[1]}A${R0} ${R0} 0 ${ang > Math.PI ? 1 : 0} 1 ${p1[0]} ${p1[1]}Z"`;
+      const pc = f.valor / tot, x = { forma: `${forma} class="fat${aberta === f ? ' on' : ''}" fill="${f.cor}" style="--dx:${(Math.cos(meio) * 7).toFixed(1)}px;--dy:${(Math.sin(meio) * 7).toFixed(1)}px" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(pc)})</title>${fatias.length === 1 ? '</circle>' : '</path>'}`,
+        rot: pc >= .07 ? `<text class="pzp" x="${lb[0]}" y="${lb[1]}" text-anchor="middle" dominant-baseline="central">${Math.round(pc * 100)}%</text>` : '' };
+      a0 = a1; return x;
+    });
+    const subs = f => f.outras ? f.outras.map(x => [x.cat, x.valor]) : Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
+    return `<div class="ondefoi${aberta ? ' foco' : ''}"><div class="ofh"><div><span class="rl">Saiu em ${u.esc(u.nomeMes(r.m).toLowerCase())}</span><b class="rv num c-out">${u.brl(r.saiu)}</b></div>${cmp ? `<small class="ofcmp">${cmp}</small>` : ''}</div>
+      <div class="ofcorpo"><div class="pizza"><svg viewBox="-10 -10 220 220" role="img" aria-label="Gastos por categoria: ${u.esc(fatias.map(f => `${f.cat} ${u.pct(f.valor / tot)}`).join(', '))}"><defs><radialGradient id="pzLuz" cx="35%" cy="28%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></radialGradient></defs>
+        <g class="pzg">${fat.map(x => x.forma).join('')}<circle class="pzluz" cx="100" cy="100" r="${R0}" fill="url(#pzLuz)"/><circle class="pzaro" cx="100" cy="100" r="${R0 + .5}" fill="none"/>${fat.map(x => x.rot).join('')}</g></svg></div>
+      <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}</span><b class="num">${u.brl(f.valor)}</b><small class="num">${u.pct(f.valor / tot)}</small></button>${aberta === f ? (() => { const ss = subs(f), m2 = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / m2 * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : `<button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}Ver os lançamentos</button>`}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div></div>`;
   }
+  /* passar o mouse ou o dedo numa linha da lista acende a fatia dela (e o contrário) */
+  (() => {
+    const alvo = el => el && el.closest && el.closest('.ondefoi .fat, .ondefoi .catl');
+    const acender = (box, cat) => { if (!box) return; box.querySelectorAll('.fat').forEach(x => x.classList.toggle('quente', !!cat && x.dataset.v === cat)); box.querySelectorAll('.catl').forEach(x => x.classList.toggle('quente', !!cat && x.dataset.v === cat)); box.classList.toggle('mira', !!cat); };
+    document.addEventListener('pointerover', e => { const a = alvo(e.target); if (a) acender(a.closest('.ondefoi'), a.dataset.v); });
+    document.addEventListener('pointerout', e => { const a = alvo(e.target); if (a && !alvo(e.relatedTarget)) acender(a.closest('.ondefoi'), null); });
+  })();
 
   function anel(p, tam, esp, cor) { const r = (tam - esp) / 2, cf = 2 * Math.PI * r; return `<svg viewBox="0 0 ${tam} ${tam}" width="${tam}" height="${tam}"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="${esp}"/><circle class="rg" cx="${tam / 2}" cy="${tam / 2}" r="${r}" fill="none" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-dasharray="${cf}" stroke-dashoffset="${cf}" data-off="${cf * (1 - Math.min(Math.max(p, 0), 1))}"/></svg>`; }
   const foto = () => window.FOTO_JOAO ? `<img class="ava" src="${window.FOTO_JOAO}" alt="">` : `<span class="ava" style="display:grid;place-items:center;background:linear-gradient(135deg,#ffe08a,#c98a2a);color:#3a2500;font-weight:800">JD</span>`;
@@ -1821,7 +1838,7 @@
     });
     db.linhas('AVISOS').forEach(x => {
       const velho = String(x['QUANDO']) < u.addDias(hoje, x['TIPO'] === 'teste' ? -1 : -30);
-      if ((!x['ENVIADO'] && x['TIPO'] !== 'teste' && !mapa.has(x.ID)) || velho) ops.push({ op: 'apagar', aba: 'AVISOS', id: x.ID });
+      if ((!x['ENVIADO'] && x['TIPO'] !== 'teste' && x['TIPO'] !== 'banco' && !mapa.has(x.ID)) || velho) /* "banco" é do robô do Open Finance: o app não apaga */ ops.push({ op: 'apagar', aba: 'AVISOS', id: x.ID });
     });
     if (ops.length) db.lote(ops);
   }

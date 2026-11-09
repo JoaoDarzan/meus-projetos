@@ -267,3 +267,16 @@ export const mostraLiquido = caixinhas => caixinhas.some(c => /mostra (o valor )
    e anotar 09/11 faria os lançamentos de 09/11 ficarem de fora da conta. Data sem horário (posição das caixinhas) fica como veio */
 export const diaNoBrasil = (em, seVazio = '') => { const t = String(em || ''); if (!t) return seVazio; if (!/T\d{2}:\d{2}/.test(t) || /T00:00(:00(\.0+)?)?Z?$/.test(t)) return t.slice(0, 10);
   const ms = Date.parse(t); return isNaN(ms) ? t.slice(0, 10) : new Date(ms - 3 * 3600e3).toISOString().slice(0, 10); };
+
+/* aviso no celular do que entrou e saiu (o que o robô trouxe agora: novo ou conferido). Até 4 movimentos, um aviso para cada;
+   mais que isso, um aviso só com o resumo. Só os dos últimos 3 dias (na primeira conexão de um banco não chega um monte de aviso velho).
+   Vai para a tabela avisos (tipo "banco"); o GitHub (avisos.yml) manda para o iPhone */
+const reais = v => 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+,)/g, '.');
+export function avisosDoBanco(casados, hoje) {
+  const limite = new Date(Date.parse(hoje + 'T12:00:00Z') - 3 * 864e5).toISOString().slice(0, 10);
+  const ps = casados.filter(p => (p.acao === 'novo' || p.acao === 'conferir') && p.data >= limite && +p.valor);
+  const base = { quando: hoje, tipo: 'banco', enviado: null };
+  if (ps.length <= 4) return ps.map(p => Object.assign({ id: ('VOF-' + p.pid).slice(0, 110), titulo: `${p.valor > 0 ? 'Entrou' : 'Saiu'} ${reais(p.valor)} · ${p.banco}${p.tipo === 'cartão' ? ' (cartão)' : ''}`, corpo: String(p.desc || '').slice(0, 120) || 'Do Open Finance' }, base));
+  const ent = ps.filter(p => p.valor > 0).reduce((s, p) => s + +p.valor, 0), sai = ps.filter(p => p.valor < 0).reduce((s, p) => s - p.valor, 0);
+  return [Object.assign({ id: `VOF-${hoje}-${ps.length}-${String(ps[0].pid).slice(0, 12)}`, titulo: `${ps.length} novidades do banco`, corpo: `Entrou ${reais(ent)} · Saiu ${reais(sai)}. Toque para ver no app.` }, base)];
+}
