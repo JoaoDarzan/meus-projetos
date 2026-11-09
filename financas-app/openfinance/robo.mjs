@@ -39,7 +39,7 @@ async function principal() {
   else console.log(`  ✓ PLUGGY_ITEMS: ${itens.length} número(s) de conexão no formato certo`);
   if (!ok) throw new Error('arrume o segredo marcado com ✗ e rode de novo (nada foi gravado)');
   let abertos = 0, semNome = 0;
-  const saldos = [], caixas = [];
+  const saldos = [], caixas = [], detalhes = [];
   const propostas = [];
   for (const [i, item] of itens.entries()) {
     const id = item.id;
@@ -61,6 +61,8 @@ async function principal() {
     /* caixinhas e cofrinhos: o banco manda como investimento (ou poupança); guarda o saldo de cada um para o app conferir todo dia */
     const invs = await pg.investimentos(id);
     /* o Open Finance não manda o nome da caixinha (cada depósito vira uma aplicação "CDB - banco"): soma tudo do banco num total só */
+    /* modo "caixinhas": guarda o detalhe de cada aplicação escondido no app (só para o Claude entender o que o banco manda; nada no registro público) */
+    if (MODO === 'caixinhas') detalhes.push({ banco, lotes: invs.map(v => Object.fromEntries(Object.entries(v).filter(([k, x]) => x != null && typeof x !== 'object' && !/^(id|itemId|accountId)$/.test(k)))), poup: contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT').length });
     const ativos = invs.filter(v => v.status !== 'TOTAL_WITHDRAWAL' && v.balance != null);
     const poup = contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT' && c.balance != null);
     if (ativos.length || poup.length) caixas.push({ banco, saldo: u2(ativos.reduce((t, v) => t + +v.balance, 0) + poup.reduce((t, c) => t + +c.balance, 0)), n: ativos.length + poup.length, em: it.lastUpdatedAt || '' });
@@ -75,6 +77,10 @@ async function principal() {
   }
   if (!abertos) throw new Error('nenhum banco abriu: confira o segredo PLUGGY_ITEMS');
   if (semNome && MODO !== 'diagnostico') throw new Error(`${semNome} conexão(ões) sem banco reconhecido: escreva o nome no segredo PLUGGY_ITEMS (Nubank=número,...) e rode de novo (nada foi gravado)`);
+  if (MODO === 'caixinhas') {
+    await gravar(detalhes.map(d => ({ tabela: 'extrato', op: 'salvar', linha: { id: 'LOFD-' + sem(d.banco).replace(/[^a-z0-9]+/g, '-'), data: hoje, banco: d.banco, descricao: 'Detalhe das caixinhas (Open Finance)', grupo: 'Guardado', tipo: 'conta', valor: 0, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: JSON.stringify(d).slice(0, 60000) } })));
+    console.log(`\nDetalhe das caixinhas guardado no app (escondido): ${detalhes.length} banco(s).`); return;
+  }
   if (MODO === 'diagnostico') { console.log('\nDiagnóstico pronto: a conexão com os bancos funciona. Nada foi gravado.'); return; }
 
   const extrato = await ler('extrato'), mem = memoria(extrato);
