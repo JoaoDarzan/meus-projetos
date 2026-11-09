@@ -455,6 +455,10 @@ window.A = window.A || {};
   /* a soma de todas as caixinhas por dia (para o gráfico e para o fim do mês passado) */
   c.fotosTotal = () => { const ds = [...new Set(c.caixinhas().flatMap(cx => c.fotos(cx).map(z => z.data)))].sort();
     return ds.map(d => ({ data: d, saldo: u.r2(u.sum(c.caixinhas(), cx => c.saldoEm(cx, d) || 0)) })); };
+  /* o que o banco informou das caixinhas (robô, escondido): total bruto, líquido se sacar hoje e imposto */
+  c.caixinhasNoBanco = b => { const l = db.linhas('EXTRATO').find(x => /^LOFI-/.test(x.ID) && x['BANCO'] === b); if (!l) return null;
+    const o = String(l['OBS'] || ''), n = re => { const m = o.match(re); return m ? +m[1] : null; };
+    return { bruto: c.num(l['VALOR']), liquido: n(/líquido (-?[\d.]+)/), ir: n(/IR (-?[\d.]+)/) || 0, iof: n(/IOF (-?[\d.]+)/) || 0, data: String(l['DATA'] || '').slice(0, 10) }; };
   c.conferidoPeloBanco = b => db.linhas('EXTRATO').some(l => /^LOF[SI]-/.test(l.ID) && l['BANCO'] === b);
 
   /* ---------- metas como potes: o dinheiro fica numa caixinha de verdade e o app separa quanto é de cada meta ---------- */

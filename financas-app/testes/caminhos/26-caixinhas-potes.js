@@ -29,6 +29,18 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     certo(/Conferido hoje/.test(linha) && /rendeu R\$ 300,00 no mês/.test(linha), 'a caixinha mostra que foi conferida hoje e quanto rendeu: ' + linha);
     await conferirLayout(p, 'caixinhas rendendo');
   }],
+  ['bruto e líquido: as caixinhas ficam no bruto, e cada banco mostra quanto cai se sacar hoje e o imposto (o que o banco informou pelo Open Finance)', async (st, abrir) => {
+    caixinhaComFotos(st);
+    st.tabelas.extrato.push({ id: 'LOFI-nubank', user_id: 'u-joao', data: HOJE, banco: 'Nubank', descricao: 'Guardado no banco (Open Finance)', grupo: 'Guardado', tipo: 'conta', valor: 5000, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '',
+      obs: `Open Finance · total bruto das caixinhas/aplicações (3) informado pelo banco em ${HOJE} · líquido 4940.25 · IR 59.75 · IOF 0.00 · só para conferência` });
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await irBancos(p);
+    const liq = await txt(p, '#view .bank .sub-row.liq');
+    certo(/Se sacar as caixinhas hoje\s*R\$ 4\.940,25/.test(liq) && /bruto R\$ 5\.000,00/.test(liq) && /Imposto de Renda R\$ 59,75/.test(liq), 'o banco mostra o líquido e o imposto: ' + liq);
+    certo(/Se sacar tudo hoje: R\$ 4\.940,25 · imposto R\$ 59,75/.test(await txt(p, '#cxLiq')), 'o quadro das caixinhas mostra o total líquido');
+    await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
+    certo(/valor bruto/.test(await txt(p, '#s2')), 'a conferência explica que nas caixinhas vai o valor bruto');
+  }],
   ['sem a tabela de saldos no Supabase: avisa o passo e o resto de Bancos funciona', async (st, abrir) => {
     st.semTabela('saldos');
     const p = await abrir({ aparelho: 'iphone-15' });

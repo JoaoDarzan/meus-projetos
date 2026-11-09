@@ -65,7 +65,9 @@ async function principal() {
     if (MODO === 'caixinhas') detalhes.push({ banco, lotes: invs.map(v => Object.fromEntries(Object.entries(v).filter(([k, x]) => x != null && typeof x !== 'object' && !/^(id|itemId|accountId)$/.test(k)))), poup: contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT').length });
     const ativos = invs.filter(v => v.status !== 'TOTAL_WITHDRAWAL' && v.balance != null);
     const poup = contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT' && c.balance != null);
-    if (ativos.length || poup.length) caixas.push({ banco, saldo: u2(ativos.reduce((t, v) => t + +v.balance, 0) + poup.reduce((t, c) => t + +c.balance, 0)), n: ativos.length + poup.length, em: it.lastUpdatedAt || '' });
+    /* bruto (amount: com o rendimento, antes do imposto, o número grande do app do banco) e líquido (balance: o que cai na conta se sacar hoje) */
+    const soma = f => u2(ativos.reduce((t, v) => t + +(f(v) || 0), 0) + poup.reduce((t, c) => t + +c.balance, 0));
+    if (ativos.length || poup.length) caixas.push({ banco, saldo: soma(v => v.amount != null ? v.amount : v.balance), liquido: soma(v => v.balance), ir: soma(v => v.taxes), iof: soma(v => v.taxes2), n: ativos.length + poup.length, em: it.lastUpdatedAt || '' });
     console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => `${v.type || '?'}/${v.status || 'sem status'}/${v.balance != null ? 'com saldo' : v.amount != null ? 'só amount' : 'sem valor'}`)).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
@@ -104,7 +106,7 @@ async function principal() {
   /* o saldo de cada caixinha que o banco informou, escondido do mesmo jeito (o app usa para conferir e para a foto diária) */
   caixas.forEach(x => opsSaldo.push({ tabela: 'extrato', op: 'salvar', linha: {
     id: 'LOFI-' + sem(x.banco).replace(/[^a-z0-9]+/g, '-'), data: String(x.em).slice(0, 10) || hoje, banco: x.banco, descricao: 'Guardado no banco (Open Finance)', grupo: 'Guardado', tipo: 'conta',
-    valor: x.saldo, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: `Open Finance · total das caixinhas/aplicações (${x.n}) informado pelo banco em ${x.em || hoje} · só para conferência` } }));
+    valor: x.saldo, categoria: '', subcategoria: '', status: 'Cancelado', parcela: '', obs: `Open Finance · total bruto das caixinhas/aplicações (${x.n}) informado pelo banco em ${x.em || hoje} · líquido ${x.liquido.toFixed(2)} · IR ${x.ir.toFixed(2)} · IOF ${x.iof.toFixed(2)} · só para conferência` } }));
   if (opsSaldo.length) await gravar(opsSaldo);
 
   if (MODO === 'previa') {

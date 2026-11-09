@@ -267,7 +267,7 @@ test('caixinhas: saldo do jeito do app, só as que rendem no banco, e a diferen�
 });
 
 test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam iguais ao total do banco, e a foto do dia vai para a tabela saldos', async () => {
-  const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
+  const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, amount: 1004.5, taxes: 4, taxes2: 0, name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
     { id: 'i3', type: 'FIXED_INCOME', status: 'TOTAL_WITHDRAWAL', balance: 0, name: 'CDB - BANCOTESTE' }];
   const { st, env, fim } = await preparar({ investimentos: inv });
   try {
@@ -279,7 +279,9 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.equal(i.codigo, 0, i.saida);
     const c = id => st.linhas('contas').find(x => x.id === id);
     assert.deepEqual([c('CB').saldo_conferido, c('CB').data_da_conferencia], [500, '2026-10-27'], 'a conta bateu com o banco: conferida no dia do banco');
-    assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1610.5, 'caixinhas = total do banco (a retirada total não conta)');
+    assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1614.5, 'caixinhas = total BRUTO do banco (amount; quem não manda amount usa balance; a retirada total não conta)');
+    const lofi = st.linhas('extrato').find(l => l.id === 'LOFI-bancoteste');
+    assert.ok(lofi && lofi.valor === 1614.5 && /líquido 1610\.50 · IR 4\.00 · IOF 0\.00/.test(lofi.obs) && lofi.status === 'Cancelado', 'guarda o bruto, o líquido e o imposto, escondido: ' + JSON.stringify(lofi));
     assert.ok(c('CA').data_da_conferencia === '2026-10-27' && c('CC').data_da_conferencia === '2026-10-27', 'caixinhas conferidas no dia do banco');
     assert.deepEqual([c('CE').saldo_conferido, c('CE').data_da_conferencia], [300, '2026-10-01'], 'dinheiro emprestado não é do banco: fica como está');
     const foto = st.linhas('saldos');
@@ -288,7 +290,7 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.equal(foto.find(f => f.conta === 'Caixinha A').saldo, c('CA').saldo_conferido);
     assert.match(i.saida, /contas que bateram com o banco: 1/);
     assert.match(i.saida, /BancoTeste: 2 caixinha\(s\) iguais ao total do banco \(diferença pequena: rendimento\)/);
-    assert.ok(!/1610|1000,5|610/.test(i.saida), 'o registro público não mostra valores');
+    assert.ok(!/1610|1614|1000,5|610/.test(i.saida), 'o registro público não mostra valores');
     /* rodar de novo no mesmo dia: troca a foto, não duplica */
     await rodar(Object.assign({}, env, { MODO: 'importar' }));
     assert.equal(st.linhas('saldos').length, 4, 'não duplicou');
