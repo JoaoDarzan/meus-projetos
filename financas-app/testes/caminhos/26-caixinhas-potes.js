@@ -35,15 +35,19 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
       obs: `Open Finance · total bruto das caixinhas/aplicações (3) informado pelo banco em ${HOJE} · líquido 4940.25 · IR 59.75 · IOF 0.00 · só para conferência` });
     const p = await abrir({ aparelho: 'iphone-15' });
     await irBancos(p);
-    const liq = await txt(p, '#view .bank .sub-row.liq');
-    certo(/Se sacar as caixinhas hoje\s*R\$ 4\.940,25/.test(liq) && /no bruto \(R\$ 5\.000,00\), igual ao app do Nubank/.test(liq) && /Imposto de Renda R\$ 59,75/.test(liq), 'o banco mostra o líquido e o imposto: ' + liq);
-    certo(/Se sacar tudo hoje: R\$ 4\.940,25 · imposto R\$ 59,75/.test(await txt(p, '#cxLiq')), 'o quadro das caixinhas mostra o total líquido');
+    const linha = async b => { const t = await p.$$eval('#tbBancos tbody tr', (rs, b) => { const r = rs.find(x => x.cells[0].textContent.trim() === b); return r ? [...r.cells].map(c => c.textContent.trim()) : null; }, b);
+      const n = v => +String(v).replace(/[^\d,-]/g, '').replace(',', '.'); return t && { bruto: n(t[1]), liquido: n(t[2]), rendeu: t[3] }; };
+    const nu = await linha('Nubank'), saldoNu = await p.evaluate(() => A.c.saldoBanco('Nubank'));
+    certo(nu && nu.bruto === saldoNu && Math.round((nu.bruto - nu.liquido) * 100) === 5975 && /\+ R\$ 300,00/.test(nu.rendeu), 'Nubank: bruto = o que o app do banco mostra, líquido = bruto − imposto, e quanto rendeu no mês: ' + JSON.stringify(nu));
+    const topo = await txt(p, '#bResumo');
+    certo(/Se sacar tudo hoje: R\$ [\d.]+,\d\d · imposto R\$ 59,75/.test(topo) && /Total/.test(topo), 'o topo mostra o líquido total e o imposto: ' + topo.slice(0, 200));
     await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
     certo(/valor bruto/.test(await txt(p, '#s2')), 'a conferência explica que nas caixinhas vai o valor bruto');
     /* banco que mostra o líquido no app (como o PicPay): o app explica que as caixinhas já estão no líquido e a conferência pede o valor que aparece */
     await p.evaluate(() => { const cx = A.db.linhas('CONTAS').find(x => x['CONTA'] === 'Caixinha Reserva'); A.db.salvar('CONTAS', { ID: cx.ID, 'OBS': 'Rende 100% do CDI · o app do banco mostra o valor líquido' }); A.fechar && A.fechar(); });
     await p.keyboard.press('Escape').catch(() => {}); await irBancos(p);
-    certo(/já estão no líquido, igual ao app do Nubank/.test(await txt(p, '#view .bank .sub-row.liq')), 'banco no líquido: ' + await txt(p, '#view .bank .sub-row.liq'));
+    const nu2 = await linha('Nubank'), saldoNu2 = await p.evaluate(() => A.c.saldoBanco('Nubank'));
+    certo(nu2.liquido === saldoNu2 && Math.round((nu2.bruto - nu2.liquido) * 100) === 5975, 'banco que mostra o líquido: o app já está no líquido e o bruto soma o imposto: ' + JSON.stringify(nu2));
     await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
     certo(/já é o líquido/.test(await txt(p, '#s2')), 'a conferência explica que o valor do app já é o líquido');
   }],
@@ -74,6 +78,21 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await clica(p, `#view [data-a=editL][data-id="${L[0].id}"]`);
     certo(await p.inputValue('#fX') === 'Caixinha Reserva' && await p.inputValue('#fPt') === 'M9' && !/Pote|Para/.test(await p.inputValue('#fO')), 'editar mantém a caixinha e o pote, e a anotação fica limpa');
     await conferirLayout(p, 'guardei com pote');
+  }],
+  ['meta com parte fixa da caixinha (70% da Reserva): o pote acompanha o saldo, a caixinha mostra o resto livre e o formulário guarda a porcentagem', async (st, abrir) => {
+    caixinhaComFotos(st);
+    st.tabelas.metas.push({ id: 'M8', user_id: 'u-joao', meta: 'Apê teste', valor_alvo: 100000, ja_guardado: 0, onde_esta: 'Caixinha Reserva', prazo: null, obs: '70% da caixinha' });
+    const p = await abrir({ aparelho: 'iphone-15' });
+    certo(await p.evaluate(() => A.c.noPote(A.db.achar('METAS', 'M8'))) === 3500, 'o pote é 70% dos R$ 5.000 da caixinha');
+    await irBancos(p);
+    const potes = await txt(p, '#view .potes');
+    certo(/Apê teste R\$ 3\.500,00/.test(potes) && /Livre R\$ 1\.500,00/.test(potes), 'a caixinha mostra a parte do apê e o resto livre: ' + potes);
+    await p.evaluate(() => { Object.assign(A.ui, { view: 'fin', fseg: 'metas' }); A.render(false); });
+    certo(/70% da Caixinha Reserva/.test(await txt(p, '#view .goals')), 'a meta diz que é 70% da caixinha');
+    await clica(p, '#view [data-a=editM][data-id="M8"]');
+    certo(await p.inputValue('#gPc') === '70', 'o formulário mostra os 70%');
+    await p.fill('#gPc', '50'); await clica(p, '#s2 .save'); await calmo(p);
+    certo(st.linhas('metas').find(m => m.id === 'M8').obs === '50% da caixinha', 'salvou 50%: ' + st.linhas('metas').find(m => m.id === 'M8').obs);
   }],
   ['lembrete do mês: com caixinhas que rendem no banco, o app cria "Conferir as caixinhas" no dia 1º (uma vez só) e dá para marcar como feito', async (st, abrir) => {
     const m0 = HOJE.slice(0, 7);

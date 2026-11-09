@@ -13,3 +13,5 @@ Instalados a pedido do João (11/2026). São de terceiros, de uso livre, e foram
 Não instalados: `graftcp` (desvia o tráfego de rede de programas por um proxy, não serve para o projeto e
 contornaria as regras de rede deste ambiente) e `shadcn-ui-mcp-server` (componentes React; o app não usa
 React, e servidor MCP se liga no app do Claude, não no projeto).
+
+- `skills/economia/`: criada para este projeto (sem origem externa): regras para gastar menos tokens.

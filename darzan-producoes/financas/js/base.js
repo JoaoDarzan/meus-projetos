@@ -461,11 +461,20 @@ window.A = window.A || {};
   c.caixinhasNoBanco = b => { const l = db.linhas('EXTRATO').find(x => /^LOFI-/.test(x.ID) && x['BANCO'] === b); if (!l) return null;
     const o = String(l['OBS'] || ''), n = re => { const m = o.match(re); return m ? +m[1] : null; };
     return { bruto: c.num(l['VALOR']), liquido: n(/líquido (-?[\d.]+)/), ir: n(/IR (-?[\d.]+)/) || 0, iof: n(/IOF (-?[\d.]+)/) || 0, data: String(l['DATA'] || '').slice(0, 10) }; };
+  /* cada banco em bruto e líquido: na conta é igual; nas caixinhas o imposto é a diferença que o banco informou (sem informação, zero) */
+  c.resumoBanco = b => { const cs = c.contas().filter(x => x['BANCO'] === b), conta = u.r2(u.sum(cs.filter(x => String(x['CONTA']).toLowerCase() === 'conta'), x => c.saldo(x) || 0)),
+    cx = u.r2(u.sum(cs.filter(x => String(x['CONTA']).toLowerCase() !== 'conta'), x => c.saldo(x) || 0)), q = c.caixinhasNoBanco(b),
+    imposto = cx && q && q.liquido != null ? u.r2(Math.max(0, q.bruto - q.liquido)) : 0, ml = c.mostraLiquido(b);
+    return { banco: b, conta, cx, imposto, bruto: u.r2(conta + cx + (ml ? imposto : 0)), liquido: u.r2(conta + cx - (ml ? 0 : imposto)) }; };
   c.conferidoPeloBanco = b => db.linhas('EXTRATO').some(l => /^LOF[SI]-/.test(l.ID) && l['BANCO'] === b);
 
   /* ---------- metas como potes: o dinheiro fica numa caixinha de verdade e o app separa quanto é de cada meta ---------- */
   c.metas = () => db.linhas('METAS').filter(g => g['META']);
-  c.noPote = g => u.r2(c.num(g['JÁ GUARDADO']) - u.sum(c.lancs().filter(l => l.grupo === 'Guardado' && c.paga(l) && new RegExp('(^|· )Pote ' + g.ID + '( ·|$)').test(l.obs)), l => l.valor));
+  /* meta que é uma parte fixa da caixinha (OBS "70% da caixinha"): o pote é sempre essa parte do saldo dela */
+  c.pctDaCaixinha = g => { const m = String(g['OBS'] || '').match(/(\d+(?:[.,]\d+)?)\s*% da caixinha/i); return m ? +m[1].replace(',', '.') / 100 : null; };
+  c.noPote = g => { const p = c.pctDaCaixinha(g), cx = p != null && g['ONDE ESTÁ'] ? c.caixinhas().find(x => u.sem(x['CONTA']).trim() === u.sem(g['ONDE ESTÁ']).trim()) : null;
+    return cx ? u.r2(p * (c.saldo(cx) || 0)) : c.noPoteGuardado(g); };
+  c.noPoteGuardado = g => u.r2(c.num(g['JÁ GUARDADO']) - u.sum(c.lancs().filter(l => l.grupo === 'Guardado' && c.paga(l) && new RegExp('(^|· )Pote ' + g.ID + '( ·|$)').test(l.obs)), l => l.valor));
   c.potesDa = cx => c.metas().filter(g => g['ONDE ESTÁ'] && u.sem(g['ONDE ESTÁ']).trim() === u.sem(cx['CONTA']).trim());
 
   /* ---------- tarefas: contas previstas + faturas + aba TAREFAS ---------- */
