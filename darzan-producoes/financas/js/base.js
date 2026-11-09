@@ -479,8 +479,8 @@ window.A = window.A || {};
 
   /* ---------- tarefas: contas previstas + faturas + aba TAREFAS ---------- */
   c.XP = { conta: 40, fatura: 60, darzan: 30, pessoal: 20, receber: 30 };
-  c.tarefas = () => {
-    const T = [], hoje = u.hoje(), m0 = u.mes(hoje);
+  c.tarefas = (mBase) => {
+    const T = [], hoje = u.hoje(), m0 = mBase && mBase > u.mes(hoje) ? mBase : u.mes(hoje);
     c.lancs().forEach(l => {
       if (l.tipo !== 'conta' || /d[eé]bito autom/i.test(l.obs)) return;
       const feitaPeloApp = /pago pelo app|recebido pelo app/i.test(l.obs) && l.status === 'Pago' && u.ateHoje(l.data) > -45;

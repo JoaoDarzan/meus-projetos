@@ -868,3 +868,11 @@ details.perd summary svg{width:16px;height:16px}
 .pote svg{width:14px;height:14px;color:var(--muted)}
 .pote.livre{color:var(--muted)}
 .pote b{font-weight:600}
+
+.rv.rvg{grid-template-columns:36px minmax(0,1fr) auto;align-items:start;padding:12px 2px}.rvg .rv-txt{display:grid;gap:3px;text-align:left}.rvg .m.det{color:var(--faint);font-size:.76rem;word-break:break-word}.rvg-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tmes{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}.tmes b{font-size:1.05rem}.tmes .chip{padding:8px}
+.tcal{padding:12px}.tc-s,.tc-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}.tc-s span{font-size:.7rem;color:var(--faint);font-weight:700}
+.tc-d{position:relative;aspect-ratio:1;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:inherit;font-size:.82rem;padding:0;display:grid;place-items:center}
+.tc-d.tem{background:var(--glass);color:var(--fg);border-color:var(--stroke)}.tc-d.hoje{border-color:var(--blue)}.tc-d.on{background:var(--blue);color:#fff}
+.tc-d i{position:absolute;bottom:2px;right:3px;font-style:normal;font-size:.62rem;font-weight:700;color:var(--blue-hi)}.tc-d.atr i{color:var(--out)}.tc-d.on i{color:#fff}
+.tcal .more{display:block;margin:8px auto 0}

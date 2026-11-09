@@ -52,6 +52,16 @@ module.exports = { etapa: 'Revisar', testes: [
     const r = st.linhas('extrato').find(x => x.descricao === 'Teste conferir');
     certo(!/conferir/i.test(r.obs || ''), 'ficou o aviso: ' + r.obs);
   }],
+  ['para conferir: as parcelas da mesma compra aparecem uma vez só, com os detalhes, e "Está certo" confere todas', async (st, abrir) => {
+    const p = await abrir();
+    await preparar(p, [1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Loja teste parcelada', 'VALOR': -50, 'DATA': `2026-0${i + 6}-10`, 'OBS': `Compra PTESTE9 · feita em 10/07/26 · fatura Inter (lançado pelo Claude) · LOJA TESTE*XYZ · conferir: o que foi comprado?` })));
+    await abrirRevisar(p, 'conferir', 'loja teste');
+    const cards = await p.$$eval('#view .rvg', cs => cs.map(c => c.textContent.replace(/\s+/g, ' ')));
+    certo(cards.length === 1 && /3 parcelas de R\$ 50,00/.test(cards[0]) && /R\$ 150,00/.test(cards[0]) && /LOJA TESTE\*XYZ/.test(cards[0]) && /O que foi comprado\?/.test(cards[0]) && !/lançado pelo Claude/.test(cards[0]), 'um cartão só, com parcelas, total, o que o banco mostrou e a pergunta: ' + JSON.stringify(cards));
+    await clica(p, '#view .rvg [data-a=rvOk]'); await calmo(p);
+    const L = st.linhas('extrato').filter(x => x.descricao === 'Loja teste parcelada');
+    certo(L.length === 3 && L.every(r => !/conferir/i.test(r.obs) && /Compra PTESTE9/.test(r.obs)), 'as 3 parcelas conferidas (e a marca da compra fica): ' + JSON.stringify(L.map(r => r.obs)));
+  }],
   ['mudou a categoria de um? o app oferece mudar os parecidos', async (st, abrir) => {
     const p = await abrir();
     await preparar(p, [1, 2, 3].map(i => ({ 'DESCRIÇÃO': 'Teste Padaria Pão Quente', 'DATA': `2026-10-0${i}` })));

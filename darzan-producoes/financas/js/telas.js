@@ -124,7 +124,7 @@
           <button class="bell ${urg ? 'ring' : ''}" type="button" data-a="go" data-v="tarefas" aria-label="Tarefas">${u.svg('bell')}${urg ? `<span class="cnt">${urg}</span>` : ''}</button></div>
         <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
           <div class="big num" data-cnt="${r.futuro ? r.prevSobra : r.sobra}" data-fmt="big">${u.big(r.futuro ? r.prevSobra : r.sobra)}</div></div>
-        <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="k0">${u.k0(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.k0(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="k0">${u.k0(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="k0">${u.k0(r.guardou)}</b></span></div>
+        <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="brl">${u.brl(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.brl(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="brl">${u.brl(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="brl">${u.brl(r.guardou)}</b></span></div>
         <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.brl(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
       ${cartoes.length ? `<section class="sec"><div class="sec-h"><h2>Cartões</h2><button class="more" type="button" data-a="irCartoes">Ver faturas</button></div><div class="rail">${cartoes.map(k => { const nome = k['CARTÃO'], fm = m, v = c.fatura(nome, fm), ven = c.vence(nome, fm), q = u.ateHoje(ven.data); return `<button type="button" class="gcard sm tilt" style="--g:${c.GRAD[nome] || 'var(--mp)'}" data-a="irCartoes" data-v="${u.esc(nome)}"><span class="sheen"></span><span class="bank">${u.esc(nome)}${u.svg('smartphone-nfc')}</span><span><span class="k">Fatura de ${u.nomeMes(fm).toLowerCase()}</span><br><span class="amt num">${u.brl(v)}</span></span><span class="foot"><span>${q < 0 ? 'Venceu' : 'Vence'} ${u.dm(ven.data)}${ven.estimado ? '*' : ''}</span><span>${c.pagFatura(nome, fm) ? 'Paga ✓' : q < 0 && v > 0 ? 'Atrasada' : 'Crédito'}</span></span></button>`; }).join('')}</div></section>` : ''}
@@ -148,16 +148,27 @@
 
   /* ================= TAREFAS ================= */
   R.tarefas = () => {
-    const lv = c.nivel(c.xp()), F = ui.tfil;
-    const todas = c.tarefas().filter(t => F === 'todas' || t.grupo === F || (F === 'conta' && t.grupo === 'receber'));
-    const abertas = todas.filter(t => !t.feita), feitas = todas.filter(t => t.feita);
-    const G = [['Atrasadas', t => u.ateHoje(t.data) < 0], ['Hoje', t => u.ateHoje(t.data) === 0], ['Amanhã', t => u.ateHoje(t.data) === 1], ['Esta semana', t => u.ateHoje(t.data) > 1 && u.ateHoje(t.data) <= 7], ['Mais pra frente', t => u.ateHoje(t.data) > 7]];
-    const cnt = g => c.tarefas().filter(t => !t.feita && (g === 'todas' || t.grupo === g || (g === 'conta' && t.grupo === 'receber'))).length;
+    const lv = c.nivel(c.xp()), F = ui.tfil, hj = u.hoje(), m0 = u.mes(hj), M = ui.tmes || (ui.tmes = m0), dia = ui.tdia && u.mes(ui.tdia) === M ? ui.tdia : null;
+    const doGrupo = t => F === 'todas' || t.grupo === F || (F === 'conta' && t.grupo === 'receber');
+    const doMes = c.tarefas(M).filter(t => u.mes(t.data) === M && doGrupo(t)), abertas = doMes.filter(t => !t.feita);
+    const antes = M === m0 ? c.tarefas().filter(t => !t.feita && u.mes(t.data) < m0 && doGrupo(t)) : [];
+    const aPagar = u.r2(u.sum(abertas.filter(t => t.grupo === 'conta'), t => t.valor)), aRec = u.r2(u.sum(abertas.filter(t => t.grupo === 'receber'), t => t.valor));
+    const cnt = g => c.tarefas(M).filter(t => !t.feita && u.mes(t.data) === M && (g === 'todas' || t.grupo === g || (g === 'conta' && t.grupo === 'receber'))).length;
+    /* calendário do mês: cada dia mostra quantas tarefas tem (toque no dia para ver só ele) */
+    const ini = new Date(M + '-01T12:00:00'), nd = new Date(ini.getFullYear(), ini.getMonth() + 1, 0).getDate(), pula = ini.getDay();
+    const cel = Array.from({ length: pula }, () => '<span></span>').concat(Array.from({ length: nd }, (_, k) => { const d = `${M}-${String(k + 1).padStart(2, '0')}`, ts = doMes.filter(t => t.data === d), ab = ts.filter(t => !t.feita).length;
+      return `<button type="button" class="tc-d${d === hj ? ' hoje' : ''}${d === dia ? ' on' : ''}${ts.length ? ' tem' : ''}${ab && d < hj ? ' atr' : ''}" data-a="tDia" data-v="${d}" aria-label="${u.dm(d)}: ${ts.length} tarefa${ts.length === 1 ? '' : 's'}"><span>${k + 1}</span>${ts.length ? `<i>${ab || '✓'}</i>` : ''}</button>`; })).join('');
+    const lista = (dia ? doMes.filter(t => t.data === dia) : doMes);
+    const dias = [...new Set(lista.map(t => t.data))].sort();
+    const sem = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], nomeDia = d => `${sem[new Date(d + 'T12:00:00').getDay()]}, ${u.dm(d)}${d === hj ? ' · hoje' : ''}`;
     return bar('Tarefas', null, false) + `<div class="miniplayer"><div class="ringw">${anel(lv.atual / lv.prox, 52, 4, '#ffd36b')}${foto()}<span class="lvl">Nv ${lv.n}</span></div><div style="flex:1;min-width:0"><b>${lv.nome}</b><div class="xpbar"><i style="width:${lv.atual / lv.prox * 100}%"></i></div><div class="xpinfo num" style="margin-top:4px"><span>${lv.atual}/${lv.prox} XP</span><span>cada tarefa feita vale XP</span></div></div></div>
-      <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px"><div class="chips">${[['todas', 'Todas'], ['conta', 'Contas'], ['darzan', 'Darzan'], ['pessoal', 'Pessoais']].map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="tfil" data-v="${u.esc(k)}" aria-pressed="${F === k}">${n} · ${cnt(k)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoT" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Nova tarefa</button></div>
-      <div class="two"><div>${G.map(([n, f]) => { const a = abertas.filter(f); return a.length ? `<div class="grp"><span>${n}</span><b>${a.length}</b></div>${a.map(tkLinha).join('')}` : ''; }).join('') || `<div class="panel" style="margin-top:16px">${vazio(['party-popper', '#cf9cff', '#7a35e6'], 'Tudo em dia por aqui!')}</div>`}</div>
-      <div><div class="grp"><span>Feitas</span><b>${feitas.length}</b></div>${feitas.map(tkLinha).join('') || '<p class="c-muted" style="font-size:.88rem">Marcou sem querer? É só tocar em “Desfazer”.</p>'}
-      <p class="aviso">As contas do mês (seguro, boletos) e as faturas dos cartões entram aqui sozinhas. Marcar uma fatura como paga tira o valor do banco que paga o cartão.</p></div></div>`;
+      <div class="tmes sec"><button type="button" class="chip" data-a="tMes" data-v="${u.addMes(M, -1)}" aria-label="Mês anterior">${u.svg('chevron-left')}</button><b>${u.nomeMes(M)} ${M.slice(0, 4)}</b><button type="button" class="chip" data-a="tMes" data-v="${u.addMes(M, 1)}" aria-label="Próximo mês">${u.svg('chevron-right')}</button></div>
+      <div class="kpis k4 sec" id="tResumo"><div class="kpi"><span>A pagar no mês</span><b class="num c-out">${u.brl(aPagar)}</b></div><div class="kpi"><span>A receber no mês</span><b class="num c-in">${u.brl(aRec)}</b></div><div class="kpi"><span>Abertas</span><b class="num">${abertas.length}</b></div><div class="kpi"><span>Feitas</span><b class="num">${doMes.length - abertas.length} de ${doMes.length}</b></div></div>
+      ${antes.length ? `<button type="button" class="rv-aviso" data-a="tMes" data-v="${u.mes(antes[0].data)}">${u.ti(['clock', '#ffd36b', '#c07a12'])}<span><b>${antes.length} atrasada${antes.length > 1 ? 's' : ''} de meses anteriores</b><small>ficam no mês delas, sem misturar com ${u.nomeMes(M).toLowerCase()} · toque para ver</small></span></button>` : ''}
+      <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div class="chips">${[['todas', 'Todas'], ['conta', 'Contas'], ['darzan', 'Darzan'], ['pessoal', 'Pessoais']].map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="tfil" data-v="${u.esc(k)}" aria-pressed="${F === k}">${n} · ${cnt(k)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoT" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Nova tarefa</button></div>
+      <div class="two"><div class="panel tcal sec" id="tCal"><div class="tc-s">${sem.map(x => `<span>${x[0].toUpperCase()}</span>`).join('')}</div><div class="tc-g">${cel}</div>${dia ? `<button type="button" class="more" data-a="tDia" data-v="">Ver o mês inteiro</button>` : ''}</div>
+      <div id="tLista">${dias.map(d => `<div class="grp"><span>${nomeDia(d)}</span><b>${lista.filter(t => t.data === d && !t.feita).length || '✓'}</b></div>${lista.filter(t => t.data === d).sort((a, b) => a.feita - b.feita).map(tkLinha).join('')}`).join('') || `<div class="panel" style="margin-top:16px">${vazio(['party-popper', '#cf9cff', '#7a35e6'], dia ? 'Nada neste dia.' : 'Nada para este mês.')}</div>`}
+      <p class="aviso">Cada tarefa fica no mês dela. As contas do mês (seguro, boletos) e as faturas dos cartões entram aqui sozinhas. Marcar uma fatura como paga tira o valor do banco que paga o cartão.</p></div></div>`;
   };
 
   /* ================= TRABALHOS ================= */
@@ -539,6 +550,24 @@
   /* ---------- revisar: consertar vários lançamentos de uma vez ---------- */
   /* o que aparece na lista do Revisar (com o filtro digitado) */
   const listaRevisar = () => { const q = u.sem(ui.rvq); return c.paraRevisar(ui.rvfil).filter(l => !q || u.sem(l.desc + ' ' + l.cat + ' ' + l.sub + ' ' + l.banco).indexOf(q) >= 0).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0); };
+  /* Para conferir: uma compra parcelada (ou um Pix) aparece uma vez só, com tudo o que se sabe dela e o botão "Está certo" */
+  const grupoConf = l => { const m = String(l.obs || '').match(/Compra ([A-Z0-9-]+) ·/); return m ? 'c:' + m[1] : l.id; };
+  const detalheObs = o => String(o || '').split(' · ').map(p => p.trim()).filter(p => p && !/^(Open Finance|OF [0-9a-f-]{8,}|conferir|planilha antiga|Compra [A-Z0-9-]+$)/i.test(p)).map(p => p.replace(/\s*\(lançado pelo Claude\)/, '')).join(' · ');
+  function gruposConferir(L) {
+    const gs = new Map(); L.forEach(l => { const k = grupoConf(l); if (!gs.has(k)) gs.set(k, []); gs.get(k).push(l); });
+    return [...gs.values()].map(ls => {
+      ls.sort((a, b) => a.data < b.data ? -1 : 1);
+      const l = ls[0], ids = ls.map(x => x.id).join(','), on = ls.every(x => ui.rvsel.has(x.id)), tot = u.r2(u.sum(ls, x => Math.abs(x.valor)));
+      const perg = (String(l.obs || '').match(/conferir:\s*([^·]+)/i) || [])[1], det = detalheObs(l.obs);
+      return `<div class="rv rvg ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarcaG" data-ids="${u.esc(ids)}" aria-pressed="${on}" aria-label="Marcar ${u.esc(l.desc)}">${u.svg('check')}</button>
+        <div class="rv-txt"><span class="t">${u.esc(u.cap(l.desc))}</span>
+          <span class="m">${ls.length > 1 ? `${ls.length} parcelas de ${u.brl(Math.abs(l.valor))} · ${u.dm(l.data)} a ${u.dm(ls[ls.length - 1].data)}` : u.dm(l.data)} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ' (conta)'}</span>
+          <span class="m">Categoria: ${u.esc([l.cat, l.sub].filter(Boolean).join(' · ') || 'sem categoria')}</span>
+          ${det ? `<span class="m det">${u.esc(det)}</span>` : ''}${perg ? `<span class="sug">${u.svg('circle-help')}${u.esc(u.cap(perg.trim()))}</span>` : ''}
+          <span class="rvg-a"><button type="button" class="chip mini" data-a="rvOk" data-ids="${u.esc(ids)}">${u.svg('check')}Está certo</button><button type="button" class="chip mini" data-a="editL" data-id="${u.esc(l.id)}">${u.svg('pencil')}Mudar</button></span></div>
+        <span class="v num ${l.grupo === 'Renda' ? 'c-in' : ''}">${u.brl(tot)}</span></div>`;
+    }).join('');
+  }
   FIN.revisar = () => {
     const K = ui.rvfil, mem = c.memoria();
     const L = listaRevisar();
@@ -547,7 +576,8 @@
     const sel = ui.rvsel.size, todosVis = L.length && L.every(l => ui.rvsel.has(l.id));
     const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${u.esc(k)}" aria-pressed="${K === k}">${x.nome} · ${c.paraRevisar(k).length}</button>`).join('');
     let html = '', mes = null;
-    L.forEach(l => {
+    if (K === 'conferir') html = gruposConferir(L);
+    else L.forEach(l => {
       const m = u.mes(l.data);
       if (m !== mes) { mes = m; const doMes = L.filter(x => u.mes(x.data) === m), tudo = doMes.every(x => ui.rvsel.has(x.id)); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${u.esc(m)}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
       const sug = K === 'categoria' ? c.sugerir(l.desc, mem) : null, on = ui.rvsel.has(l.id);
@@ -846,6 +876,9 @@
     const obsFinal = transf ? (ainda ? l.obs : l.obs.replace(/\s*·?\s*conferir\b/ig, '').replace(/^\s*·\s*/, '')) : [tipo === 'guardar' && val('fX') ? `Para ${val('fX')}` : '', tipo === 'guardar' && $('fPt') && val('fPt') ? `Pote ${val('fPt')}` : '', l && (l.obs.match(/Compra P[\w-]+/) || [])[0], of ? 'Open Finance · ' + of : '', obs, ainda ? 'conferir' : ''].filter(Boolean).join(' · ');
     if (l) {
       db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': (transf || tipo === 'saida') && l.valor > 0 ? v : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
+      /* parcelas da mesma compra andam juntas: conferiu ou mudou a categoria de uma, vale para todas */
+      const irmas = /^c:/.test(grupoConf(l)) ? c.lancs().filter(x => x.id !== l.id && grupoConf(x) === grupoConf(l)) : [];
+      if (irmas.length && !transf) mudarVarios(irmas.map(x => x.id), { cat: cat !== l.cat || sub !== l.sub ? cat : '', sub, grupo, conferido: /conferir/i.test(l.obs) && !ainda });
       fechar(); render(false);
       /* mudou a categoria: oferece mudar também os outros com a mesma descrição */
       const k = c.chave(desc), outros = !transf && (cat !== l.cat || sub !== l.sub) && k ? c.lancs().filter(x => x.id !== l.id && c.chave(x.desc) === k && (x.cat !== cat || x.sub !== sub) && x.grupo === l.grupo) : [];
@@ -1472,6 +1505,10 @@
     ocultar: () => { ui.oculto = !ui.oculto; try { localStorage.setItem('df-oculto', ui.oculto ? '1' : '0'); } catch (e) { /* sem armazenamento */ } render(false); },
     irBancos: () => { ui.fseg = 'bancos'; go('fin'); },
     irRevisar: () => { ui.fseg = 'revisar'; go('fin'); },
+    tMes: b => { ui.tmes = b.dataset.v; ui.tdia = null; render(false); },
+    tDia: b => { ui.tdia = b.dataset.v && ui.tdia !== b.dataset.v ? b.dataset.v : null; render(false); },
+    rvMarcaG: b => { const ids = b.dataset.ids.split(','), tudo = ids.every(id => ui.rvsel.has(id)); ids.forEach(id => tudo ? ui.rvsel.delete(id) : ui.rvsel.add(id)); render(false); },
+    rvOk: b => { const ids = b.dataset.ids.split(','), desfazer = mudarVarios(ids, { conferido: true }); ids.forEach(id => ui.rvsel.delete(id)); render(false); toast('Conferido' + (ids.length > 1 ? ` (${ids.length} parcelas)` : ''), desfazer); },
     rvMarca: b => { const id = b.dataset.id; if (ui.rvsel.has(id)) ui.rvsel.delete(id); else ui.rvsel.add(id); render(false); },
     rvMes: b => { const L = listaRevisar().filter(l => u.mes(l.data) === b.dataset.v), tudo = L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
     rvTodos: () => { const L = listaRevisar(), tudo = L.length && L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },

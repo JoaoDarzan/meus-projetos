@@ -1,6 +1,24 @@
 /* Etapa 4 · Cartões e tarefas: pagar conta, pagar fatura, desfazer, dia de vencimento do cartão */
-const { calmo, clica, ir, igual, certo } = require('../ajuda');
+const { calmo, clica, ir, igual, certo, HOJE } = require('../ajuda');
 module.exports = { etapa: 'Cartões e tarefas', testes: [
+  ['tarefas por mês: cada uma no mês dela (atrasada de mês passado não mistura), calendário com os dias e o total a pagar do mês', async (st, abrir) => {
+    const m0 = HOJE.slice(0, 7), ant = new Date(Date.parse(m0 + '-15T12:00:00Z') - 31 * 864e5).toISOString().slice(0, 7), prox = new Date(Date.parse(m0 + '-15T12:00:00Z') + 31 * 864e5).toISOString().slice(0, 7);
+    const L = (id, data, v, d) => ({ id, user_id: 'u-joao', data, banco: 'Nubank', descricao: d, grupo: 'Necessidades', tipo: 'conta', valor: -v, categoria: 'Casa', subcategoria: 'Contas da casa', status: 'Previsto', parcela: '', obs: '' });
+    st.tabelas.extrato.push(L('LTM-ANT', ant + '-10', 77.7, 'Conta velha teste'), L('LTM-0', m0 + '-28', 55.5, 'Conta deste mês teste'), L('LTM-PROX', prox + '-05', 33.3, 'Conta do mês que vem teste'));
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await ir(p, 'tarefas');
+    const lista = () => p.textContent('#tLista');
+    { const t = await lista(); certo(/conta deste mês teste/i.test(t) && !/conta velha teste|conta do mês que vem teste/i.test(t), 'só as do mês: ' + [/conta deste mês teste/i.test(t), /conta velha teste/i.test(t), /conta do mês que vem teste/i.test(t)]); }
+    certo(/atrasada.* de meses anteriores/.test(await p.textContent('#view')), 'avisa as atrasadas de meses anteriores');
+    certo(await p.$$eval('#tCal .tc-d', ds => ds.length) >= 28 && await p.$(`#tCal [data-v="${m0}-28"].tem`), 'calendário do mês com o dia 28 marcado');
+    await clica(p, `#tCal [data-v="${m0}-28"]`);
+    certo(/conta deste mês teste/i.test(await lista()) && (await p.$$('#tLista .tk')).length === (await p.evaluate(d => A.c.tarefas().filter(t => t.data === d).length, m0 + '-28')), 'tocar no dia mostra só ele');
+    await clica(p, `[data-a=tMes][data-v="${prox}"]`);
+    certo(/conta do mês que vem teste/i.test(await lista()) && !/conta deste mês teste/i.test(await lista()), 'mês seguinte: só as dele');
+    await clica(p, `[data-a=tMes][data-v="${m0}"]`); await clica(p, '#view .rv-aviso');
+    certo(/conta velha teste/i.test(await lista()), 'a atrasada fica no mês dela');
+    certo(/A pagar no mês\s*R\$ [\d.]*\d+,\d\d/.test((await p.textContent('#tResumo')).replace(/\s+/g, ' ')), 'resumo do mês com valor exato');
+  }],
   ['tarefa de conta: marcar como paga e desfazer', async (st, abrir) => {
     const p = await abrir();
     await ir(p, 'tarefas');
