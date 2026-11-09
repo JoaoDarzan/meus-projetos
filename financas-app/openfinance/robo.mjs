@@ -61,7 +61,7 @@ async function principal() {
     const invs = await pg.investimentos(id);
     invs.filter(v => v.status !== 'TOTAL_WITHDRAWAL').forEach(v => caixas.push({ banco, nome: v.name || v.code || 'Investimento', saldo: v.balance, tipo: [v.type, v.subtype].filter(Boolean).join('/'), em: v.date || it.lastUpdatedAt || '' }));
     contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT').forEach(c => caixas.push({ banco, nome: c.name || 'Poupança', saldo: c.balance, tipo: 'SAVINGS_ACCOUNT', em: it.lastUpdatedAt || '' }));
-    console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => v.type || '?')).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
+    console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => `${v.type || '?'}/${v.status || 'sem status'}/${v.balance != null ? 'com saldo' : v.amount != null ? 'só amount' : 'sem valor'}`)).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
