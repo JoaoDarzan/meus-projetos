@@ -265,10 +265,11 @@ test('caixinhas: saldo do jeito do app, só as que rendem no banco, e a diferen�
   assert.deepEqual(r.mudancas.map(n => [n.id, n.saldo_conferido, n.data_da_conferencia]), [['A', 1107.98, '2026-10-27'], ['B', 604.36, '2026-10-27']], 'cada uma na proporção do saldo');
   assert.deepEqual([mostraLiquido([{ obs: 'Rende 102% do CDI · o app do PicPay mostra o valor líquido' }]), mostraLiquido([{ obs: 'mostra liquido' }]), mostraLiquido([{ obs: 'Rende 100% do CDI' }])], [true, true, false]);
   assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-11-05')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência mais nova que a do banco: não volta no tempo');
+  assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-10-27')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência do mesmo dia da posição do banco: a sua vale mais');
 });
 
 test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam iguais ao total do banco, e a foto do dia vai para a tabela saldos', async () => {
-  const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, amount: 1004.5, taxes: 4, taxes2: 0, name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
+  const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, amount: 1004.5, taxes: 4, taxes2: 0, date: '2026-10-26T00:00:00Z', name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
     { id: 'i3', type: 'FIXED_INCOME', status: 'TOTAL_WITHDRAWAL', balance: 0, name: 'CDB - BANCOTESTE' }];
   const { st, env, fim } = await preparar({ investimentos: inv });
   try {
@@ -283,7 +284,7 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1614.5, 'caixinhas = total BRUTO do banco (amount; quem não manda amount usa balance; a retirada total não conta)');
     const lofi = st.linhas('extrato').find(l => l.id === 'LOFI-bancoteste');
     assert.ok(lofi && lofi.valor === 1614.5 && /líquido 1610\.50 · IR 4\.00 · IOF 0\.00/.test(lofi.obs) && lofi.status === 'Cancelado', 'guarda o bruto, o líquido e o imposto, escondido: ' + JSON.stringify(lofi));
-    assert.ok(c('CA').data_da_conferencia === '2026-10-27' && c('CC').data_da_conferencia === '2026-10-27', 'caixinhas conferidas no dia do banco');
+    assert.ok(c('CA').data_da_conferencia === '2026-10-26' && c('CC').data_da_conferencia === '2026-10-26', 'caixinhas conferidas no dia da posição que o banco mandou (não no da atualização)');
     assert.deepEqual([c('CE').saldo_conferido, c('CE').data_da_conferencia], [300, '2026-10-01'], 'dinheiro emprestado não é do banco: fica como está');
     const foto = st.linhas('saldos');
     assert.equal(foto.length, 4, 'uma foto por conta: ' + JSON.stringify(foto));
@@ -294,6 +295,7 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.ok(!/1610|1614|1000,5|610/.test(i.saida), 'o registro público não mostra valores');
     /* banco que mostra o líquido no app (PicPay): com "mostra líquido" na OBS de uma caixinha, as caixinhas seguem o líquido */
     st.tabelas.contas.find(x => x.id === 'CA').obs = 'Rende 100% do CDI · o app do banco mostra o valor líquido';
+    ['CA', 'CC'].forEach(id => { st.tabelas.contas.find(x => x.id === id).data_da_conferencia = '2026-10-20'; });
     const liq = await rodar(Object.assign({}, env, { MODO: 'importar' }));
     assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1610.5, 'caixinhas = total LÍQUIDO do banco');
     assert.match(liq.saida, /iguais ao total líquido do banco/);

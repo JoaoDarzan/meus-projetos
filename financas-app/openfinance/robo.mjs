@@ -67,7 +67,9 @@ async function principal() {
     const poup = contas.filter(c => c.subtype === 'SAVINGS_ACCOUNT' && c.balance != null);
     /* bruto (amount: com o rendimento, antes do imposto, o número grande do app do banco) e líquido (balance: o que cai na conta se sacar hoje) */
     const soma = f => u2(ativos.reduce((t, v) => t + +(f(v) || 0), 0) + poup.reduce((t, c) => t + +c.balance, 0));
-    if (ativos.length || poup.length) caixas.push({ banco, saldo: soma(v => v.amount != null ? v.amount : v.balance), liquido: soma(v => v.balance), ir: soma(v => v.taxes), iof: soma(v => v.taxes2), n: ativos.length + poup.length, em: it.lastUpdatedAt || '' });
+    if (ativos.length || poup.length) caixas.push({ banco, saldo: soma(v => v.amount != null ? v.amount : v.balance), liquido: soma(v => v.balance), ir: soma(v => v.taxes), iof: soma(v => v.taxes2), n: ativos.length + poup.length,
+      /* a data da posição que o banco mandou (alguns bancos mandam com dias de atraso); sem ela, a da última atualização */
+      em: ativos.map(v => String(v.date || '').slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().pop() || it.lastUpdatedAt || '' });
     console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => `${v.type || '?'}/${v.status || 'sem status'}/${v.balance != null ? 'com saldo' : v.amount != null ? 'só amount' : 'sem valor'}`)).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
     for (const c of contas) {
       const ts = await pg.lancamentos(c.id, DESDE), faturas = {};

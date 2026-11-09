@@ -250,7 +250,8 @@ export const caixinhaDoBanco = cx => String(cx.conta || '').toLowerCase() !== 'c
 /* o Open Finance só diz o total guardado no banco (não o nome de cada caixinha): a diferença entre o total do banco e a soma
    das caixinhas no app (o rendimento, quase sempre) é dividida entre elas na proporção do saldo de cada uma; a soma fica igual à do banco */
 export function ajustarCaixinhas(totalBanco, caixinhas, extrato, data, hoje) {
-  const cs = caixinhas.map(cx => ({ cx, s: saldoCaixinha(cx, extrato, hoje) })).filter(x => x.s != null && x.s > 0 && String(x.cx.data_da_conferencia).slice(0, 10) <= data);
+  /* só mexe se a posição do banco for mais nova que a última conferência (uma conferência sua de hoje vale mais que um dado do banco do mesmo dia ou de antes) */
+  const cs = caixinhas.map(cx => ({ cx, s: saldoCaixinha(cx, extrato, hoje) })).filter(x => x.s != null && x.s > 0 && String(x.cx.data_da_conferencia).slice(0, 10) < data);
   const soma = r2(cs.reduce((t, x) => t + x.s, 0));
   if (!cs.length || soma <= 0 || totalBanco == null) return { mudancas: [], diferenca: null };
   const dif = r2(+totalBanco - soma);
