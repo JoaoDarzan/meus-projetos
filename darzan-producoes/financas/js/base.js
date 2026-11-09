@@ -456,6 +456,8 @@ window.A = window.A || {};
   c.fotosTotal = () => { const ds = [...new Set(c.caixinhas().flatMap(cx => c.fotos(cx).map(z => z.data)))].sort();
     return ds.map(d => ({ data: d, saldo: u.r2(u.sum(c.caixinhas(), cx => c.saldoEm(cx, d) || 0)) })); };
   /* o que o banco informou das caixinhas (robô, escondido): total bruto, líquido se sacar hoje e imposto */
+  /* o app desse banco mostra a caixinha pelo valor líquido (PicPay)? então o app segue o líquido; senão, o bruto (Nubank) */
+  c.mostraLiquido = b => c.caixinhas().some(x => x['BANCO'] === b && /mostra (o valor )?l[ií]quido/i.test(x['OBS'] || ''));
   c.caixinhasNoBanco = b => { const l = db.linhas('EXTRATO').find(x => /^LOFI-/.test(x.ID) && x['BANCO'] === b); if (!l) return null;
     const o = String(l['OBS'] || ''), n = re => { const m = o.match(re); return m ? +m[1] : null; };
     return { bruto: c.num(l['VALOR']), liquido: n(/líquido (-?[\d.]+)/), ir: n(/IR (-?[\d.]+)/) || 0, iof: n(/IOF (-?[\d.]+)/) || 0, data: String(l['DATA'] || '').slice(0, 10) }; };

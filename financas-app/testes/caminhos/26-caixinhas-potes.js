@@ -36,10 +36,16 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     const p = await abrir({ aparelho: 'iphone-15' });
     await irBancos(p);
     const liq = await txt(p, '#view .bank .sub-row.liq');
-    certo(/Se sacar as caixinhas hoje\s*R\$ 4\.940,25/.test(liq) && /bruto R\$ 5\.000,00/.test(liq) && /Imposto de Renda R\$ 59,75/.test(liq), 'o banco mostra o líquido e o imposto: ' + liq);
+    certo(/Se sacar as caixinhas hoje\s*R\$ 4\.940,25/.test(liq) && /no bruto \(R\$ 5\.000,00\), igual ao app do Nubank/.test(liq) && /Imposto de Renda R\$ 59,75/.test(liq), 'o banco mostra o líquido e o imposto: ' + liq);
     certo(/Se sacar tudo hoje: R\$ 4\.940,25 · imposto R\$ 59,75/.test(await txt(p, '#cxLiq')), 'o quadro das caixinhas mostra o total líquido');
     await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
     certo(/valor bruto/.test(await txt(p, '#s2')), 'a conferência explica que nas caixinhas vai o valor bruto');
+    /* banco que mostra o líquido no app (como o PicPay): o app explica que as caixinhas já estão no líquido e a conferência pede o valor que aparece */
+    await p.evaluate(() => { const cx = A.db.linhas('CONTAS').find(x => x['CONTA'] === 'Caixinha Reserva'); A.db.salvar('CONTAS', { ID: cx.ID, 'OBS': 'Rende 100% do CDI · o app do banco mostra o valor líquido' }); A.fechar && A.fechar(); });
+    await p.keyboard.press('Escape').catch(() => {}); await irBancos(p);
+    certo(/já estão no líquido, igual ao app do Nubank/.test(await txt(p, '#view .bank .sub-row.liq')), 'banco no líquido: ' + await txt(p, '#view .bank .sub-row.liq'));
+    await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
+    certo(/já é o líquido/.test(await txt(p, '#s2')), 'a conferência explica que o valor do app já é o líquido');
   }],
   ['sem a tabela de saldos no Supabase: avisa o passo e o resto de Bancos funciona', async (st, abrir) => {
     st.semTabela('saldos');

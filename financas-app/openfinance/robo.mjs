@@ -4,7 +4,7 @@
    ⚠️ O registro do GitHub é público: aqui só se escrevem CONTAGENS, nunca valores, nomes ou descrições.
    Segredos (GitHub): PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, PLUGGY_ITEMS ("Nubank=id,PicPay=id,..." ou só os ids separados por vírgula), DF_CLAUDE_CHAVE. */
 import { criarPluggy } from './pluggy.mjs';
-import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas } from './regras.mjs';
+import { sem, lerItens, conferirItens, nomeBanco, identificarBanco, paraApp, casar, estornos, memoria, linhaNova, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido } from './regras.mjs';
 
 const SUPABASE = process.env.DF_SUPABASE_URL || 'https://sczpyzcozcaibyzekmau.supabase.co';
 const PUBLICA = process.env.DF_SUPABASE_CHAVE || 'sb_publishable_PLND7koek37GWekjKK50bQ_SodtXm14';
@@ -146,12 +146,13 @@ async function conferenciaDiaria(saldos, caixas, contasApp, extrato) {
     const n = { id: cx.id, saldo_conferido: Math.round(+saldo * 100) / 100, data_da_conferencia: d }; ops.push(n); ajustado.set(cx.id, n);
   });
   console.log(`  · contas que bateram com o banco: ${ops.length} conferida(s) hoje`);
-  caixas.forEach(({ banco, saldo, em }) => {
+  caixas.forEach(({ banco, saldo, liquido, em }) => {
     const deste = contasApp.filter(c => c.banco === banco && caixinhaDoBanco(c));
     if (!deste.length) return;
-    const r = ajustarCaixinhas(saldo, deste, extrato, dataDe(em), hoje);
+    /* o mesmo valor que o app do banco mostra: bruto (Nubank) ou líquido (PicPay) */
+    const liq = mostraLiquido(deste) && liquido != null, r = ajustarCaixinhas(liq ? liquido : saldo, deste, extrato, dataDe(em), hoje);
     r.mudancas.forEach(n => { ops.push(n); ajustado.set(n.id, n); });
-    if (r.mudancas.length) console.log(`  · ${banco}: ${r.mudancas.length} caixinha(s) iguais ao total do banco (diferença ${Math.abs(r.diferenca) <= Math.max(5, r.soma * 0.01) ? 'pequena: rendimento' : 'grande: dinheiro que entrou ou saiu das caixinhas'})`);
+    if (r.mudancas.length) console.log(`  · ${banco}: ${r.mudancas.length} caixinha(s) iguais ao total ${liq ? 'líquido' : 'bruto'} do banco (diferença ${Math.abs(r.diferenca) <= Math.max(5, r.soma * 0.01) ? 'pequena: rendimento' : 'grande: dinheiro que entrou ou saiu das caixinhas'})`);
   });
   if (ops.length) await gravar(ops.map(linha => ({ tabela: 'contas', op: 'salvar', linha })));
   /* foto do dia: o saldo de cada conta e caixinha do app depois da conferência */

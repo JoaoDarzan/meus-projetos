@@ -259,3 +259,6 @@ export function ajustarCaixinhas(totalBanco, caixinhas, extrato, data, hoje) {
   if (resto) { const maior = novos.reduce((a, b) => (b.saldo_conferido > a.saldo_conferido ? b : a)); maior.saldo_conferido = r2(maior.saldo_conferido + resto); }
   return { mudancas: novos, diferenca: dif, soma };
 }
+/* cada banco mostra a caixinha de um jeito: o PicPay mostra o valor líquido (já sem o imposto), o Nubank mostra o bruto.
+   Basta uma caixinha do banco com "mostra líquido" na OBS para o robô seguir o líquido daquele banco; sem isso, segue o bruto */
+export const mostraLiquido = caixinhas => caixinhas.some(c => /mostra (o valor )?l[ií]quido/i.test(c.obs || ''));

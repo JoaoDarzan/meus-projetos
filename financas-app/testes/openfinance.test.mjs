@@ -6,7 +6,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas } from '../openfinance/regras.mjs';
+import { lerItens, conferirItens, nomeBanco, identificarBanco, faturaDe, paraApp, linhaNova, entreMinhas, estornos, casar, saldoBate, saldoCaixinha, caixinhaDoBanco, ajustarCaixinhas, mostraLiquido } from '../openfinance/regras.mjs';
 const require = createRequire(import.meta.url);
 const { criar } = require('./supabase-de-mentira.js');
 const ROBO = new URL('../openfinance/robo.mjs', import.meta.url).pathname;
@@ -263,6 +263,7 @@ test('caixinhas: saldo do jeito do app, só as que rendem no banco, e a diferen�
   assert.equal(r.diferenca, 12.34, 'banco 1712,34 − app (1100 + 600)');
   assert.equal(Math.round(r.mudancas.reduce((t, n) => t + n.saldo_conferido, 0) * 100) / 100, 1712.34, 'a soma fica igual à do banco');
   assert.deepEqual(r.mudancas.map(n => [n.id, n.saldo_conferido, n.data_da_conferencia]), [['A', 1107.98, '2026-10-27'], ['B', 604.36, '2026-10-27']], 'cada uma na proporção do saldo');
+  assert.deepEqual([mostraLiquido([{ obs: 'Rende 102% do CDI · o app do PicPay mostra o valor líquido' }]), mostraLiquido([{ obs: 'mostra liquido' }]), mostraLiquido([{ obs: 'Rende 100% do CDI' }])], [true, true, false]);
   assert.deepEqual(ajustarCaixinhas(500, [cx('A', 'Caixinha A', 1000, 'Rende', '2026-11-05')], ex, '2026-10-27', '2026-10-30').mudancas, [], 'conferência mais nova que a do banco: não volta no tempo');
 });
 
@@ -289,8 +290,13 @@ test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam 
     assert.ok(foto.every(f => /^Z\d{4}-\d{2}-\d{2}-C[A-Z]$/.test(f.id)), 'id com o dia e a conta');
     assert.equal(foto.find(f => f.conta === 'Caixinha A').saldo, c('CA').saldo_conferido);
     assert.match(i.saida, /contas que bateram com o banco: 1/);
-    assert.match(i.saida, /BancoTeste: 2 caixinha\(s\) iguais ao total do banco \(diferença pequena: rendimento\)/);
+    assert.match(i.saida, /BancoTeste: 2 caixinha\(s\) iguais ao total bruto do banco \(diferença pequena: rendimento\)/);
     assert.ok(!/1610|1614|1000,5|610/.test(i.saida), 'o registro público não mostra valores');
+    /* banco que mostra o líquido no app (PicPay): com "mostra líquido" na OBS de uma caixinha, as caixinhas seguem o líquido */
+    st.tabelas.contas.find(x => x.id === 'CA').obs = 'Rende 100% do CDI · o app do banco mostra o valor líquido';
+    const liq = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(Math.round((c('CA').saldo_conferido + c('CC').saldo_conferido) * 100) / 100, 1610.5, 'caixinhas = total LÍQUIDO do banco');
+    assert.match(liq.saida, /iguais ao total líquido do banco/);
     /* rodar de novo no mesmo dia: troca a foto, não duplica */
     await rodar(Object.assign({}, env, { MODO: 'importar' }));
     assert.equal(st.linhas('saldos').length, 4, 'não duplicou');
