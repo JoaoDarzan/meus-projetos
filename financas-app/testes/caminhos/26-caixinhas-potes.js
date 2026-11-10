@@ -22,7 +22,7 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     const card = await txt(p, '#cxRende');
     certo(/Rendeu ontem\s*\+ R\$ 3,21/.test(card), 'rendeu ontem = 5.000 − 4.996,79: ' + card);
     certo(/Rendeu no mês\s*\+ R\$ 300,00/.test(card), 'no mês = 5.000 − 4.500 − 200 guardados: ' + card);
-    certo(/Fim do mês passado\s*R\$ 4\.500,00.*cresceu R\$ 500,00 até hoje/.test(card), 'fim do mês passado: ' + card);
+    certo(/Todas as caixinhas e cofrinhos juntos \(Nubank\): R\$ 5\.000,00/.test(card) && !/Fim do mês passado/.test(card), 'explica que o número é a soma das caixinhas: ' + card);
     certo(await p.$$eval('#cxRende svg.cxg circle', cs => cs.length) === 4, 'gráfico com um ponto por dia de foto (3 fotos + hoje)');
     const linhas = await p.$$eval('#view .bank .sub-row', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ')));
     const linha = linhas.find(t => /Caixinha Reserva/.test(t)) || '';
@@ -35,7 +35,7 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
       obs: `Open Finance · total bruto das caixinhas/aplicações (3) informado pelo banco em ${HOJE} · líquido 4940.25 · IR 59.75 · IOF 0.00 · só para conferência` });
     const p = await abrir({ aparelho: 'iphone-15' });
     await irBancos(p);
-    const linha = async b => { const t = await p.$$eval('#tbBancos tbody tr', (rs, b) => { const r = rs.find(x => x.cells[0].textContent.trim() === b); return r ? [...r.cells].map(c => c.textContent.trim()) : null; }, b);
+    const linha = async b => { const t = await p.$$eval('#tbBancos .bkr:not(.bkh)', (rs, b) => { const r = rs.find(x => x.children[0].textContent.trim() === b); return r ? [...r.children].map(c => c.textContent.trim()) : null; }, b);
       const n = v => +String(v).replace(/[^\d,-]/g, '').replace(',', '.'); return t && { bruto: n(t[1]), liquido: n(t[2]), rendeu: t[3] }; };
     const nu = await linha('Nubank'), saldoNu = await p.evaluate(() => A.c.saldoBanco('Nubank'));
     certo(nu && nu.bruto === saldoNu && Math.round((nu.bruto - nu.liquido) * 100) === 5975 && /\+ R\$ 300,00/.test(nu.rendeu), 'Nubank: bruto = o que o app do banco mostra, líquido = bruto − imposto, e quanto rendeu no mês: ' + JSON.stringify(nu));

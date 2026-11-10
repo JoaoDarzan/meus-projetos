@@ -1008,3 +1008,49 @@ body.topo-azul::before{background:transparent}
 .ppdias{display:grid;gap:6px;max-height:240px;overflow:auto}
 .ptr{grid-template-columns:1.2fr .8fr .8fr 1.2fr}
 .tab.mid .orb{color:#0a2a52;background:conic-gradient(from 200deg,#e8f3ff,#75aadb,#cfe6fb,#3a6ea5,#e8f3ff);box-shadow:0 10px 26px -6px rgba(117,170,219,.8),0 0 0 5px rgba(7,13,28,.9)}
+
+/* ===== v55: responsividade (celular e PC) ===== */
+/* iPhone: fundo "fixo" e rolagem no body faziam a barra de baixo pular. O degradê agora mora numa camada fixa e quem rola é a página */
+html,body{height:auto;min-height:100%}
+html{background:var(--bg);overscroll-behavior-y:none}
+body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
+.app::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60vw 45vh at 90% 0%,rgba(117,170,219,.42),transparent 70%),radial-gradient(55vw 45vh at 0% 35%,rgba(43,93,170,.42),transparent 70%),radial-gradient(55vw 40vh at 100% 70%,rgba(117,170,219,.26),transparent 70%),radial-gradient(60vw 45vh at 5% 100%,rgba(30,70,140,.45),transparent 70%)}
+.tabbar{transform:translateZ(0);-webkit-transform:translateZ(0);backface-visibility:hidden}
+.main,.wrap,#view{min-width:0;max-width:100%}
+/* bancos: lista que cabe no celular (no PC vira tabela) */
+.bkl{padding:4px 14px}
+.bkr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--stroke)}
+.bkr:last-child{border-bottom:0}
+.bkr .bkn{grid-column:1/-1;font-size:.95rem}
+.bkr span{display:grid;font-size:.86rem;min-width:0}
+.bkr span::before{content:attr(data-l);font-size:.68rem;color:var(--muted)}
+.bkr.bkh{display:none}
+.bkr.bkt .bkn{color:var(--blue-hi)}
+@media (min-width:700px){.bkr{grid-template-columns:1.2fr repeat(3,minmax(0,1fr));align-items:center}.bkr .bkn{grid-column:auto}.bkr span::before{display:none}.bkr.bkh{display:grid;font-size:.72rem;color:var(--muted);padding:8px 0}.bkr.bkh span{font-size:.72rem}}
+.bank-h .tot .liq{display:block;font-size:.72rem;color:var(--muted);margin-top:2px}
+.bank-h .tot .liq b{display:inline;font-size:.82rem;color:var(--fg)}
+.bank-h>div:nth-child(2){min-width:0}
+@media (max-width:420px){.bank-h{flex-wrap:wrap}.bank-h .tot{margin-left:0;width:100%;text-align:left;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.bank-h .tot .liq{display:inline;margin:0}}
+/* equipamentos: valores sem quebrar e peças de compra junta */
+.eqv b{font-size:clamp(.8rem,3.4vw,.98rem);white-space:nowrap}
+.eqv small{white-space:nowrap}
+.eqp{display:grid;gap:4px;margin:6px 0}
+.eqp span{display:grid;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--stroke)}
+.eqp i{font-style:normal;font-weight:700;font-size:.8rem}
+.eqp small{font-size:.7rem;color:var(--muted)}
+.pecasbox{margin:4px 0 14px;padding:12px;border:1px dashed var(--stroke);border-radius:16px}
+.pecasbox .lbl2{font-weight:700;font-size:.86rem;margin-bottom:8px}
+.peca{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 40px;gap:6px;margin-bottom:6px}
+.peca .pdel{border:1px solid var(--stroke);background:none;color:var(--muted);border-radius:12px;display:grid;place-items:center}
+.peca .pdel svg{width:16px;height:16px}
+#eVh:disabled{opacity:.7}
+/* recorrentes: os 3 números da produção cabem lado a lado */
+.prod .kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.prod .kpis.k3 .kpi{padding:10px}
+.prod .kpis.k3 .kpi b{font-size:clamp(.95rem,4.2vw,1.2rem)}
+.prodh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ppag .t{min-width:0}
+/* abas de cima (Quadro, Recorrentes...): rolam de lado sem empurrar a tela */
+.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+@media (max-width:380px){.kpis .kpi b{font-size:1.02rem}.kpis .kpi{padding:12px}}

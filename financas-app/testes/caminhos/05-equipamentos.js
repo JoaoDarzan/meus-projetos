@@ -44,4 +44,25 @@ module.exports = { etapa: 'Equipamentos', testes: [
     certo(st.linhas('extrato').length === n0, 'criou lançamento');
     igual((await resumo(p, m0)).saiu, antes, 'saiu mudou');
   }],
+  ['compra junta (câmera + lente): cada peça com o valor de mercado, o que paguei dividido na proporção e somado no total', async (st, abrir) => {
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await ir(p, 'equip'); await clica(p, '#view [data-a=novoE]');
+    await p.fill('#eN', 'Kit teste câmera e lente'); await p.fill('#eV', '5000');
+    await clica(p, '#eAddPeca'); await p.fill('#ePecas .peca:nth-child(1) .pn', 'Câmera teste'); await p.fill('#ePecas .peca:nth-child(1) .pv', '4500');
+    await clica(p, '#eAddPeca'); await p.fill('#ePecas .peca:nth-child(2) .pn', 'Lente teste'); await p.fill('#ePecas .peca:nth-child(2) .pv', '1500');
+    const t = await p.textContent('#ePecasT');
+    certo(/Câmera teste: paguei ≈ R\$ 3\.750,00 · vale R\$ 4\.500,00/.test(t) && /Lente teste: paguei ≈ R\$ 1\.250,00/.test(t) && /Vale hoje \(soma\): R\$ 6\.000,00/.test(t), 'divide o que pagou na proporção: ' + t);
+    certo(await p.isDisabled('#eVh'), 'com peças, o "vale hoje" vem da soma');
+    await clica(p, '#s2 .save'); await calmo(p);
+    const E = st.linhas('equipamentos').find(r => r.nome === 'Kit teste câmera e lente');
+    certo(E && /Peças: Câmera teste = 4500; Lente teste = 1500/.test(E.obs) && !/Vale hoje/.test(E.obs), 'gravou as peças: ' + (E && E.obs));
+    const card = (await p.textContent(`#view .eq[data-id="${E.id}"]`)).replace(/\s+/g, ' ');
+    certo(/Câmera teste\s*paguei R\$ 3\.750 · vale R\$ 4\.500/.test(card) && /valorizou 20%/.test(card), 'o card mostra cada peça e que valorizou: ' + card);
+    const kp = await p.evaluate(() => A.c.valeHoje(A.db.achar('EQUIPAMENTOS', [...A.db.linhas('EQUIPAMENTOS')].find(e => e['NOME'] === 'Kit teste câmera e lente').ID)).v);
+    igual(kp, 6000, 'o total "vale hoje" soma as peças');
+    await clica(p, `#view .eq[data-id="${E.id}"]`);
+    certo(await p.inputValue('#ePecas .peca:nth-child(2) .pn') === 'Lente teste' && !/Peças/.test(await p.inputValue('#eO')), 'ao editar, as peças voltam nos campos (e não aparecem nas anotações)');
+    await clica(p, '#ePecas .peca:nth-child(2) .pdel'); await clica(p, '#s2 .save'); await calmo(p);
+    certo(/Peças: Câmera teste = 4500(?!;)/.test(st.linhas('equipamentos').find(r => r.id === E.id).obs), 'tirar uma peça');
+  }],
 ] };

@@ -47,7 +47,7 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     certo(/Prod v=2 c=1/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs) && /Trabalho JREC/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs), 'gravou no pagamento (e manteve o que já tinha)');
     certo(st.linhas('dias').filter(d => d.pagamento === 'LREC-1').length === 2, 'os 2 dias ficaram ligados ao pagamento');
     const k = (await p.textContent('#view .prod .kpis')).replace(/\s+/g, ' ');
-    certo(/Vídeos\s*2/.test(k) && /Captações\s*1/.test(k) && /R\$ 400,00/.test(k), 'o mês mostra 2 vídeos, 1 captação e o que entrou: ' + k);
+    certo(/Vídeos\s*2/.test(k) && /Captações\s*1/.test(k) && /R\$ 400(?!,\d)/.test(k), 'o mês mostra 2 vídeos, 1 captação e o que entrou: ' + k);
     certo(new RegExp('2 vídeos · 1 captação.*dias ' + d1.slice(8) + '/').test(await p.textContent('#view .ppag')), 'o pagamento mostra o que foi e os dias');
     await conferirLayout(p, 'produção do recorrente');
   }],

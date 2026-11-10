@@ -1,5 +1,5 @@
 /* Etapa 22 · Pedidos do fim de outubro: extrato em ordem do que aconteceu, "Pra fazer" só do mês, porcentagem no gráfico e escolher o mês direto */
-const { HOJE, calmo, clica, certo, igual, conferirLayout } = require('../ajuda');
+const { HOJE, calmo, clica, certo, igual, conferirLayout, ir } = require('../ajuda');
 const mesmo = (a, b, msg) => certo(a === b, `${msg}: esperava ${b}, veio ${a}`); /* igual() é só para números */
 const m0 = HOJE.slice(0, 7);
 const addMes = (m, n) => { const d = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
@@ -20,21 +20,14 @@ module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
     certo(antes[0] > antes[2] && antes[0] < antes[1], '"Ainda vai acontecer" separa o que já foi do que vai ser: ' + antes);
     await conferirLayout(p, 'extrato com "ainda vai acontecer"');
   }],
-  ['"Pra fazer" do início só mostra o que é do mês escolhido (no mês atual, o atrasado de antes também)', async (st, abrir) => {
+  ['o Início não tem mais o "Pra fazer": as tarefas ficam na aba Tarefas, separadas por mês', async (st, abrir) => {
     st.tabelas.extrato.push(L('ZT-ESTE', { data: addDias(HOJE, 2), descricao: 'Conta deste mês', status: 'Previsto' }),
-      L('ZT-PROX', { data: addMes(m0, 1) + '-10', descricao: 'Conta do mês que vem', status: 'Previsto' }),
-      L('ZT-ATRAS', { data: addMes(m0, -1) + '-20', descricao: 'Conta atrasada', status: 'Previsto' }));
+      L('ZT-PROX', { data: addMes(m0, 1) + '-10', descricao: 'Conta do mês que vem', status: 'Previsto' }));
     const p = await abrir({ aparelho: 'iphone-15' });
-    const titulos = () => p.$$eval('#view .tk .t', ts => ts.map(t => t.textContent));
-    const tem = (ts, x) => ts.some(t => t.includes(x));
-    let ts = await titulos();
-    certo(!tem(ts, 'mês que vem'), 'no mês atual não aparece a conta do mês que vem: ' + ts);
-    certo(await p.isVisible('#view h2:has-text("Pra fazer em")'), 'o título diz de qual mês é');
-    const todas = await p.evaluate(() => A.c.tarefas().filter(t => !t.feita).map(t => t.titulo));
-    certo(tem(todas, 'mês que vem'), 'a tarefa existe (só não aparece neste mês)');
-    await clica(p, '#view .mpill [data-a=mes][data-d="1"]');
-    ts = await titulos();
-    certo(tem(ts, 'mês que vem') && !tem(ts, 'deste mês') && !tem(ts, 'atrasada'), 'no mês que vem: só a do mês que vem: ' + ts);
+    certo(!(await p.$('#view .tk')) && !(await p.isVisible('#view h2:has-text("Pra fazer")')), 'o Início não mostra tarefas');
+    await ir(p, 'tarefas');
+    const ts = await p.$$eval('#view .tk .t', xs => xs.map(t => t.textContent));
+    certo(ts.some(t => t.includes('deste mês')) && !ts.some(t => t.includes('mês que vem')), 'na aba Tarefas, o mês atual: ' + ts);
   }],
   ['Para onde foi em anel (app de investimento): total no meio, porcentagem na lista, tocar no pedaço abre as subcategorias e os lançamentos; o total compara com o mês anterior', async (st, abrir) => {
     const ant = addMes(m0, -1);

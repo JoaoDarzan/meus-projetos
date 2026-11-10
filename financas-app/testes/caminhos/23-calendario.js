@@ -29,8 +29,8 @@ module.exports = { etapa: 'Calendário dos dias trabalhados', testes: [
     certo(await p.isVisible(`#view .cd.falta[data-v="${SAB}"]`), 'dia sem pagamento com a borda de "falta receber"');
     const t = await p.evaluate(() => A.c.tarefas().find(t => t.id === 'w:JPL SOM'));
     certo(t && t.valor === 500 && /2 dias/.test(t.titulo) && !t.feita, 'tarefa "Receber JPL SOM · 2 dias": ' + JSON.stringify(t));
-    await p.evaluate(() => { A.ui.view = 'inicio'; A.render(false); });
-    certo(await p.isVisible('#view .tk:has-text("Receber JPL SOM")'), 'aparece no Pra fazer do início');
+    await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
+    certo(await p.isVisible('#view .tk:has-text("Receber JPL SOM")'), 'aparece nas Tarefas');
   }],
   ['o Pix de R$ 500 chega: ligar aos 2 dias divide R$ 250 cada, os dias ficam pagos, a tarefa some e a renda não conta em dobro', async (st, abrir) => {
     st.tabelas.dias.push({ id: 'WSAB', user_id: 'u-joao', data: SAB, empresa: 'JPL SOM', descricao: 'som', valor: null, pagamento: null, obs: null },

@@ -87,7 +87,7 @@ module.exports = { etapa: 'Trabalhos: quadro, recorrentes e balanço', testes: [
     certo(/Este mês\s*R\$\s?400/.test(txt), 'este mês: 400 — ' + txt.slice(0, 600));
     certo(/Média por mês\s*R\$\s?300\s*em 3 meses/.test(txt), 'média: 900 em 3 meses = 300');
     certo(/Total\s*R\$\s?900/.test(txt) && /Pagamentos\s*3/.test(txt), 'total 900 em 3 pagamentos');
-    certo(/R\$\s?500,00/.test(txt), 'o mês de 2 pagamentos soma 500');
+    certo(/R\$\s?500(?![\d.])/.test(await p.textContent('#view .recp')), 'o mês de 2 pagamentos soma 500 (na tabela de meses)');
     igual(await p.$$eval('#view [id^=chRec] svg .col', g => g.length), 3, 'gráfico com uma coluna por mês');
     await conferirLayout(p, 'recorrentes');
   }],

@@ -223,7 +223,8 @@ export function linhaNova(p, mem, prefixo = 'LOF-') {
   const grupo = s ? s.grupo : p.valor > 0 ? 'Renda' : 'Desejos';
   return { id: prefixo + p.pid, data: p.data, banco: p.banco, descricao: p.desc.slice(0, 120), grupo, tipo: p.tipo, valor: p.valor,
     categoria: s ? s.categoria : '', subcategoria: s ? s.subcategoria : '', status: 'Pago', parcela: p.parcela,
-    obs: `Open Finance · OF ${p.pid} · conferir` }; /* tudo que chega do banco vai para o Revisar: o João confirma o que é (a categoria sugerida já vem preenchida) */
+    obs: `Open Finance · OF ${p.pid}${s ? '' : ' · conferir'}` }; /* só vai para o Revisar o que o robô não sabe o que é: transferência entre contas do João, caixinha, rendimento
+       e o que já foi classificado antes (memória) entram prontos */
 }
 
 /* o saldo da conta no app (conferido + o que entrou e saiu depois) bate com o do banco? */

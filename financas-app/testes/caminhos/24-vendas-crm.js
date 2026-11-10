@@ -56,12 +56,13 @@ module.exports = { etapa: 'Vendas (CRM)', testes: [
     const t = await p.evaluate(() => A.c.tarefas().filter(t => t.id.startsWith('v:')).map(t => [t.id, t.titulo, t.nota]));
     certo(t.length === 1 && t[0][0] === 'v:JL2' && /Chamar Ana e Pedro de novo/.test(t[0][1]) && /há 4 dias/.test(t[0][2]), 'só quem passou de 3 dias: ' + JSON.stringify(t));
     igual(await p.evaluate(m => A.c.funil(m).esperando, m0), 1, '1 esperando resposta');
-    certo(await p.isVisible('#view .tk:has-text("Chamar Ana e Pedro de novo")'), 'está no Pra fazer do início');
+    await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
+    certo(await p.isVisible('#view .tk:has-text("Chamar Ana e Pedro de novo")'), 'está nas Tarefas');
     const href = await p.getAttribute('#view .tk:has-text("Chamar Ana e Pedro") a.whats', 'href');
     certo(decodeURIComponent(href).startsWith('https://wa.me/5519988881111?text=Oi, Ana e Pedro!') && /orçamento/.test(decodeURIComponent(href)), 'WhatsApp com a mensagem de retorno: ' + href);
     await irQuadro(p);
     certo(/sem resposta há 4 dias/.test(await p.textContent('#view .job[data-id="JL2"]')), 'o cartão mostra há quantos dias');
-    await p.evaluate(() => { A.ui.view = 'inicio'; A.render(false); });
+    await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });
     await clica(p, '#view .tk:has-text("Chamar Ana e Pedro") [data-a=tarefa]'); await calmo(p);
     mesmo(crm(st, 'JL2').contato, HOJE, 'anotou que chamou hoje');
     certo(!(await p.evaluate(() => A.c.tarefas().some(t => t.id === 'v:JL2'))), 'a tarefa saiu');

@@ -534,8 +534,12 @@ window.A = window.A || {};
   c.linhasDaCompra = pid => { const re = new RegExp('Compra ' + pid + '(?![\\w-])'); return c.lancs().filter(l => re.test(l.obs)); };
   /* quanto o equipamento vale hoje: o que o João anotou ("Vale hoje 1234.56 em AAAA-MM-DD" na OBS) ou uma estimativa
      (perde uns 20% por ano desde a compra, nunca abaixo de 25% do que pagou). Vendido não vale mais nada para você */
+  /* compra junta (ex.: câmera + lente): "Peças: Câmera = 3500; Lente 23mm = 2000" na OBS. O que pagou se divide na proporção do valor de cada peça */
+  c.pecas = e => { const m = String(e['OBS'] || '').match(/Peças: ([^·]*)/); return m ? m[1].split(';').map(x => x.match(/^\s*(.+?)\s*=\s*(\d+(?:\.\d+)?)\s*$/)).filter(Boolean).map(x => ({ nome: x[1], vale: +x[2] })) : []; };
   c.valeHoje = e => { const pago = c.num(e['VALOR']) || 0, m = String(e['OBS'] || '').match(/Vale hoje (\d+(?:\.\d+)?)(?: em (\d{4}-\d{2}-\d{2}))?/);
     if (e['ESTADO'] === 'Vendido') return { v: 0, estimado: false, vendido: true, pago };
+    const ps = c.pecas(e), tv = u.sum(ps, p => p.vale);
+    if (ps.length && tv > 0) return { v: u.r2(tv), estimado: false, pago, pecas: ps.map(p => Object.assign({}, p, { pago: u.r2(pago * p.vale / tv) })) };
     if (m) return { v: +m[1], data: m[2] || '', estimado: false, pago };
     const d = String(e['DATA DA COMPRA'] || '').slice(0, 10), anos = /^\d{4}-\d{2}-\d{2}$/.test(d) ? Math.max(0, -u.ateHoje(d) / 365.25) : 0;
     return { v: u.r2(pago * Math.max(0.25, Math.pow(0.8, anos))), estimado: true, pago }; };
