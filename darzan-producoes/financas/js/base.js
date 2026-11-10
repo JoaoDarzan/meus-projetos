@@ -199,7 +199,7 @@ window.A = window.A || {};
         /* no cartão, o lançamento fica no mês da fatura em que a cobrança cai */
         const mf = tipo === 'cartão' && A.c.cartao(f['BANCO']) ? A.c.faturaDe(u.dataNoMes(m, dia), f['BANCO']) : m;
         if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === mf && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
-        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(mf, dia), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': tipo === 'cartão' ? 'Pago' : 'Previsto', 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
+        ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(mf, dia), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': 'Previsto', /* no cartão também: fica prevista até o banco mostrar a cobrança */ 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
       });
     });
     ops.push(...parcelasDosTrabalhos(m0));
@@ -347,6 +347,8 @@ window.A = window.A || {};
   /* compra devolvida ou reembolsada continua na fatura (o banco cobra e depois devolve), mas não conta como gasto */
   c.naFatura = l => c.ehGasto(l) || l.grupo === 'Reembolso';
   c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l));
+  /* o banco já mostrou essa cobrança (o robô marcou "OF <id>", ou "OFP <id>" se ainda está pendente na fatura aberta) */
+  c.noBanco = l => /\bOFP? [0-9a-f-]{20,}/i.test(l.obs || '');
   c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m)));
   c.pagFatura = (nome, m) => c.lancs().find(l => l.obs.indexOf(`Fatura ${nome} ${m}`) === 0);
   c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
@@ -517,7 +519,7 @@ window.A = window.A || {};
      O que já foi visto fica guardado no aparelho; na primeira vez, só os últimos 3 dias contam como novos */
   const VISTO = 'df-visto';
   const lerVisto = () => { try { const o = JSON.parse(localStorage.getItem(VISTO) || 'null'); if (o && o.ini) return { ini: o.ini, ids: new Set(o.ids || []) }; } catch (e) { /* sem armazenamento */ } return { ini: u.addDias(u.hoje(), -3), ids: new Set() }; };
-  c.doRobo = () => c.lancs().filter(l => !/^LOF[PSID]-/.test(l.id) && (/^LOF-/.test(l.id) || /\bOF [0-9a-f-]{20,}/i.test(l.obs))).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : a.id < b.id ? 1 : -1);
+  c.doRobo = () => c.lancs().filter(l => !/^LOF[PSID]-/.test(l.id) && !/\bOFP [0-9a-f-]{20,}/i.test(l.obs) && (/^LOF-/.test(l.id) || /\bOF [0-9a-f-]{20,}/i.test(l.obs))).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : a.id < b.id ? 1 : -1);
   c.novidades = () => { const v = lerVisto(), ls = c.doRobo(); return { novas: ls.filter(l => l.data >= v.ini && !v.ids.has(l.id)), vistas: ls.filter(l => l.data < v.ini || v.ids.has(l.id)) }; };
   c.marcarVisto = () => { const ini = u.addDias(u.hoje(), -60), v = lerVisto(), ids = c.doRobo().filter(l => l.data >= ini).map(l => l.id);
     try { localStorage.setItem(VISTO, JSON.stringify({ ini: v.ini < ini ? ini : v.ini, ids: [...new Set([...v.ids].concat(ids))].filter(id => ids.includes(id)) })); } catch (e) { /* sem armazenamento */ } };

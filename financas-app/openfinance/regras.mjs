@@ -274,7 +274,7 @@ export const diaNoBrasil = (em, seVazio = '') => { const t = String(em || ''); i
 const reais = v => 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+,)/g, '.');
 export function avisosDoBanco(casados, hoje) {
   const limite = new Date(Date.parse(hoje + 'T12:00:00Z') - 3 * 864e5).toISOString().slice(0, 10);
-  const ps = casados.filter(p => (p.acao === 'novo' || p.acao === 'conferir') && p.data >= limite && +p.valor);
+  const ps = casados.filter(p => (p.acao === 'novo' || p.acao === 'conferir') && !p.pendente && p.data >= limite && p.data <= hoje && +p.valor);
   const base = { quando: hoje, tipo: 'banco', enviado: null };
   if (ps.length <= 4) return ps.map(p => Object.assign({ id: ('VOF-' + p.pid).slice(0, 110), titulo: `${p.valor > 0 ? 'Entrou' : 'Saiu'} ${reais(p.valor)} · ${p.banco}${p.tipo === 'cartão' ? ' (cartão)' : ''}`, corpo: String(p.desc || '').slice(0, 120) || 'Do Open Finance' }, base));
   const ent = ps.filter(p => p.valor > 0).reduce((s, p) => s + +p.valor, 0), sai = ps.filter(p => p.valor < 0).reduce((s, p) => s - p.valor, 0);

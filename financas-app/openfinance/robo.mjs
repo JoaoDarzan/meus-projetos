@@ -88,8 +88,9 @@ async function principal() {
   if (MODO === 'diagnostico') { console.log('\nDiagnóstico pronto: a conexão com os bancos funciona. Nada foi gravado.'); return; }
 
   const extrato = await ler('extrato'), mem = memoria(extrato);
-  /* compras ainda pendentes (o Inter deixa a fatura aberta inteira como pendente) só entram na prévia, para conferir; importar espera ficarem lançadas */
-  const casados = estornos(casar(propostas.filter(p => !p.pendente || MODO === 'previa'), extrato), extrato);
+  /* compras do cartão ainda pendentes (fatura aberta e parcelas futuras: o Inter deixa a fatura aberta inteira como pendente) também entram,
+     marcadas "OFP <id>" e como previstas; quando o banco lançar de vez, a mesma linha ganha "OF <id>" (não duplica). Pendente na conta corrente continua esperando */
+  const casados = estornos(casar(propostas.filter(p => !p.pendente || p.tipo === 'cartão'), extrato), extrato);
   const resumo = contar(casados, p => p.acao);
   console.log(`\nComparando com o app: ${resumo.conferir || 0} já estavam lá, ${resumo.novo || 0} novos, ${resumo['ja-importado'] || 0} já importados antes, ${resumo.ignorar || 0} ignorados (pagamento de fatura ou compra estornada), ${propostas.filter(p => p.pendente).length} pendentes (ficam para quando confirmarem).`);
   Object.entries(contar(casados.filter(p => p.acao === 'novo'), p => `${p.banco} (${p.tipo})`)).forEach(([k, n]) => console.log(`  · novos em ${k}: ${n}`));
@@ -126,11 +127,11 @@ async function principal() {
   if (MODO === 'importar') {
     const ops = extrato.filter(l => /^LOFP-/.test(l.id)).map(l => ({ tabela: 'extrato', op: 'apagar', linha: { id: l.id } }));
     casados.forEach(p => {
-      if (p.acao === 'novo') ops.push({ tabela: 'extrato', op: 'salvar', linha: linhaNova(p, mem) });
+      if (p.acao === 'novo') { const l = linhaNova(p, mem); if (p.pendente) Object.assign(l, { status: 'Previsto', obs: (p.parcela ? `Compra ${grupoParcelas(p)} · ` : '') + l.obs.replace(`OF ${p.pid}`, `OFP ${p.pid}`) }); ops.push({ tabela: 'extrato', op: 'salvar', linha: l }); }
       /* conferido pelo banco (no holerite, todas as linhas que somam o depósito ganham a marca) */
       if (p.acao === 'conferir') (p.grupo || [p.app]).forEach(id => {
-        const l = extrato.find(x => x.id === id), obs = [String(l.obs || '').trim(), `OF ${p.pid}`].filter(Boolean).join(' · ');
-        ops.push({ tabela: 'extrato', op: 'salvar', linha: Object.assign({ id: l.id, obs }, l.status === 'Previsto' && p.data <= hoje ? { status: 'Pago', data: p.data } : {}) });
+        const l = extrato.find(x => x.id === id), obs = [String(l.obs || '').replace(/\s*·?\s*OFP [0-9a-f-]{20,}/gi, '').trim(), `${p.pendente ? 'OFP' : 'OF'} ${p.pid}`].filter(Boolean).join(' · ');
+        ops.push({ tabela: 'extrato', op: 'salvar', linha: Object.assign({ id: l.id, obs }, !p.pendente && l.status === 'Previsto' && p.data <= hoje ? { status: 'Pago', data: p.data } : {}) });
       });
     });
     await gravar(ops);
@@ -142,6 +143,8 @@ async function principal() {
 }
 /* conferência de todo dia: a conta que bateu com o banco fica "conferida hoje"; as caixinhas que rendem ficam iguais ao total
    que o banco informou; e o saldo de cada conta e caixinha vai para a foto diária (tabela saldos), que mostra quanto rendeu */
+/* as parcelas futuras de uma mesma compra ganham a mesma marca "Compra OF…" (no Revisar aparecem juntas, uma vez só) */
+const grupoParcelas = p => { const k = `${sem(p.banco)}|${sem(String(p.desc || '').replace(/\s*\d+\/\d+\s*$/, ''))}|${Math.abs(+p.valor).toFixed(2)}`; let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 'POF' + h.toString(36).toUpperCase(); };
 async function conferenciaDiaria(saldos, caixas, contasApp, extrato) {
   const ops = [], dataDe = em => diaNoBrasil(em, hoje), ajustado = new Map();
   console.log('\nConferência do dia:');

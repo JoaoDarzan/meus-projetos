@@ -14,7 +14,7 @@ const CHAVE = 'dfc_chave-de-teste-open-finance';
 
 /* Pluggy de mentira: 1 banco com conta e cartão */
 const ITEM = '11111111-2222-3333-4444-555555555555';
-function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefined, investimentos = [], atualizado = '2026-10-27T09:00:00Z' } = {}) {
+function pluggyFalsa(lancs0, { conector = 'BancoTeste S.A.', nomeConta = undefined, investimentos = [], atualizado = '2026-10-27T09:00:00Z', extras = [] } = {}) {
   const s = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), json = (c, b) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(b)); };
     if (u.pathname === '/auth') { let b = ''; req.on('data', d => b += d); return req.on('end', () => JSON.parse(b).clientSecret === 'segredo-certo' ? json(200, { apiKey: 'k1' }) : json(401, { message: 'no' })); }
@@ -24,7 +24,7 @@ function pluggyFalsa(lancs, { conector = 'BancoTeste S.A.', nomeConta = undefine
     if (u.pathname === '/investments') return json(200, { results: investimentos });
     if (u.pathname === '/bills') return json(200, { results: [{ id: 'fat-nov', dueDate: '2026-11-07T00:00:00Z' }] });
     if (u.pathname === '/v2/transactions') {
-      const conta = u.searchParams.get('accountId'), todos = lancs.filter(t => t.accountId === conta), depois = u.searchParams.get('after');
+      const lancs = lancs0.concat(extras), conta = u.searchParams.get('accountId'), todos = lancs.filter(t => t.accountId === conta), depois = u.searchParams.get('after');
       /* duas páginas, para testar a paginação */
       return depois ? json(200, { results: todos.slice(1), next: null }) : json(200, { results: todos.slice(0, 1), next: todos.length > 1 ? `/v2/transactions?after=pag2&accountId=${conta}` : null });
     }
@@ -223,9 +223,8 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   const p = await rodar(Object.assign({}, env, { MODO: 'previa' }));
   assert.equal(p.codigo, 0, p.saida);
   const previa = st.linhas('extrato').filter(l => /^LOFP-/.test(l.id));
-  assert.ok(previa.length === 6 && previa.every(l => l.status === 'Cancelado'), 'prévia escondida (com a pendente, para conferir): ' + JSON.stringify(previa.map(l => [l.id, l.status])));
-  assert.ok(/pendente/.test(previa.find(l => /000000000006$/.test(l.id)).obs), 'a compra pendente aparece marcada como pendente na prévia');
-  assert.match(p.saida, /1 já estavam lá, 4 novos/);
+  assert.ok(previa.length === 5 && previa.every(l => l.status === 'Cancelado'), 'prévia escondida (o Pix pendente da conta espera): ' + JSON.stringify(previa.map(l => [l.id, l.status])));
+  assert.match(p.saida, /1 já estavam lá, 3 novos/);
   const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
   assert.equal(i.codigo, 0, i.saida);
   const ex = st.linhas('extrato');
@@ -278,6 +277,30 @@ test('dia do banco no horário de Brasília: atualização à noite não vira o 
     const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
     assert.equal(i.codigo, 0, i.saida);
     assert.equal(st.linhas('contas').find(x => x.id === 'CB').data_da_conferencia, '2026-10-27', 'o banco atualizou às 22h30 de 27/10 (01:30Z de 28/10): conferida em 27/10');
+  } finally { await fim(); }
+});
+
+test('cartão: compras pendentes (fatura aberta e parcelas futuras) entram como previstas, juntas no Revisar, sem aviso; quando o banco lança, a mesma linha é conferida (não duplica)', async () => {
+  const cc = (n, d, extra = {}) => T(n, 'cartao1', 'DEBIT', 80, 'LOJA PARCELADA TESTE', d, Object.assign({ status: 'PENDING', creditCardMetadata: { purchaseDate: '2026-09-20T15:00:00Z', billId: 'fat-nov', installmentNumber: +n - 6, totalInstallments: 4 } }, extra));
+  const extras = [cc('8', '2026-11-20T12:00:00Z'), cc('9', '2026-12-20T12:00:00Z')];
+  const { st, env, fim } = await preparar({ extras });
+  try {
+    const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(i.codigo, 0, i.saida);
+    const pend = () => st.linhas('extrato').filter(l => /LOJA PARCELADA TESTE/.test(l.descricao));
+    assert.equal(pend().length, 2, 'as 2 parcelas pendentes entraram');
+    assert.ok(pend().every(l => l.status === 'Previsto' && /OFP aaaaaaaa/.test(l.obs) && !/\bOF aaaaaaaa/.test(l.obs) && /conferir/.test(l.obs)), 'previstas, com a marca de pendente: ' + JSON.stringify(pend().map(l => [l.status, l.obs])));
+    const g = pend().map(l => (l.obs.match(/Compra (POF\w+) ·/) || [])[1]);
+    assert.ok(g[0] && g[0] === g[1], 'as parcelas da mesma compra têm a mesma marca (aparecem juntas no Revisar): ' + g);
+    assert.ok(!st.linhas('avisos').some(a => /LOJA PARCELADA/.test(a.corpo || '')), 'pendente não manda aviso no celular');
+    await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(pend().length, 2, 'rodar de novo não duplica');
+    /* o banco lança a parcela de novembro de vez, com outro número */
+    extras[0] = cc('10', '2026-11-20T12:00:00Z', { status: 'POSTED' });
+    await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(pend().length, 2, 'lançada de vez: confere a mesma linha, não cria outra');
+    const nov = pend().find(l => l.data === '2026-11-20');
+    assert.ok(/\bOF aaaaaaaa-0000-0000-0000-000000000010/.test(nov.obs) && !/OFP/.test(nov.obs), 'a linha de novembro agora tem a marca de lançada: ' + nov.obs);
   } finally { await fim(); }
 });
 
