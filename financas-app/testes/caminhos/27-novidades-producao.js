@@ -59,7 +59,7 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     const um = await p.textContent('#view .eq[data-id=ETESTE1]'), dois = await p.textContent('#view .eq[data-id=ETESTE2]');
     certo(/Paguei/.test(um) && /R\$ 1\.000,00/.test(um) && /estimado/.test(um) && /R\$ 80\d,\d\d/.test(um), 'estimado: perde uns 20% em 1 ano: ' + um);
     certo(/R\$ 700,00/.test(dois) && !/estimado/.test(dois) && /perdeu 30%/.test(dois), 'anotado: R$ 700 (perdeu 30%): ' + dois);
-    certo(/Vale hoje/.test(await p.textContent('#view .kpis')), 'o total do que vale hoje aparece em cima');
+    certo(/Vale hoje/.test(await p.textContent('#view .eqval .eqtop')), 'o total do que vale hoje aparece no painel de valores');
     await conferirLayout(p, 'equipamentos com valor de hoje');
     await clica(p, '#view .eq[data-id=ETESTE1]'); await p.waitForSelector('#s2 #eVh');
     certo(/estimado/.test(await p.getAttribute('#s2 #eVh', 'placeholder')), 'o campo mostra a estimativa');

@@ -265,6 +265,7 @@ window.A = window.A || {};
   c.grupoDe = (cat, sub) => ((sub && c.categorias().find(x => x['CATEGORIA'] === cat && x['SUB-CATEGORIA'] === sub)) || c.categorias().find(x => x['CATEGORIA'] === cat) || {})['GRUPO'] || 'Desejos';
   c.BANCOS = ['Nubank', 'PicPay', 'Mercado Pago', 'Inter', 'Banco Pan', 'Não informado'];
   c.CORBANCO = Object.assign(Object.create(null), { 'Nubank': ['#c3b0ff', '#5b38d0'], 'PicPay': ['#7cf0a8', '#15a352'], 'Mercado Pago': ['#9fd8ff', '#2a62d8'], 'Inter': ['#ffc996', '#d0621e'], 'Banco Pan': ['#9be7ff', '#0a8fc7'], 'Não informado': ['#b5bfd6', '#5c6886'] });
+  c.CORCARTAO = Object.assign(Object.create(null), { 'Nubank': '#8a05be', 'Mercado Pago': '#00a6e0', 'Inter': '#ff7a00', 'PicPay': '#21c25e' });
   c.GRAD = Object.assign(Object.create(null), { 'Nubank': 'var(--nu)', 'Mercado Pago': 'var(--mp)', 'Inter': 'var(--inter)', 'PicPay': 'linear-gradient(135deg,#b7f5cc 0%,#3cc46f 48%,#137a3d 100%)' });
   const ICAT = {
     'Alimentação': ['utensils', '#ff8aa0', '#d61c4e'], 'Carro e transporte': ['car', '#6cc8ff', '#1f5fe0'], 'Casa': ['house', '#5ff0d6', '#0b8a78'],
@@ -469,7 +470,9 @@ window.A = window.A || {};
   c.resumoBanco = b => { const cs = c.contas().filter(x => x['BANCO'] === b), conta = u.r2(u.sum(cs.filter(x => String(x['CONTA']).toLowerCase() === 'conta'), x => c.saldo(x) || 0)),
     cx = u.r2(u.sum(cs.filter(x => String(x['CONTA']).toLowerCase() !== 'conta'), x => c.saldo(x) || 0)), q = c.caixinhasNoBanco(b),
     imposto = cx && q && q.liquido != null ? u.r2(Math.max(0, q.bruto - q.liquido)) : 0, ml = c.mostraLiquido(b);
-    return { banco: b, conta, cx, imposto, bruto: u.r2(conta + cx + (ml ? imposto : 0)), liquido: u.r2(conta + cx - (ml ? 0 : imposto)) }; };
+    /* banco que mostra o líquido (PicPay): o João só vê o líquido, então não existe bruto nem imposto para ele */
+    if (ml) return { banco: b, conta, cx, imposto: 0, bruto: u.r2(conta + cx), liquido: u.r2(conta + cx), soLiquido: true };
+    return { banco: b, conta, cx, imposto, bruto: u.r2(conta + cx), liquido: u.r2(conta + cx - imposto) }; };
   c.conferidoPeloBanco = b => db.linhas('EXTRATO').some(l => /^LOF[SI]-/.test(l.ID) && l['BANCO'] === b);
 
   /* ---------- metas como potes: o dinheiro fica numa caixinha de verdade e o app separa quanto é de cada meta ---------- */
@@ -729,6 +732,7 @@ window.A = window.A || {};
     const out = [], hoje = u.hoje(), fim = u.addDias(hoje, 60);
     const add = (chave, data, oQue, corpo, tipo) => {
       if (!data) return;
+      if (data < hoje) { for (let k = 0; k < 7; k++) { const quando = u.addDias(hoje, k); if (quando > u.addDias(data, 30)) break; out.push({ ID: `AV-${chave}-atr-${quando}`, 'QUANDO': quando, 'TITULO': `Atrasada: ${oQue}`, 'CORPO': corpo, 'TIPO': tipo, 'ENVIADO': '' }); } return; }
       [[-1, 'Amanhã'], [0, 'Hoje']].forEach(([n, q]) => {
         const quando = u.addDias(data, n);
         if (quando < hoje || quando > fim) return;

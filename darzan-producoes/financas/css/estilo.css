@@ -1054,3 +1054,29 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
 .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
 .seg::-webkit-scrollbar{display:none}
 @media (max-width:380px){.kpis .kpi b{font-size:1.02rem}.kpis .kpi{padding:12px}}
+/* ===== v56 ===== */
+/* cartões do Início: vidro com a cor de cada cartão */
+.gcard.glassc{background:linear-gradient(140deg,color-mix(in srgb,var(--c) 62%,transparent),color-mix(in srgb,var(--c) 22%,transparent) 70%);border:1px solid color-mix(in srgb,var(--c) 55%,rgba(255,255,255,.3));backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 14px 34px -14px color-mix(in srgb,var(--c) 70%,#000)}
+.gcard.glassc::after{content:"";position:absolute;inset:auto -30% -45% auto;width:120px;height:120px;border-radius:50%;background:color-mix(in srgb,var(--c) 70%,#fff 10%);filter:blur(30px);opacity:.55;pointer-events:none}
+.gcard.glassc>*{position:relative;z-index:1}
+/* divisão entre as partes de uma tela */
+.divt{display:flex;align-items:center;gap:10px;margin:22px 0 10px;font-size:.74rem;font-weight:700;letter-spacing:.02em;color:var(--muted);text-transform:none}
+.divt::after{content:"";flex:1;height:1px;background:var(--stroke)}
+.sec-h{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:12px}
+.sec + .sec{margin-top:22px}
+/* bancos: logo de cada banco */
+.bank-h .logob{width:42px;height:42px;flex:none;border-radius:12px}
+.bkr .bkn{display:flex;align-items:center;gap:8px}
+.bkr .bkn .logob{width:24px;height:24px;border-radius:7px;flex:none}
+.bkr .bkn .logob svg{width:15px;height:15px}
+/* equipamentos: paguei x vale hoje */
+.eqtop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.eqtop span{display:grid;min-width:0}.eqtop small{font-size:.7rem;color:var(--muted)}.eqtop b{font-size:clamp(.95rem,4.4vw,1.25rem);white-space:nowrap}
+.eqleg{display:flex;gap:14px;font-size:.7rem;color:var(--muted);margin-bottom:6px}.eqleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.eqleg .lp,.eqbar .lp{background:rgba(255,255,255,.28)}.eqleg .lv,.eqbar .lv{background:#4fd18b}
+.eqbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n v" "b b";gap:4px 10px;width:100%;padding:9px 0;border:0;border-top:1px solid var(--stroke);background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.eqbar .n{grid-area:n;font-size:.82rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eqbar .v{grid-area:v;font-size:.78rem;color:var(--muted);white-space:nowrap}
+.eqbar .b{grid-area:b;display:grid;gap:3px}.eqbar .b i{display:block;height:6px;border-radius:4px;min-width:2px}
+.bank-h .logob svg{width:26px;height:26px}.bank-h .logob{font-size:1rem}
+.recstats .kpi{padding:10px 12px}.recstats .kpi b{font-size:1.05rem}.recstats .kpi small{font-size:.68rem}@media (min-width:700px){.recstats{grid-template-columns:repeat(4,minmax(0,1fr))}}.prodh{margin-top:18px}

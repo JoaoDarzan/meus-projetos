@@ -47,7 +47,7 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await p.evaluate(() => { const cx = A.db.linhas('CONTAS').find(x => x['CONTA'] === 'Caixinha Reserva'); A.db.salvar('CONTAS', { ID: cx.ID, 'OBS': 'Rende 100% do CDI · o app do banco mostra o valor líquido' }); A.fechar && A.fechar(); });
     await p.keyboard.press('Escape').catch(() => {}); await irBancos(p);
     const nu2 = await linha('Nubank'), saldoNu2 = await p.evaluate(() => A.c.saldoBanco('Nubank'));
-    certo(nu2.liquido === saldoNu2 && Math.round((nu2.bruto - nu2.liquido) * 100) === 5975, 'banco que mostra o líquido: o app já está no líquido e o bruto soma o imposto: ' + JSON.stringify(nu2));
+    certo(nu2.liquido === saldoNu2 && /só líquido/.test(await p.textContent('#tbBancos')), 'banco que mostra o líquido (PicPay): só tem líquido, sem bruto inventado: ' + JSON.stringify(nu2));
     await clica(p, '#view [data-a=conferir][data-v="Nubank"]');
     certo(/já é o líquido/.test(await txt(p, '#s2')), 'a conferência explica que o valor do app já é o líquido');
   }],
@@ -94,13 +94,13 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await p.fill('#gPc', '50'); await clica(p, '#s2 .save'); await calmo(p);
     certo(st.linhas('metas').find(m => m.id === 'M8').obs === '50% da caixinha', 'salvou 50%: ' + st.linhas('metas').find(m => m.id === 'M8').obs);
   }],
-  ['tela inicial: o topo mostra o que sobrou no mês (como antes), 6 atalhos, só as metas (sem caixinhas), barra de 5 abas e o menu lateral fecha sozinho ao escolher', async (st, abrir) => {
+  ['tela inicial: o topo mostra o que sobrou no mês (como antes), 5 atalhos (sem Pagar fatura), só as metas (sem caixinhas), barra de 5 abas e o menu lateral fecha sozinho ao escolher', async (st, abrir) => {
     caixinhaComFotos(st);
     st.tabelas.metas.push({ id: 'M7', user_id: 'u-joao', meta: 'Meta inicial teste', valor_alvo: 1000, ja_guardado: 250, onde_esta: 'Caixinha Reserva', prazo: null, obs: '' });
     const p = await abrir({ aparelho: 'iphone-15' });
     const topo = await txt(p, '#view .hero .bal');
     certo(/Sobrou em|Previsto para/.test(topo) && !/Dinheiro nos bancos/.test(topo), 'o topo mostra o que sobrou no mês: ' + topo);
-    certo(await p.$$eval('#view .atalhos .at', a => a.length) === 6, 'seis atalhos');
+    certo(await p.$$eval('#view .atalhos .at', a => a.length) === 5 && !(await p.$('#view .atalhos [data-a=irCartoes]')), 'cinco atalhos (sem "Pagar fatura")');
     const rail = await txt(p, '#hCaixinhas');
     certo(/Metas/.test(rail) && /Meta inicial teste\s*R\$ 250,00/.test(rail) && /25% de/.test(rail) && !/Reserva\s*R\$ 5\.000,00/.test(rail), 'só as metas na tela inicial: ' + rail);
     certo(await p.$$eval('#tabbar .tab', t => t.length) === 5 && await p.$('#tabbar [data-v=tarefas]') && !(await p.$('#tabbar [data-a=mais]')), 'a barra tem as 5 abas de antes');
