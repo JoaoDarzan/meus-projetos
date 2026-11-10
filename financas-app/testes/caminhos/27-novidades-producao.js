@@ -28,24 +28,28 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     await p.reload(); await p.waitForSelector('#view .bell'); await calmo(p);
     mesmo(await p.textContent('#view .bell .cnt'), '1', 'chegou mais uma: o sininho mostra só ela');
   }],
-  ['recorrente: conta vídeos (R$ 100) e captações (R$ 200) do mês com + e −, mostra o que entrou e quanto falta receber; dá para mudar os valores', async (st, abrir) => {
+  ['recorrente: cada pagamento que caiu aparece na produção; tocar nele marca quantos vídeos e captações foram e os dias trabalhados', async (st, abrir) => {
     st.tabelas.trabalhos.push({ id: 'JREC', user_id: 'u-joao', cliente: 'Cliente Rec Teste', tipo_de_evento: 'Social media', data_do_evento: null, local: null, o_que_foi_fechado: 'Vídeos do mês', valor_total: null, entrega: null, etapa: 'Recorrente',
       telefone: null, contrato: null, obs: null, briefing: null, entregas: null, parcela_mensal: null, dia_da_parcela: null, crm: '{}' });
-    st.tabelas.extrato.push(L('LREC-1', { descricao: 'Pix Cliente Rec Teste', valor: 300, grupo: 'Renda', categoria: 'Renda', subcategoria: 'Darzan Produções', obs: 'Trabalho JREC' }));
+    st.tabelas.extrato.push(L('LREC-1', { descricao: 'Pix Cliente Rec Teste', valor: 400, grupo: 'Renda', categoria: 'Darzan Produções', subcategoria: 'Social media', obs: 'Trabalho JREC' }));
+    const d1 = addDias(HOJE, -3), d2 = addDias(HOJE, -2);
+    st.tabelas.dias.push({ id: 'WTESTE1', user_id: 'u-joao', data: d1, empresa: 'Darzan Produções', o_que_foi: 'Captação teste', valor: 200, pagamento: null, obs: null },
+      { id: 'WTESTE2', user_id: 'u-joao', data: d2, empresa: 'Darzan Produções', o_que_foi: 'Vídeos teste', valor: 0, pagamento: null, obs: null });
     const p = await abrir({ aparelho: 'iphone-15' });
     await ir(p, 'trabalhos', { jseg: 'recorrentes' }); await p.waitForSelector('#view .prod');
-    const mais = k => clica(p, `#view [data-a=prodMais][data-id=JREC][data-k=${k}][data-d="1"]`).then(() => calmo(p));
-    for (let i = 0; i < 3; i++) await mais('video');
-    await mais('captacao');
-    const prod = () => JSON.parse(st.linhas('trabalhos').find(j => j.id === 'JREC').crm).prod[m0];
-    certo(prod().video === 3 && prod().captacao === 1, 'gravou 3 vídeos e 1 captação: ' + JSON.stringify(prod()));
-    const k = await p.textContent('#view .prod .kpis');
-    certo(/R\$ 500,00/.test(k) && /R\$ 300,00/.test(k) && /R\$ 200,00/.test(k), 'feito R$ 500, entrou R$ 300, falta R$ 200: ' + k);
+    certo(!(await p.$('#view [data-a=prodMais]')), 'não tem mais o + e − de vídeo e captação');
+    certo(/Toque para dizer o que foi/.test(await p.textContent('#view .ppag')) && /R\$ 400,00/.test(await p.textContent('#view .ppag')), 'o Pix que caiu aparece para marcar');
+    await clica(p, '#view [data-a=prodPag][data-id=LREC-1]');
+    await p.fill('#s2 #ppV', '2'); await p.fill('#s2 #ppC', '1');
+    certo(/R\$ 400,00 · bate com o Pix/.test(await p.textContent('#s2 #ppT')), '2 × 100 + 1 × 200 bate com o Pix: ' + await p.textContent('#s2 #ppT'));
+    await p.check('#s2 .ppdias input[value=WTESTE1]'); await p.check('#s2 .ppdias input[value=WTESTE2]');
+    await clica(p, '#s2 .save'); await calmo(p);
+    certo(/Prod v=2 c=1/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs) && /Trabalho JREC/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs), 'gravou no pagamento (e manteve o que já tinha)');
+    certo(st.linhas('dias').filter(d => d.pagamento === 'LREC-1').length === 2, 'os 2 dias ficaram ligados ao pagamento');
+    const k = (await p.textContent('#view .prod .kpis')).replace(/\s+/g, ' ');
+    certo(/Vídeos\s*2/.test(k) && /Captações\s*1/.test(k) && /R\$ 400,00/.test(k), 'o mês mostra 2 vídeos, 1 captação e o que entrou: ' + k);
+    certo(new RegExp('2 vídeos · 1 captação.*dias ' + d1.slice(8) + '/').test(await p.textContent('#view .ppag')), 'o pagamento mostra o que foi e os dias');
     await conferirLayout(p, 'produção do recorrente');
-    await clica(p, '#view [data-a=prodMais][data-id=JREC][data-k=video][data-d="-1"]'); await calmo(p);
-    igual(prod().video, 2, 'o − tira um vídeo');
-    await clica(p, '#view [data-a=precosRec]'); await p.fill('#s2 #pV', '150'); await clica(p, '#s2 .save'); await calmo(p);
-    certo(/R\$ 200,00/.test(await p.textContent('#view .prod .kpis')) && /R\$ 500,00/.test(await p.textContent('#view .prod .kpis')), 'com R$ 150 o vídeo: 2 × 150 + 200 = R$ 500, falta R$ 200');
   }],
   ['equipamentos: quanto paguei e quanto vale hoje (estimado ou anotado); anotar o valor de hoje guarda sem perder as anotações', async (st, abrir) => {
     const E = (id, x) => Object.assign({ id, user_id: 'u-joao', nome: id, tipo: 'Câmera', valor: 1000, data_da_compra: addDias(HOJE, -365), como_pagou: 'Já tinha', estado: 'Usado', numero_de_serie: null, obs: null, foto: null }, x);

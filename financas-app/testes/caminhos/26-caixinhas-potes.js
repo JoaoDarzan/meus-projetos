@@ -94,20 +94,23 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await p.fill('#gPc', '50'); await clica(p, '#s2 .save'); await calmo(p);
     certo(st.linhas('metas').find(m => m.id === 'M8').obs === '50% da caixinha', 'salvou 50%: ' + st.linhas('metas').find(m => m.id === 'M8').obs);
   }],
-  ['tela inicial nova: dinheiro nos bancos em cima, 6 atalhos, caixinhas e metas deslizando; a barra tem 4 abas e "Mais" leva às Tarefas', async (st, abrir) => {
+  ['tela inicial: o topo mostra o que sobrou no mês (como antes), 6 atalhos, só as metas (sem caixinhas), barra de 5 abas e o menu lateral fecha sozinho ao escolher', async (st, abrir) => {
     caixinhaComFotos(st);
     st.tabelas.metas.push({ id: 'M7', user_id: 'u-joao', meta: 'Meta inicial teste', valor_alvo: 1000, ja_guardado: 250, onde_esta: 'Caixinha Reserva', prazo: null, obs: '' });
     const p = await abrir({ aparelho: 'iphone-15' });
-    const B = await p.evaluate(() => A.c.bancosComConta().map(A.c.resumoBanco).reduce((t, x) => t + x.bruto, 0));
     const topo = await txt(p, '#view .hero .bal');
-    certo(/Dinheiro nos bancos/.test(topo) && await p.$eval('#view .hero .bal .big', e => +e.dataset.cnt) === Math.round(B * 100) / 100, 'o número grande é o dinheiro nos bancos: ' + topo);
+    certo(/Sobrou em|Previsto para/.test(topo) && !/Dinheiro nos bancos/.test(topo), 'o topo mostra o que sobrou no mês: ' + topo);
     certo(await p.$$eval('#view .atalhos .at', a => a.length) === 6, 'seis atalhos');
     const rail = await txt(p, '#hCaixinhas');
-    certo(/Meta inicial teste\s*R\$ 250,00/.test(rail) && /25% de/.test(rail) && /Reserva\s*R\$ 5\.000,00/.test(rail), 'metas e caixinhas na tela inicial: ' + rail);
-    certo(await p.$$eval('#tabbar .tab', t => t.length) === 4 && !(await p.$('#tabbar [data-v=tarefas]')), 'a barra tem 4 abas');
-    await clica(p, '#tabbar [data-a=mais]');
-    await clica(p, '#s2 [data-a=maisIr][data-v=tarefas]');
-    certo(await p.evaluate(() => A.ui.view) === 'tarefas' && await p.$eval('#tabbar [data-a=mais]', e => e.getAttribute('aria-current')) === 'page', 'Mais leva às Tarefas e fica marcado');
+    certo(/Metas/.test(rail) && /Meta inicial teste\s*R\$ 250,00/.test(rail) && /25% de/.test(rail) && !/Reserva\s*R\$ 5\.000,00/.test(rail), 'só as metas na tela inicial: ' + rail);
+    certo(await p.$$eval('#tabbar .tab', t => t.length) === 5 && await p.$('#tabbar [data-v=tarefas]') && !(await p.$('#tabbar [data-a=mais]')), 'a barra tem as 5 abas de antes');
+    await clica(p, '#view .hero [data-a=menu]');
+    certo(await p.evaluate(() => document.body.classList.contains('menu-aberto')) && await p.isVisible('.side #snav'), 'o ☰ abre o menu do lado');
+    await clica(p, '.side [data-a=irRel]'); await p.waitForTimeout(300);
+    certo(await p.evaluate(() => A.ui.fseg) === 'relatorios' && !(await p.evaluate(() => document.body.classList.contains('menu-aberto'))) && !(await p.isVisible('.side #snav')), 'escolher Relatórios abre a tela e o menu some sozinho');
+    await clica(p, '#view [data-a=menu]');
+    await p.mouse.click(380, 400); await p.waitForTimeout(200);
+    certo(!(await p.evaluate(() => document.body.classList.contains('menu-aberto'))), 'tocar fora fecha o menu');
     await clica(p, '#tabbar [data-a=go][data-v=inicio]');
     await clica(p, '#view .atalhos [data-a=novoL][data-t=saida]');
     certo(await p.isVisible('#s2 #fV'), 'o atalho Lançar gasto abre o formulário');
@@ -120,7 +123,8 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     const fora = await p.evaluate(() => { const col = document.querySelector('.home .col-l').getBoundingClientRect(); return [...document.querySelectorAll('#hCaixinhas .cxm')].filter(e => { const r = e.getBoundingClientRect(); return r.right > col.right + 1 || r.left < col.left - 1; }).length; });
     certo(fora === 0, fora + ' cartões de caixinha/meta saem da coluna da esquerda');
     certo(await p.$eval('#view .pizza.donut .pzg', e => getComputedStyle(e).animationName) === 'none', 'o anel não tem animação de girar');
-    certo(await p.$$eval('#view .pizza.donut .pzp', t => t.length) >= 1, 'a porcentagem aparece em cima do anel');
+    certo(await p.$$eval('#view .pizza.donut .pzp', t => t.length) === await p.$$eval('#view .pizza.donut .fat', t => t.length), 'a porcentagem aparece em todos os pedaços do anel');
+    certo(await p.$eval('#view .pizza.donut .pzp', e => getComputedStyle(e).strokeWidth === '0px' || getComputedStyle(e).stroke === 'none'), 'porcentagem sem sombra');
   }],
   ['lembrete do mês: com caixinhas que rendem no banco, o app cria "Conferir as caixinhas" no dia 1º (uma vez só) e dá para marcar como feito', async (st, abrir) => {
     const m0 = HOJE.slice(0, 7);

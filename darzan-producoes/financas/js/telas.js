@@ -12,7 +12,7 @@
     return `<div class="mpill"><button type="button" data-a="mes" data-d="-1" aria-label="Mês anterior" ${i <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><button type="button" class="mnome" data-a="escolherMes" aria-haspopup="dialog" aria-label="Escolher o mês (agora: ${u.esc(u.nomeMes(ui.mes))} de ${ui.mes.slice(0, 4)})">${u.nomeMes(ui.mes)}${ui.mes.slice(0, 4) !== u.hoje().slice(0, 4) ? ' ' + ui.mes.slice(2, 4) : ''}</button><button type="button" data-a="mes" data-d="1" aria-label="Próximo mês" ${i >= ms.length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></div>`;
   };
   /* fora do início: voltar (um passo, até chegar no início) e a casinha (direto para o início). No início não tem nenhum dos dois */
-  const bar = (titulo, voltar, comMes = true) => `<header class="bar">${ui.view !== 'inicio' ? `<span class="navb"><button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button><button class="back casa" type="button" data-a="go" data-v="inicio" aria-label="Ir para o início">${u.svg('house')}</button></span>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
+  const bar = (titulo, voltar, comMes = true) => `<header class="bar"><button class="back menub" type="button" data-a="menu" aria-label="Abrir o menu">${u.svg('menu')}</button>${ui.view !== 'inicio' ? `<span class="navb"><button class="back" type="button" data-a="voltar" aria-label="Voltar">${u.svg('chevron-left')}</button><button class="back casa" type="button" data-a="go" data-v="inicio" aria-label="Ir para o início">${u.svg('house')}</button></span>` : ''}<h1>${titulo}</h1>${comMes ? pill() : ''}</header>`;
   const seg = (nome, atual, ops) => `<div class="seg" role="group">${ops.map(([k, n]) => `<button type="button" data-a="seg" data-s="${u.esc(nome)}" data-v="${u.esc(k)}" aria-pressed="${atual === k}">${n}</button>`).join('')}</div>`;
   const vazio = (icone, txt, botao) => `<div class="vazio">${u.ti(icone, 'lg')}<span>${txt}</span>${botao || ''}</div>`;
   function linhaL(l) {
@@ -36,8 +36,12 @@
     let acc = 0;
     const fat = fatias.map(f => {
       const pc = f.valor / tot, len = Math.max(pc * C - gap, 1.2), off = C / 4 - acc, meio = -Math.PI / 2 + (acc + len / 2) / C * 2 * Math.PI; acc += pc * C;
-      const rot = pc >= .06 ? `<text class="pzp" x="${(100 + R0 * Math.cos(meio)).toFixed(1)}" y="${(100 + R0 * Math.sin(meio)).toFixed(1)}" dominant-baseline="central">${Math.round(pc * 100)}%</text>` : '';
-      return { rot, forma: `<circle class="fat${aberta === f ? ' on' : ''}" cx="100" cy="100" r="${R0}" fill="none" style="stroke:${f.cor}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(pc)})</title></circle>` };
+      /* a porcentagem de todas as categorias, do lado de fora do anel, discreta (sem sombra) */
+      const RL = R0 + SW / 2 + 9, cx = Math.cos(meio), al = cx > .35 ? 'start' : cx < -.35 ? 'end' : 'middle';
+      const rot = `<text class="pzp${aberta === f ? ' on' : ''}" x="${(100 + RL * cx).toFixed(1)}" y="${(100 + RL * Math.sin(meio)).toFixed(1)}" dominant-baseline="central" style="text-anchor:${al}">${pc < .01 ? '<1' : Math.round(pc * 100)}%</text>`;
+      /* área de toque maior e invisível em cada pedaço, para dar para tocar até nos pequenos */
+      const hit = `<circle class="fhit" cx="100" cy="100" r="${R0}" fill="none" stroke="transparent" stroke-width="40" stroke-dasharray="${Math.max(pc * C, 6).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.pct(pc)}</title></circle>`;
+      return { rot, hit, forma: `<circle class="fat${aberta === f ? ' on' : ''}" cx="100" cy="100" r="${R0}" fill="none" style="stroke:${f.cor}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(pc)})</title></circle>` };
     });
     const centro = aberta
       ? `<text class="dc1" x="100" y="80">${u.esc(aberta.cat.length > 18 ? aberta.cat.slice(0, 17) + '…' : aberta.cat)}</text><text class="dc2 num" x="100" y="104">${u.brl(aberta.valor)}</text><text class="dc3" x="100" y="124">${u.pct(aberta.valor / tot)} do mês</text>`
@@ -46,13 +50,13 @@
     const lancsDe = f => c.doMes(r.m).filter(l => c.ehGasto(l) && (l.cat || 'Outros') === f.cat).sort((a, b) => a.data < b.data ? 1 : -1);
     const subs = f => f.outras ? f.outras.map(x => [x.cat, x.valor]) : Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
     return `<div class="ondefoi${aberta ? ' foco' : ''}"><div class="ofh">${cmp ? `<small class="ofcmp">${cmp}</small>` : ''}</div>
-      <div class="ofcorpo"><div class="pizza donut"><svg viewBox="0 0 200 200" role="img" aria-label="Gastos por categoria: ${u.esc(fatias.map(f => `${f.cat} ${u.pct(f.valor / tot)}`).join(', '))}">
-        <g class="pzg"><circle class="dtrilho" cx="100" cy="100" r="${R0}" fill="none" stroke-width="${SW}"/>${fat.map(x => x.forma).join('')}${fat.map(x => x.rot).join('')}${centro}</g></svg></div>
+      <div class="ofcorpo"><div class="pizza donut"><svg viewBox="-24 -16 248 232" role="img" aria-label="Gastos por categoria: ${u.esc(fatias.map(f => `${f.cat} ${u.pct(f.valor / tot)}`).join(', '))}">
+        <g class="pzg"><circle class="dtrilho" cx="100" cy="100" r="${R0}" fill="none" stroke-width="${SW}"/>${fat.map(x => x.forma).join('')}${fat.map(x => x.rot).join('')}${centro}${fat.map(x => x.hit).join('')}${aberta ? `<circle class="fmeio" cx="100" cy="100" r="${R0 - SW / 2 - 2}" fill="transparent" data-a="abreCat" data-v="${u.esc(aberta.cat)}"><title>Voltar ao total</title></circle>` : ''}</g></svg></div>
       <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}</span><b class="num">${u.brl(f.valor)}</b><small class="num">${u.pct(f.valor / tot)}</small></button>${aberta === f ? (() => { const ss = subs(f), m2 = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / m2 * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : (() => { const ls = lancsDe(f); return `<div class="oflancs">${ls.slice(0, 8).map(l => `<button type="button" class="ofl1" data-a="editL" data-id="${u.esc(l.id)}"><span class="d">${u.dm(l.data)}</span><span class="t">${u.esc(u.cap(l.desc))}<small>${u.esc(l.sub || 'sem subcategoria')}${l.tipo === 'cartão' ? ' · cartão' : ''}${l.status === 'Previsto' ? ' · previsto' : ''}</small></span><b class="num">${u.brl(Math.abs(l.valor))}</b></button>`).join('')}</div><button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}${ls.length > 8 ? `Ver os ${ls.length} lançamentos` : 'Ver no extrato'}</button>`; })()}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div></div>`;
   }
   /* passar o mouse ou o dedo numa linha da lista acende a fatia dela (e o contrário) */
   (() => {
-    const alvo = el => el && el.closest && el.closest('.ondefoi .fat, .ondefoi .catl');
+    const alvo = el => el && el.closest && el.closest('.ondefoi .fat, .ondefoi .fhit, .ondefoi .catl');
     const acender = (box, cat) => { if (!box) return; box.querySelectorAll('.fat').forEach(x => x.classList.toggle('quente', !!cat && x.dataset.v === cat)); box.querySelectorAll('.catl').forEach(x => x.classList.toggle('quente', !!cat && x.dataset.v === cat)); box.classList.toggle('mira', !!cat); };
     document.addEventListener('pointerover', e => { const a = alvo(e.target); if (a) acender(a.closest('.ondefoi'), a.dataset.v); });
     document.addEventListener('pointerout', e => { const a = alvo(e.target); if (a && !alvo(e.relatedTarget)) acender(a.closest('.ondefoi'), null); });
@@ -98,11 +102,11 @@
   /* caixinhas e metas deslizando para o lado (Nubank): quanto tem, quanto rendeu no mês e a barrinha da meta */
   function railCaixinhas() {
     const cxs = c.caixinhas().filter(x => (c.saldo(x) || 0) > 0).sort((a, b) => c.saldo(b) - c.saldo(a)), ms = c.metas();
-    if (!cxs.length && !ms.length) return '';
+    if (!ms.length) return '';
     const fimAnt = u.addDias(u.mes(u.hoje()) + '-01', -1), nome = x => String(x['CONTA']).replace(/^(Caixinha|Cofrinho)\s+/i, '');
     const cardCx = x => { const rd = c.semSaldos() ? null : rendeuDesde([x], fimAnt); return `<button type="button" class="cxm" data-a="irBancos"><span class="e">${u.svg('piggy-bank')}</span><small>${u.esc(nome(x))}</small><b class="num">${u.brl(c.saldo(x))}</b><span class="p">${u.esc(x['BANCO'])}${rd && rd.v ? ` · <span class="${rd.v > 0 ? 'c-in' : 'c-out'}">${rd.v > 0 ? '+' : '−'} ${u.brl(Math.abs(rd.v))} no mês</span>` : ''}</span></button>`; };
     const cardM = g => { const alvo = c.num(g['VALOR ALVO']), t = c.noPote(g), p = alvo ? Math.min(t / alvo, 1) : 0; return `<button type="button" class="cxm meta" data-a="irMetas"><span class="e">${u.svg('target')}</span><small>${u.esc(g['META'])}</small><b class="num">${u.brl(t)}</b>${alvo ? `<span class="mbar"><i style="width:${(p * 100).toFixed(1)}%"></i></span><span class="p">${u.pct(p)} de ${u.k0(alvo)}</span>` : ''}</button>`; };
-    return `<section class="sec" id="hCaixinhas"><div class="sec-h"><h2>Caixinhas e metas</h2><button class="more" type="button" data-a="irBancos">Ver todas</button></div><div class="rail">${ms.map(cardM).join('')}${cxs.map(cardCx).join('')}</div></section>`;
+    return `<section class="sec" id="hCaixinhas"><div class="sec-h"><h2>Metas</h2><button class="more" type="button" data-a="irMetas">Ver todas</button></div><div class="rail">${ms.map(cardM).join('')}</div></section>`;
   }
   R.inicio = () => {
     const r = c.resumo(ui.mes), m = ui.mes;
@@ -118,13 +122,11 @@
     const d1 = c.dicas(m)[0];
     return `<div class="home"><div class="col-l">
       <section class="hero"><span class="blob b1"></span><span class="blob b2"></span>
-        <div class="hello"><button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+        <div class="hello"><button type="button" class="menub hm" data-a="menu" aria-label="Abrir o menu">${u.svg('menu')}</button><button type="button" class="ava-w" data-a="conta" aria-label="Sua conta" style="border:0;padding:0;background:none;cursor:pointer">${foto()}</button><div class="hi"><b>Olá, João!</b><span>${new Date(u.hoje() + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
           <button class="eye" type="button" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}">${u.svg(ui.oculto ? 'eye-off' : 'eye')}</button>
           <button class="bell ${nov ? 'ring' : ''}" type="button" data-a="novidades" aria-label="${nov ? `${nov} ${nov > 1 ? 'novidades' : 'novidade'} do banco` : 'Novidades do banco'}">${u.svg('bell')}${nov ? `<span class="cnt">${nov > 99 ? '99+' : nov}</span>` : ''}</button></div>
-        ${(() => { const rs = c.bancosComConta().map(c.resumoBanco), B = u.r2(u.sum(rs, x => x.bruto)), L = u.r2(u.sum(rs, x => x.liquido)), sob = r.futuro ? r.prevSobra : r.sobra;
-          return `<button type="button" class="bal" data-a="irBancos" aria-label="Dinheiro nos bancos: ${u.brl(B)}"><div class="lbl">Dinheiro nos bancos <span class="seta">${u.svg('chevron-right')}</span></div>
-          <div class="big num" data-cnt="${B}" data-fmt="big">${u.big(B)}</div>${Math.abs(B - L) >= 0.01 ? `<div class="liqh">Se sacar tudo hoje: <b class="num">${u.brl(L)}</b></div>` : ''}</button>
-          <div class="mesl">${pill()}<span class="sob">${r.futuro ? 'previsto sobrar' : 'sobrou'} <b class="num ${sob < 0 ? 'c-out' : ''}">${u.brl(sob)}</b></span></div>`; })()}
+        <div class="bal"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="lbl">${r.futuro ? 'Previsto para' : 'Sobrou em'} ${u.nomeMes(m).toLowerCase()}</div>${pill()}</div>
+          <div class="big num" data-cnt="${r.futuro ? r.prevSobra : r.sobra}" data-fmt="big">${u.big(r.futuro ? r.prevSobra : r.sobra)}</div></div>
         <div class="flows num"><span class="flow f-in">${u.svg('arrow-up')}<span>Entrou</span><b data-cnt="${r.entr}" data-fmt="brl">${u.brl(r.entr)}</b>${r.aReceber ? `<small class="arec">+ ${u.brl(r.aReceber)} a receber</small>` : ''}</span><span class="flow f-out">${u.svg('arrow-down')}<span>Saiu</span><b data-cnt="${r.saiu}" data-fmt="brl">${u.brl(r.saiu)}</b></span><span class="flow f-sav">${u.svg('piggy-bank')}<span>Guardou</span><b data-cnt="${r.guardou}" data-fmt="brl">${u.brl(r.guardou)}</b></span></div>
         <div class="bankpills" aria-label="Saldo na conta corrente">${bancos.map(x => `<button type="button" class="bp" data-a="irBancos" aria-label="${u.esc(x.b)}: ${x.tem ? u.brl(x.v) : 'sem saldo informado'} na conta">${logoBanco(x.b)}${u.esc(x.b)} <b class="num">${x.tem ? u.brl(x.v) : '—'}</b></button>`).join('')}${c.semSaldo() ? `<button type="button" class="bp" data-a="irBancos" style="--a:#ffe08a;--b:#c98a2a"><i></i>Informar saldos</button>` : ''}</div>
       </section>
@@ -197,8 +199,9 @@
         ${perdidos.length ? `<details class="perd"><summary>${u.svg('x')}Não fecharam (${perdidos.length})</summary>${perdidos.sort((a, b) => String(c.crm(b).perdido || '') < String(c.crm(a).perdido || '') ? -1 : 1).map(j => `<button type="button" class="it btn diai" data-a="editJ" data-id="${u.esc(j.ID)}"><span class="pto" style="background:#ff8f8f"></span><div style="min-width:0"><div class="t">${u.esc(j['CLIENTE'])}</div><div class="m"><span>${u.esc(j['TIPO DE EVENTO'] || '')}</span>${c.crm(j).motivo ? `<span>·</span><span>${u.esc(c.crm(j).motivo)}</span>` : ''}${c.crm(j).perdido ? `<span>·</span><span>${u.esc(u.dm(c.crm(j).perdido))}</span>` : ''}</div></div><div class="v num">${c.num(j['VALOR TOTAL']) ? u.k0(c.num(j['VALOR TOTAL'])) : ''}</div></button>`).join('')}</details>` : ''}
         <p class="aviso">Toque no trabalho para ver os vídeos, os comprovantes e o contrato. “Recebido” soma o que você registra dentro do trabalho (dá para anexar o comprovante junto) e as entradas que têm o nome do cliente.</p></section>`;
     return bar('Trabalhos', null, S === 'calendario') + `<div class="sub" style="margin-top:-4px">Darzan Produções</div>
-      <section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => c.etapaQuadro(j) === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>
-      <div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço'], ['calendario', 'Calendário']])}</div>` + corpo;
+      ${S === 'quadro' ? '' : `<div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço'], ['calendario', 'Calendário']])}</div>`}
+      ${S !== 'quadro' ? '' : `<section class="sec"><div class="kpis k4"><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(receber)}</b><small>dos trabalhos fechados</small></div><div class="kpi"><span>Em orçamento</span><b class="num">${u.k0(orc)}</b><small>${quadro.filter(j => c.etapaQuadro(j) === 'Orçamento').length} esperando resposta</small></div><div class="kpi"><span>Próximo evento</span><b>${prox ? u.dm(String(prox['DATA DO EVENTO'])) : '—'}</b><small>${prox ? u.esc(prox['CLIENTE']) : 'nenhum marcado'}</small></div><div class="kpi"><span>Faturou em ${u.nomeMes(ui.mes).toLowerCase()}</span><b class="num c-in">${u.k0(fat)}</b><small>na Darzan</small></div></div></section>`}
+      ${S === 'quadro' ? `<div class="sec">${seg('jseg', S, [['quadro', 'Quadro'], ['recorrentes', 'Recorrentes'], ['balanco', 'Balanço'], ['calendario', 'Calendário']])}</div>` : ''}` + corpo;
   };
   /* ---------- vendas: como foi o mês e quem está esperando resposta ---------- */
   function vendas() {
@@ -379,23 +382,40 @@
       }).join('') : `<div class="panel">${vazio(['refresh-cw', '#c9a7ff', '#7a35e6'], 'Nenhum cliente recorrente ainda. Abra um trabalho e toque em “Recorrente”.')}</div>`}
       <p class="aviso">Cliente recorrente é quem te paga todo mês (social media, pacote de vídeos). Ele não fica no quadro; aqui aparece quanto rendeu em cada mês, somando as entradas com o nome dele.</p></section>`;
   }
-  /* produção do recorrente: vídeos e captações do mês (com + e −), quanto vale, quanto entrou e quanto falta receber */
+  /* produção do recorrente: cada pagamento que caiu do cliente no mês, marcado com o que foi (vídeos, captações) e os dias */
   function blocoProd(j) {
     if (c.semCrm()) return '';
     const P = c.producao(j), m0 = u.mes(u.hoje()), sel = (ui.recMes && ui.recMes[j.ID]) || m0, x = P.linha(sel), nm = u.nomeMes(sel).toLowerCase() + (sel.slice(0, 4) !== m0.slice(0, 4) ? ' de ' + sel.slice(0, 4) : '');
-    const passo = (k, rot, ic, n) => `<div class="pstep"><span>${u.svg(ic)}<b>${rot}</b><small class="num">${u.brl(P.precos[k])} cada</small></span><div class="pbt"><button type="button" class="chip" data-a="prodMais" data-id="${u.esc(j.ID)}" data-m="${sel}" data-k="${k}" data-d="-1" aria-label="Tirar 1 ${rot.toLowerCase()}" ${n ? '' : 'disabled'}>${u.svg('minus')}</button><b class="num" aria-live="polite">${n}</b><button type="button" class="chip" data-a="prodMais" data-id="${u.esc(j.ID)}" data-m="${sel}" data-k="${k}" data-d="1" aria-label="Mais 1 ${rot.toLowerCase()}">${u.svg('plus')}</button></div></div>`;
-    const ms = P.lista.map(y => y.m); if (!ms.includes(m0)) ms.push(m0); if (!ms.includes(sel)) ms.push(sel); ms.sort();
+    const ms = P.meses.slice(); if (!ms.includes(m0)) ms.push(m0); if (!ms.includes(sel)) ms.push(sel); ms.sort();
+    const pag = l => { const pd = c.prodDe(l), ds = c.diasDoPagamento(l.id).map(d => u.dm(d.data));
+      return `<button type="button" class="ppag${pd ? '' : ' falta'}" data-a="prodPag" data-id="${u.esc(l.id)}" data-j="${u.esc(j.ID)}"><span class="d num">${u.dm(l.data)}</span><span class="t">${pd ? [pd.video ? `${pd.video} ${pd.video === 1 ? 'vídeo' : 'vídeos'}` : '', pd.captacao ? `${pd.captacao} ${pd.captacao === 1 ? 'captação' : 'captações'}` : ''].filter(Boolean).join(' · ') || 'nada marcado' : 'Toque para dizer o que foi'}<small>${ds.length ? 'dias ' + ds.join(', ') : 'sem dias marcados'}</small></span><b class="num c-in">${u.brl(l.valor)}</b></button>`; };
     return `<div class="prod"><div class="prodh"><h4>${u.svg('clapperboard')}Produção</h4><span class="chips"><button type="button" class="chip mini" data-a="prodMes" data-id="${u.esc(j.ID)}" data-v="${u.addMes(sel, -1)}" aria-label="Mês anterior">${u.svg('chevron-left')}</button><b class="pmes">${u.esc(u.cap(nm))}</b><button type="button" class="chip mini" data-a="prodMes" data-id="${u.esc(j.ID)}" data-v="${u.addMes(sel, 1)}" aria-label="Próximo mês" ${sel >= m0 ? 'disabled' : ''}>${u.svg('chevron-right')}</button></span></div>
-      <div class="psteps">${passo('video', 'Vídeos', 'clapperboard', x.video)}${passo('captacao', 'Captações', 'camera', x.captacao)}</div>
-      <div class="kpis"><div class="kpi"><span>Feito em ${u.esc(u.nomeMes(sel).toLowerCase())}</span><b class="num">${u.brl(x.valor)}</b><small>${x.video} ${x.video === 1 ? 'vídeo' : 'vídeos'} · ${x.captacao} ${x.captacao === 1 ? 'captação' : 'captações'}</small></div><div class="kpi"><span>Entrou em ${u.esc(u.nomeMes(sel).toLowerCase())}</span><b class="num c-in">${u.brl(x.recebido)}</b><small>pagamentos com o nome</small></div><div class="kpi"><span>Falta receber</span><b class="num ${P.falta ? 'c-warn' : 'c-in'}">${P.falta ? u.brl(P.falta) : 'em dia'}</b><small>${u.brl(P.feito)} feito · ${u.brl(P.recebido)} pago</small></div></div>
-      <div class="ptab" role="table" aria-label="Produção por mês"><div class="ptr pth" role="row"><span role="columnheader">Mês</span><span role="columnheader">Vídeos</span><span role="columnheader">Capt.</span><span role="columnheader">Valor</span><span role="columnheader">Entrou</span></div>${ms.slice().reverse().map(m => { const y = P.linha(m); return `<button type="button" class="ptr${m === sel ? ' on' : ''}" role="row" data-a="prodMes" data-id="${u.esc(j.ID)}" data-v="${m}"><span role="cell">${u.cap(u.CURTO[+m.slice(5) - 1])}${m.slice(0, 4) !== m0.slice(0, 4) ? '/' + m.slice(2, 4) : ''}</span><span role="cell" class="num">${y.video}</span><span role="cell" class="num">${y.captacao}</span><span role="cell" class="num">${u.brl(y.valor)}</span><span role="cell" class="num ${y.recebido >= y.valor ? 'c-in' : 'c-warn'}">${u.brl(y.recebido)}</span></button>`; }).join('')}</div>
-      <button type="button" class="chip mini" data-a="precosRec" data-id="${u.esc(j.ID)}" style="margin-top:10px">${u.svg('pencil')}Mudar os valores (${u.brl(P.precos.video)} o vídeo, ${u.brl(P.precos.captacao)} a captação)</button></div>`;
+      <div class="kpis k3"><div class="kpi"><span>Vídeos</span><b class="num">${x.video}</b></div><div class="kpi"><span>Captações</span><b class="num">${x.captacao}</b></div><div class="kpi"><span>Entrou</span><b class="num c-in">${u.brl(x.recebido)}</b></div></div>
+      <div class="ppags">${x.pags.map(pag).join('') || `<p class="c-muted" style="font-size:.84rem;margin:8px 2px">Nenhum pagamento em ${u.esc(nm)} ainda. Quando o Pix cair, ele aparece aqui para você marcar o que foi.</p>`}</div>
+      ${x.semMarca ? `<p class="aviso" style="margin-top:8px">${x.semMarca} pagamento${x.semMarca > 1 ? 's' : ''} sem dizer o que foi.</p>` : ''}
+      <div class="ptab" role="table" aria-label="Produção por mês"><div class="ptr pth" role="row"><span role="columnheader">Mês</span><span role="columnheader">Vídeos</span><span role="columnheader">Capt.</span><span role="columnheader">Entrou</span></div>${ms.slice().reverse().map(m => { const y = P.linha(m); return `<button type="button" class="ptr${m === sel ? ' on' : ''}" role="row" data-a="prodMes" data-id="${u.esc(j.ID)}" data-v="${m}"><span role="cell">${u.cap(u.CURTO[+m.slice(5) - 1])}${m.slice(0, 4) !== m0.slice(0, 4) ? '/' + m.slice(2, 4) : ''}</span><span role="cell" class="num">${y.video}</span><span role="cell" class="num">${y.captacao}</span><span role="cell" class="num">${y.recebido ? u.k0(y.recebido) : '—'}</span></button>`; }).join('')}</div>
+      <button type="button" class="chip mini" data-a="precosRec" data-id="${u.esc(j.ID)}" style="margin-top:10px">${u.svg('pencil')}Valores para sugerir (${u.brl(P.precos.video)} o vídeo, ${u.brl(P.precos.captacao)} a captação)</button></div>`;
   }
-  function mudarProd(id, m, k, d) {
-    const j = db.achar('TRABALHOS', id); if (!j) return;
-    const prod = Object.assign({}, c.crm(j).prod || {}), x = Object.assign({ video: 0, captacao: 0 }, prod[m] || {});
-    x[k] = Math.max(0, (+x[k] || 0) + d); prod[m] = x; crmSalvar(id, { prod }); render(false);
-    toast(`${d > 0 ? '+1' : '−1'} ${k === 'video' ? 'vídeo' : 'captação'} em ${u.nomeMes(m).toLowerCase()}`, () => mudarProd(id, m, k, -d));
+  /* marcar um pagamento: quantos vídeos e captações foram e de quais dias (os dias trabalhados do calendário) */
+  function formProdPag(id, jid) {
+    const l = c.lancs().find(x => x.id === id), j = db.achar('TRABALHOS', jid); if (!l || !j) return;
+    const P = c.producao(j), pd = c.prodDe(l), pv = P.precos.video || 100, pc = P.precos.captacao || 200;
+    const sug = pd || (/v[ií]deo/i.test(l.sub) ? { video: Math.round(l.valor / pv), captacao: 0 } : l.valor % pc === 0 ? { video: 0, captacao: l.valor / pc } : { video: Math.round(l.valor / pv), captacao: 0 });
+    const ds = c.dias().filter(d => d.pag === id || (!c.diaPago(d) && d.empresa === 'Darzan Produções' && u.ateHoje(d.data) >= -120 && d.data <= u.hoje())).sort((a, b) => a.data < b.data ? 1 : -1);
+    abrir(`<h3 style="margin:0 0 4px">O que foi esse pagamento?</h3><p class="c-muted" style="margin:0 0 12px">${u.esc(j['CLIENTE'])} · ${u.dm(l.data)} · <b class="num">${u.brl(l.valor)}</b></p>
+      <div class="grid2">${campo('Vídeos', `<input class="txt num" id="ppV" type="number" min="0" inputmode="numeric" value="${sug.video}">`)}${campo('Captações', `<input class="txt num" id="ppC" type="number" min="0" inputmode="numeric" value="${sug.captacao}">`)}</div>
+      <p class="c-muted" id="ppT" style="font-size:.82rem;margin:0 0 12px"></p>
+      ${campo('De quais dias', ds.length ? `<div class="ppdias">${ds.map(d => `<label class="checkline"><input type="checkbox" value="${u.esc(d.id)}" ${d.pag === id ? 'checked' : ''}><span>${u.dm(d.data)} · ${u.esc(d.desc || 'dia trabalhado')}${d.valor ? ' · ' + u.brl(d.valor) : ''}</span></label>`).join('')}</div>` : '<p class="c-muted" style="font-size:.84rem;margin:0">Nenhum dia trabalhado da Darzan nos últimos meses. Marque os dias no Calendário.</p>')}
+      <button class="save" type="submit">Salvar</button>`, () => {
+      const v = Math.max(0, Math.round(u.num(val('ppV')) || 0)), cp = Math.max(0, Math.round(u.num(val('ppC')) || 0));
+      const obs = String(l.obs || '').replace(/\s*·?\s*Prod v=\d+ c=\d+/g, '').trim();
+      db.salvar('EXTRATO', { ID: l.id, 'OBS': [obs, `Prod v=${v} c=${cp}`].filter(Boolean).join(' · ') });
+      document.querySelectorAll('#s2 .ppdias input').forEach(cb => { const d = c.dias().find(x => x.id === cb.value); if (!d) return;
+        if (cb.checked && d.pag !== id) db.salvar('DIAS', { ID: d.id, 'PAGAMENTO': id }); else if (!cb.checked && d.pag === id) db.salvar('DIAS', { ID: d.id, 'PAGAMENTO': '' }); });
+      fechar(); render(false); toast('Pagamento marcado');
+    });
+    const conta = () => { const v = u.num(val('ppV')) || 0, cp = u.num(val('ppC')) || 0, t = u.r2(v * pv + cp * pc); $('ppT').innerHTML = `Pelos valores: ${u.brl(t)}${Math.abs(t - l.valor) >= 0.01 ? ` · <span class="c-warn">o Pix foi ${u.brl(l.valor)}</span>` : ' · bate com o Pix'}`; };
+    ['ppV', 'ppC'].forEach(k => $(k).addEventListener('input', conta)); conta();
   }
   /* sininho: lista do que entrou e saiu pelo robô do banco; o que é novo fica marcado e, ao abrir, passa a "visto" */
   function formNovidades() {
@@ -1489,8 +1509,7 @@
   const TABS = [['inicio', 'Início', 'house'], ['trabalhos', 'Trabalhos', 'clapperboard'], ['tarefas', 'Tarefas', 'list-checks'], ['equip', 'Equipamentos', 'camera'], ['fin', 'Finanças', 'wallet']];
   function nav() {
     const urg = c.urgentes();
-    $('tabbar').innerHTML = TABS.filter(([k]) => !['tarefas', 'equip'].includes(k)).map(([k, n, i]) => `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('')
-      + `<button class="tab" type="button" data-a="mais" ${['tarefas', 'equip'].includes(ui.view) ? 'aria-current="page"' : ''} aria-label="Mais: tarefas, equipamentos e outros${urg ? ` (${urg} tarefa${urg > 1 ? 's' : ''} para hoje)` : ''}">${u.svg('layers')}${urg ? `<span class="cnt">${urg}</span>` : ''}<span>Mais</span></button>`;
+    $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
     const nov = c.novidades().novas.length;
     $('snav').innerHTML = TABS.map(([k, n, i]) => `<button type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}${n}${k === 'tarefas' && urg ? `<span class="cnt">${urg}</span>` : ''}</button>`).join('') + `<div class="sep"></div><button type="button" data-a="novidades">${u.svg('bell')}Novidades do banco${nov ? `<span class="cnt">${nov}</span>` : ''}</button><button type="button" data-a="irRel" data-v="mes">${u.svg('chart-column')}Relatórios</button><button type="button" data-a="ocultar">${u.svg(ui.oculto ? 'eye-off' : 'eye')}${ui.oculto ? 'Mostrar valores' : 'Esconder valores'}</button><button type="button" data-a="conta">${u.svg('user')}Sua conta</button>`;
     const lv = c.nivel(c.xp());
@@ -1550,9 +1569,7 @@
     irBancos: () => { ui.fseg = 'bancos'; go('fin'); },
     irRevisar: () => { ui.fseg = 'revisar'; go('fin'); },
     irMetas: () => { ui.fseg = 'metas'; go('fin'); },
-    maisIr: b => { fechar(); go(b.dataset.v); },
-    mais: () => { const urg = c.urgentes(), nov = c.novidades().novas.length, it = (a, v, ic, t, sub) => `<button type="button" class="mais-i" data-a="${a}" ${v ? `data-v="${v}"` : ''}>${u.ti(ic)}<span><b>${t}</b><small>${sub}</small></span>${u.svg('chevron-right')}</button>`;
-      abrir(`<h3 style="margin:0 0 12px">Mais</h3><div class="mais">${it('maisIr', 'tarefas', ['list-checks', '#a9d1f5', '#3a6ea5'], 'Tarefas', urg ? `${urg} para hoje ou atrasada${urg > 1 ? 's' : ''}` : 'contas, faturas e lembretes do mês')}${it('maisIr', 'equip', ['camera', '#a9d1f5', '#3a6ea5'], 'Equipamentos', 'quanto paguei e quanto vale')}${it('novidades', '', ['bell', '#a9d1f5', '#3a6ea5'], 'Novidades do banco', nov ? `${nov} nova${nov > 1 ? 's' : ''}` : 'o que o banco trouxe')}${it('irRel', 'mes', ['chart-column', '#a9d1f5', '#3a6ea5'], 'Relatórios', 'mês a mês e o ano')}${it('conta', '', ['user', '#a9d1f5', '#3a6ea5'], 'Sua conta', 'senha, aparelho e backup')}</div>`); },
+    menu: () => { document.body.classList.toggle('menu-aberto'); },
     tMes: b => { ui.tmes = b.dataset.v; ui.tdia = null; render(false); },
     tDia: b => { ui.tdia = b.dataset.v && ui.tdia !== b.dataset.v ? b.dataset.v : null; render(false); },
     rvMarcaG: b => { const ids = b.dataset.ids.split(','), tudo = ids.every(id => ui.rvsel.has(id)); ids.forEach(id => tudo ? ui.rvsel.delete(id) : ui.rvsel.add(id)); render(false); },
@@ -1598,7 +1615,7 @@
     etapaJ: b => etapaNaFicha(b),
     novidades: () => formNovidades(),
     novRev: () => { fechar(); ui.fseg = 'revisar'; go('fin'); },
-    prodMais: b => mudarProd(b.dataset.id, b.dataset.m, b.dataset.k, +b.dataset.d),
+    prodPag: b => formProdPag(b.dataset.id, b.dataset.j),
     prodMes: b => { const m0 = u.mes(u.hoje()); if (b.dataset.v > m0) return; (ui.recMes || (ui.recMes = {}))[b.dataset.id] = b.dataset.v; render(false); },
     precosRec: b => formPrecos(b.dataset.id),
     novoRec: () => formJob(null, { 'ETAPA': 'Recorrente', 'TIPO DE EVENTO': 'Social media' }),
@@ -1629,6 +1646,10 @@
     fab: () => ui.view === 'equip' ? formEquip(null) : ui.view === 'trabalhos' ? formJob(null) : ui.view === 'tarefas' ? formTarefa(null) : formLanc('saida'),
   };
   /* a ação que devolve true deixa o clique seguir (ex.: link do WhatsApp que também anota "chamei hoje") */
+  /* menu lateral aberto: tocar fora fecha; tocar numa opção faz a ação e fecha */
+  document.addEventListener('click', e => { if (!document.body.classList.contains('menu-aberto')) return; const dentro = e.target.closest('.side');
+    if (!dentro) { if (!e.target.closest('[data-a=menu]')) { e.stopPropagation(); e.preventDefault(); } document.body.classList.remove('menu-aberto'); return; }
+    if (e.target.closest('[data-a]')) setTimeout(() => document.body.classList.remove('menu-aberto'), 0); }, true);
   document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const f = ACOES[b.dataset.a]; if (f && f(b, e) !== true) e.preventDefault(); });
   document.addEventListener('submit', e => { if (e.target.id !== 's2') return; e.preventDefault(); if (aoEnviar) aoEnviar(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });

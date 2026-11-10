@@ -50,6 +50,11 @@ module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
     certo(await p.getAttribute('#view .catl[data-v="Teste Grande"]', 'aria-expanded') === 'true' && await p.isVisible('#view .ofsubs'), 'tocar na fatia abre as subcategorias');
     certo(/Teste Grande/.test(await p.textContent('#view .pizza.donut')) && await p.$$eval('#view .oflancs .ofl1', ls => ls.length) >= 1, 'o meio mostra a categoria aberta e a lista mostra os lançamentos dela');
     certo(await p.$eval('#view .pizza .fat[data-v="Teste Grande"]', e => e.classList.contains('on')) && await p.$eval('#view .ondefoi', e => e.classList.contains('foco')), 'a fatia aberta fica em destaque');
+    await p.$eval('#view .pizza .fmeio', e => e.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await p.waitForTimeout(200);
+    certo(/Saiu em/.test(await p.textContent('#view .pizza.donut')) && !(await p.$('#view .ondefoi.foco')), 'tocar no meio (ou de novo no pedaço) volta para o total');
+    await p.$eval('#view .pizza .fhit[data-v="Teste Grande"]', e => e.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    await p.$eval('#view .pizza .fhit[data-v="Teste Grande"]', e => e.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await p.waitForTimeout(200);
+    certo(/Saiu em/.test(await p.textContent('#view .pizza.donut')), 'tocar duas vezes no mesmo pedaço também volta');
     await conferirLayout(p, 'para onde foi em anel');
   }],
   ['escolher o mês direto: tocar no nome do mês abre os 12 meses; vai de outubro para janeiro num toque; mês sem nada fica apagado', async (st, abrir) => {

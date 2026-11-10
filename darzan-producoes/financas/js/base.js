@@ -626,11 +626,12 @@ window.A = window.A || {};
   /* produção do cliente recorrente (ex.: Kellen): quantos vídeos e captações em cada mês, guardados no CRM do trabalho
      ({ prod: { "2026-11": { video: 3, captacao: 1 } }, precos: { video: 100, captacao: 200 } }). Falta receber = o que foi feito − o que entrou desde o primeiro mês contado */
   c.PRECOS_PROD = { video: 100, captacao: 200 };
-  c.producao = j => { const k = c.crm(j), pr = Object.assign({}, c.PRECOS_PROD, k.precos || {}), prod = k.prod && typeof k.prod === 'object' ? k.prod : {}, g = c.ganhosPorMes(j);
-    const meses = Object.keys(prod).filter(m => /^\d{4}-\d{2}$/.test(m) && ((+prod[m].video || 0) || (+prod[m].captacao || 0))).sort();
-    const linha = m => { const x = prod[m] || {}, v = Math.max(0, +x.video || 0), cp = Math.max(0, +x.captacao || 0); return { m, video: v, captacao: cp, valor: u.r2(v * pr.video + cp * pr.captacao), recebido: g[m] || 0 }; };
-    const lista = meses.map(linha), feito = u.r2(u.sum(lista, x => x.valor)), recebido = meses.length ? u.r2(u.sum(Object.keys(g).filter(m => m >= meses[0]), m => g[m])) : 0;
-    return { precos: pr, prod, lista, linha, feito, recebido, falta: u.r2(Math.max(0, feito - recebido)), videos: u.sum(lista, x => x.video), captacoes: u.sum(lista, x => x.captacao) }; };
+  /* produção do recorrente vem dos pagamentos: cada Pix que cai do cliente é marcado com o que foi ("Prod v=2 c=1" na OBS = 2 vídeos e 1 captação) */
+  c.prodDe = l => { const m = String(l.obs || '').match(/Prod v=(\d+) c=(\d+)/); return m ? { video: +m[1], captacao: +m[2] } : null; };
+  c.producao = j => { const k = c.crm(j), pr = Object.assign({}, c.PRECOS_PROD, k.precos || {}), pags = c.recebimentos(j).slice().sort((a, b) => a.data < b.data ? 1 : -1);
+    const linha = m => { const ps = pags.filter(l => u.mes(l.data) === m), mk = ps.map(c.prodDe).filter(Boolean);
+      return { m, pags: ps, video: u.sum(mk, x => x.video), captacao: u.sum(mk, x => x.captacao), recebido: u.r2(u.sum(ps, l => l.valor)), semMarca: ps.filter(l => !c.prodDe(l)).length }; };
+    return { precos: pr, pags, linha, meses: [...new Set(pags.map(l => u.mes(l.data)))].sort() }; };
   c.ganhosPorMes = j => { const o = {}; c.recebimentos(j).forEach(l => { const m = u.mes(l.data); o[m] = u.r2((o[m] || 0) + l.valor); }); return o; };
   /* balanço da Darzan num ano: por mês, o que faturou (trabalhos e recorrentes) e quais trabalhos aconteceram */
   c.anosDarzan = () => [...new Set(c.lancs().filter(l => l.cat === 'Darzan Produções').map(l => l.data.slice(0, 4)).concat(c.trabalhos().map(j => String(j['DATA DO EVENTO'] || '').slice(0, 4)).filter(a => a && a <= u.hoje().slice(0, 4))))].sort();
