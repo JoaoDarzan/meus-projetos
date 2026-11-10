@@ -46,7 +46,7 @@ module.exports = { etapa: 'Calendário dos dias trabalhados', testes: [
     mesmo(await p.inputValue('#s2 #lpP'), 'LPIXJPL', 'o pagamento já vem escolhido');
     await p.check('#s2 #lp-WSAB'); await p.check('#s2 #lp-WDOM');
     await clica(p, '#s2 [data-a=dividirPag]');
-    certo(/R\$ 500,00 de R\$ 500,00 ✓/.test(await p.textContent('#s2 #lpTot')), 'soma confere com o pagamento: ' + await p.textContent('#s2 #lpTot'));
+    certo(/R\$\s500,00 de R\$\s500,00 ✓/.test(await p.textContent('#s2 #lpTot')), 'soma confere com o pagamento: ' + await p.textContent('#s2 #lpTot'));
     await conferirLayout(p, 'ligar pagamento aos dias');
     await clica(p, '#s2 .save'); await calmo(p);
     const ds = Object.fromEntries(st.linhas('dias').map(d => [d.id, d]));

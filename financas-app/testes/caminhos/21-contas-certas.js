@@ -93,7 +93,7 @@ module.exports = { etapa: 'Contas certas (revisão)', testes: [
     const cx = await p.evaluate(() => A.c.contas().filter(x => /Viagem/.test(x['CONTA'])).map(x => [x['CONTA'], A.c.saldo(x)]));
     certo(JSON.stringify(cx) === JSON.stringify([['Caixinha Viagem', 100], ['Caixinha Viagem Chile', 600]]), 'só a caixinha certa recebe: ' + JSON.stringify(cx));
     const msg = await p.evaluate(() => { A.ui.oculto = true; const j = A.db.achar('TRABALHOS', 'JW'); return decodeURIComponent(A.c.linkWhats(j, 250, null)); });
-    certo(/R\$ 250,00/.test(msg) && !/••/.test(msg), 'mensagem com o valor de verdade: ' + msg.slice(0, 120));
+    certo(/R\$\s250,00/.test(msg) && !/••/.test(msg), 'mensagem com o valor de verdade: ' + msg.slice(0, 120));
   }],
   ['lançamento que veio do banco (Open Finance) e é excluído fica cancelado, para o robô não trazer de novo; o lançado à mão some de verdade', async (st, abrir) => {
     st.tabelas.extrato.push(L('LOF-aaaaaaaa-0000-0000-0000-000000000077', { descricao: 'veio do banco', obs: 'Open Finance · OF aaaaaaaa-0000-0000-0000-000000000077' }),

@@ -36,7 +36,7 @@ module.exports = { etapa: 'Ordem, mês e gráfico', testes: [
     const d = await p.evaluate(() => { const r = A.c.resumo(A.ui.mes), t = r.cats.reduce((s, x) => s + x.valor, 0); return { cats: r.cats.map(x => x.cat), p0: Math.round(r.cats[0].valor / t * 100) }; });
     mesmo(d.cats[0], 'Teste Grande', 'a maior categoria vem primeiro');
     certo((await p.$$eval('#view .catl small', t => t.map(x => x.textContent.trim()))).some(x => x.startsWith(d.p0 + '%') || x.startsWith(d.p0 + ',')), 'a porcentagem aparece na lista');
-    certo(/Saiu em .*R\$ [\d.]+,\d\d/.test(await p.textContent('#view .pizza.donut')), 'o total do mês fica no meio do anel');
+    certo(/Saiu em .*R\$\s[\d.]+,\d\d/.test(await p.textContent('#view .pizza.donut')), 'o total do mês fica no meio do anel');
     certo(/a mais que|a menos que|igual a/.test(await p.textContent('#view .ofcmp')), 'o total compara com o mês anterior');
     await p.$eval('#view .pizza', e => e.scrollIntoView({ block: 'center' }));
     await p.$eval('#view .pizza .fat[data-v="Teste Grande"]', e => e.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await p.waitForTimeout(350);

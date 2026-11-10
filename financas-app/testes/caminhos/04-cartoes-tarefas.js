@@ -17,7 +17,7 @@ module.exports = { etapa: 'Cartões e tarefas', testes: [
     certo(/conta do mês que vem teste/i.test(await lista()) && !/conta deste mês teste/i.test(await lista()), 'mês seguinte: só as dele');
     await clica(p, `[data-a=tMes][data-v="${m0}"]`); await clica(p, '#view .rv-aviso');
     certo(/conta velha teste/i.test(await lista()), 'a atrasada fica no mês dela');
-    certo(/A pagar no mês\s*R\$ [\d.]*\d+,\d\d/.test((await p.textContent('#tResumo')).replace(/\s+/g, ' ')), 'resumo do mês com valor exato');
+    certo(/A pagar no mês\s*R\$\s[\d.]*\d+,\d\d/.test((await p.textContent('#tResumo')).replace(/\s+/g, ' ')), 'resumo do mês com valor exato');
   }],
   ['cartão: conta fixa que o banco ainda não cobrou fica fora do total da fatura e aparece separada; conta fixa no cartão nasce prevista', async (st, abrir) => {
     const m0 = HOJE.slice(0, 7), L = (id, desc, v, obs) => ({ id, user_id: 'u-joao', data: m0 + '-05', banco: 'Nubank', descricao: desc, grupo: 'Desejos', tipo: 'cartão', valor: -v, categoria: 'Assinaturas', subcategoria: 'Apps', status: 'Previsto', parcela: '', obs });
@@ -25,7 +25,7 @@ module.exports = { etapa: 'Cartões e tarefas', testes: [
     const p = await abrir({ aparelho: 'iphone-15' });
     await p.evaluate(() => { Object.assign(A.ui, { view: 'fin', fseg: 'cartoes', cartao: 'Nubank' }); A.render(false); });
     const t = await p.textContent('#naoBanco');
-    certo(/Fora do total/.test(t) && /Assinatura que ainda não caiu \(R\$ 19,90\)/.test(t) && !/Compra que o banco já mostrou/.test(t), 'separa o que o banco ainda não cobrou: ' + t);
+    certo(/Fora do total/.test(t) && /Assinatura que ainda não caiu \(R\$\s19,90\)/.test(t) && !/Compra que o banco já mostrou/.test(t), 'separa o que o banco ainda não cobrou: ' + t);
     const fat = await p.evaluate(m => [A.c.fatura('Nubank', m), A.c.itensFatura('Nubank', m).reduce((s, l) => s - l.valor, 0)], m0);
     certo(Math.round((fat[1] - fat[0]) * 100) === 1990, 'a fixa que o banco não cobrou fica fora do total da fatura: ' + fat);
     certo(st.linhas('extrato').filter(l => /^LFX-/.test(l.id) && l.tipo === 'cartão').every(l => l.status === 'Previsto'), 'conta fixa no cartão nasce prevista');

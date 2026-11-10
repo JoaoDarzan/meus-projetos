@@ -1,6 +1,6 @@
 /* Etapa 19 · Botão de voltar e gráfico do "Para onde foi" */
 const { HOJE, calmo, clica, certo, igual, conferirLayout } = require('../ajuda');
-const A_brl = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const A_brl = v => 'R$\u00a0' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const estado = p => p.evaluate(() => [A.ui.view, A.ui.fseg, A.ui.jseg, A.ui.filtro].join('|'));
 
 module.exports = { etapa: 'Voltar e Para onde foi', testes: [

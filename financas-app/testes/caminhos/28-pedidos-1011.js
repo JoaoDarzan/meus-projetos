@@ -30,7 +30,7 @@ module.exports = { etapa: 'Pedidos de 10/11', testes: [
     const p = await abrir({ aparelho: 'iphone-se' });
     await ir(p, 'equip'); await calmo(p);
     const bar = (await p.textContent('#view .eqbar[data-id="EQV1"]')).replace(/\s+/g, ' ');
-    certo(/Drone teste/.test(bar) && /R\$ 1\.000 → R\$ 1\.500/.test(bar), 'item: paguei → vale hoje: ' + bar);
+    certo(/Drone teste/.test(bar) && /R\$\s1\.000 → R\$\s1\.500/.test(bar), 'item: paguei → vale hoje: ' + bar);
     const larg = await p.$eval('#view .eqbar[data-id="EQV1"] .lv', e => e.style.width), larg2 = await p.$eval('#view .eqbar[data-id="EQV1"] .lp', e => e.style.width);
     certo(parseFloat(larg) > parseFloat(larg2), 'a barra do "vale hoje" é maior que a do "paguei"');
     certo(/Tripé teste/.test(await p.textContent('#view .eqval')), 'item que não custou nada também entra (vale R$ 100)');

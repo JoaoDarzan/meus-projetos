@@ -1080,3 +1080,28 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
 .eqbar .b{grid-area:b;display:grid;gap:3px}.eqbar .b i{display:block;height:6px;border-radius:4px;min-width:2px}
 .bank-h .logob svg{width:26px;height:26px}.bank-h .logob{font-size:1rem}
 .recstats .kpi{padding:10px 12px}.recstats .kpi b{font-size:1.05rem}.recstats .kpi small{font-size:.68rem}@media (min-width:700px){.recstats{grid-template-columns:repeat(4,minmax(0,1fr))}}.prodh{margin-top:18px}
+/* ===== v56: correções da auditoria (celular e PC) ===== */
+/* título da tela não passa por baixo do seletor de mês: no celular o mês desce para a linha de baixo */
+.bar h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:700px){.bar{flex-wrap:wrap;row-gap:8px}.bar h1{flex:1 0 auto;max-width:100%}.bar .mpill{order:9;margin-left:auto}}
+/* novidades do banco: valores inteiros */
+.nvk .kpi b{font-size:clamp(.9rem,4.2vw,1.15rem);overflow:visible;text-overflow:clip}
+@media (max-width:420px){.nvk{grid-template-columns:repeat(2,minmax(0,1fr))}.nvk .kpi:last-child{grid-column:1/-1}}
+/* cartão do equipamento: "Paguei" e "Vale hoje" um embaixo do outro */
+.eqv{grid-template-columns:1fr;gap:4px}
+.eqv span{display:flex;justify-content:space-between;align-items:baseline;gap:6px;min-width:0}
+.eqv b{font-size:.92rem}
+/* o + não cobre o fim da tela */
+@media (max-width:999px){.main{padding-block:0 calc(190px + var(--sa-b))}}
+/* quadro: no celular cada coluna rola por dentro (sem espaço vazio enorme embaixo); no PC as 4 colunas ocupam a largura */
+.board{align-items:start}
+@media (max-width:999px){.board .col{max-height:calc(100dvh - 230px);overflow-y:auto;overscroll-behavior:contain}}
+@media (min-width:1000px){.board{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* relatórios no PC: nome da categoria inteiro */
+.catl .n{white-space:normal;line-height:1.25;overflow-wrap:anywhere}
+/* início: "a receber" inteiro */
+.flow small.arec{white-space:normal;overflow:visible}
+/* peças do equipamento alinhadas */
+.peca .txt{height:44px;min-height:0;padding-block:0}
+/* PC: a fileira de bancos mostra que dá para rolar */
+@media (min-width:1000px){.bankpills{scrollbar-width:thin;flex-wrap:wrap}}

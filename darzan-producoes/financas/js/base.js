@@ -5,11 +5,11 @@ window.A = window.A || {};
   const CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const u = A.u = { MESES, CURTO };
   u.oculto = () => !!(A.ui && A.ui.oculto);
-  u.brl = (v, cents = true) => { v = +v || 0; if (u.oculto()) return 'R$ ••••'; return (v < 0 ? '−' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 }); };
+  u.brl = (v, cents = true) => { v = +v || 0; if (u.oculto()) return 'R$ ••••'; return (v < 0 ? '−' : '') + 'R$\u00a0' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 }); };
   u.k0 = v => u.brl(v, false);
   /* valor sem esconder: para mensagem ao cliente e avisos no celular (o "esconder valores" vale só para a tela) */
   u.reais = v => (v < 0 ? '−' : '') + 'R$ ' + Math.abs(+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  u.big = v => { if (u.oculto()) return 'R$ ••••••'; const [a, b] = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `${v < 0 ? '−' : ''}R$ ${a}<span class="cents">,${b}</span>`; };
+  u.big = v => { if (u.oculto()) return 'R$ ••••••'; const [a, b] = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `${v < 0 ? '−' : ''}R$\u00a0${a}<span class="cents">,${b}</span>`; };
   u.pct = v => Math.round((v || 0) * 100) + '%';
   u.r2 = v => Math.round((+v || 0) * 100) / 100;
   u.num = s => { if (typeof s === 'number') return s; s = String(s == null ? '' : s).replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, ''); const n = parseFloat(s); return isFinite(n) ? n : 0; };

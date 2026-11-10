@@ -19,7 +19,7 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     await p.waitForSelector('#s2 .novas');
     const t = await p.textContent('#s2 .novas');
     certo(/Padaria Teste/.test(t) && /Pix Teste Recebido/.test(t) && !/Prévia escondida/.test(t) && !/Mercado Antigo/.test(t), 'lista as 2 novas: ' + t.slice(0, 200));
-    certo(/R\$ 500,00/.test(await p.textContent('#s2 .nvk')) && /R\$ 45,00/.test(await p.textContent('#s2 .nvk')), 'mostra quanto entrou e saiu');
+    certo(/R\$\s500,00/.test(await p.textContent('#s2 .nvk')) && /R\$\s45,00/.test(await p.textContent('#s2 .nvk')), 'mostra quanto entrou e saiu');
     certo(/Mercado Antigo/.test(await p.textContent('#s2 details')), 'a antiga fica em "Já vistas"');
     await conferirLayout(p, 'novidades do banco');
     await clica(p, '#s2 [data-a=fechar]');
@@ -38,16 +38,16 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     const p = await abrir({ aparelho: 'iphone-15' });
     await ir(p, 'trabalhos', { jseg: 'recorrentes' }); await p.waitForSelector('#view .prod');
     certo(!(await p.$('#view [data-a=prodMais]')), 'não tem mais o + e − de vídeo e captação');
-    certo(/Toque para dizer o que foi/.test(await p.textContent('#view .ppag')) && /R\$ 400,00/.test(await p.textContent('#view .ppag')), 'o Pix que caiu aparece para marcar');
+    certo(/Toque para dizer o que foi/.test(await p.textContent('#view .ppag')) && /R\$\s400,00/.test(await p.textContent('#view .ppag')), 'o Pix que caiu aparece para marcar');
     await clica(p, '#view [data-a=prodPag][data-id=LREC-1]');
     await p.fill('#s2 #ppV', '2'); await p.fill('#s2 #ppC', '1');
-    certo(/R\$ 400,00 · bate com o Pix/.test(await p.textContent('#s2 #ppT')), '2 × 100 + 1 × 200 bate com o Pix: ' + await p.textContent('#s2 #ppT'));
+    certo(/R\$\s400,00 · bate com o Pix/.test(await p.textContent('#s2 #ppT')), '2 × 100 + 1 × 200 bate com o Pix: ' + await p.textContent('#s2 #ppT'));
     await p.check('#s2 .ppdias input[value=WTESTE1]'); await p.check('#s2 .ppdias input[value=WTESTE2]');
     await clica(p, '#s2 .save'); await calmo(p);
     certo(/Prod v=2 c=1/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs) && /Trabalho JREC/.test(st.linhas('extrato').find(l => l.id === 'LREC-1').obs), 'gravou no pagamento (e manteve o que já tinha)');
     certo(st.linhas('dias').filter(d => d.pagamento === 'LREC-1').length === 2, 'os 2 dias ficaram ligados ao pagamento');
     const k = (await p.textContent('#view .prod .kpis')).replace(/\s+/g, ' ');
-    certo(/Vídeos\s*2/.test(k) && /Captações\s*1/.test(k) && /R\$ 400(?!,\d)/.test(k), 'o mês mostra 2 vídeos, 1 captação e o que entrou: ' + k);
+    certo(/Vídeos\s*2/.test(k) && /Captações\s*1/.test(k) && /R\$\s400(?!,\d)/.test(k), 'o mês mostra 2 vídeos, 1 captação e o que entrou: ' + k);
     certo(new RegExp('2 vídeos · 1 captação.*dias ' + d1.slice(8) + '/').test(await p.textContent('#view .ppag')), 'o pagamento mostra o que foi e os dias');
     await conferirLayout(p, 'produção do recorrente');
   }],
@@ -57,8 +57,8 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     const p = await abrir({ aparelho: 'iphone-15' });
     await ir(p, 'equip'); await p.waitForSelector('#view .eq');
     const um = await p.textContent('#view .eq[data-id=ETESTE1]'), dois = await p.textContent('#view .eq[data-id=ETESTE2]');
-    certo(/Paguei/.test(um) && /R\$ 1\.000,00/.test(um) && /estimado/.test(um) && /R\$ 80\d,\d\d/.test(um), 'estimado: perde uns 20% em 1 ano: ' + um);
-    certo(/R\$ 700,00/.test(dois) && !/estimado/.test(dois) && /perdeu 30%/.test(dois), 'anotado: R$ 700 (perdeu 30%): ' + dois);
+    certo(/Paguei/.test(um) && /R\$\s1\.000,00/.test(um) && /estimado/.test(um) && /R\$\s80\d,\d\d/.test(um), 'estimado: perde uns 20% em 1 ano: ' + um);
+    certo(/R\$\s700,00/.test(dois) && !/estimado/.test(dois) && /perdeu 30%/.test(dois), 'anotado: R$ 700 (perdeu 30%): ' + dois);
     certo(/Vale hoje/.test(await p.textContent('#view .eqval .eqtop')), 'o total do que vale hoje aparece no painel de valores');
     await conferirLayout(p, 'equipamentos com valor de hoje');
     await clica(p, '#view .eq[data-id=ETESTE1]'); await p.waitForSelector('#s2 #eVh');
@@ -66,7 +66,7 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     await p.fill('#s2 #eVh', '900'); await clica(p, '#s2 .save'); await calmo(p);
     const obs = st.linhas('equipamentos').find(e => e.id === 'ETESTE1').obs;
     certo(obs.includes(`Vale hoje 900 em ${HOJE}`) && obs.includes('guardada na case'), 'guardou o valor e as anotações: ' + obs);
-    certo(/R\$ 900,00/.test(await p.textContent('#view .eq[data-id=ETESTE1]')) && !/estimado/.test(await p.textContent('#view .eq[data-id=ETESTE1]')), 'o cartão mostra R$ 900');
+    certo(/R\$\s900,00/.test(await p.textContent('#view .eq[data-id=ETESTE1]')) && !/estimado/.test(await p.textContent('#view .eq[data-id=ETESTE1]')), 'o cartão mostra R$ 900');
   }],
   ['calendário: o mês fica dentro do calendário (trocar e voltar para hoje), com fim de semana e o valor do dia', async (st, abrir) => {
     const p = await abrir({ aparelho: 'iphone-15' });

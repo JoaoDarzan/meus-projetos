@@ -107,7 +107,7 @@ module.exports = { etapa: 'Trabalhos: vídeos, anexos e parcelas', testes: [
     await p.fill('#jW', '(19) 98888-7777'); await clica(p, '#s2 .save'); await calmo(p);
     await clica(p, '#view [data-a=editJ][data-id="JT4"]');
     const links = await p.$$eval('#jRec a.whats', as => as.map(a => decodeURIComponent(a.getAttribute('href'))));
-    certo(links.length === 2 && links.every(l => l.startsWith('https://wa.me/5519988887777?text=Oi, Casal!') && /R\$ 200,00/.test(l) && /Darzan Produções/.test(l)), 'link do WhatsApp com número e mensagem: ' + links[0]);
+    certo(links.length === 2 && links.every(l => l.startsWith('https://wa.me/5519988887777?text=Oi, Casal!') && /R\$\s200,00/.test(l) && /Darzan Produções/.test(l)), 'link do WhatsApp com número e mensagem: ' + links[0]);
     certo(/vence em 26\//.test(links[1]) && /desconsiderar/.test(links[1]), 'parcela que ainda vai vencer: lembrete leve');
     await clica(p, '#s2 [data-a=fechar]');
     await p.evaluate(() => { A.ui.view = 'tarefas'; A.render(false); });

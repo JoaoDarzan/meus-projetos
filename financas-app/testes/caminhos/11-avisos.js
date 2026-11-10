@@ -32,7 +32,7 @@ module.exports = { etapa: 'Avisos no celular', testes: [
     const bol = avisosDe(st, 'boleto internet');
     certo(bol.map(a => a.quando).sort().join() === [HOJE, amanha(HOJE)].join(), 'boleto: ' + JSON.stringify(bol.map(a => [a.quando, a.titulo])));
     certo(bol.find(a => a.quando === HOJE).titulo.startsWith('Amanhã') && bol.find(a => a.quando === amanha(HOJE)).titulo.startsWith('Hoje'), 'textos do boleto');
-    certo(/R\$ 99,90/.test(bol[0].corpo), 'valor no aviso: ' + bol[0].corpo);
+    certo(/R\$\s99,90/.test(bol[0].corpo), 'valor no aviso: ' + bol[0].corpo);
     certo(!avisosDe(st, 'débito automático').length, 'débito automático não precisa de aviso');
     certo(st.linhas('avisos').some(a => a.tipo === 'fatura' && /fatura/.test(a.titulo)), 'nenhum aviso de fatura');
     const ev = avisosDe(st, 'lia e davi');
