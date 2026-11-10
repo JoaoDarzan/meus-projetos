@@ -349,7 +349,9 @@ window.A = window.A || {};
   c.itensFatura = (nome, m) => c.doMes(m).filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l));
   /* o banco já mostrou essa cobrança (o robô marcou "OF <id>", ou "OFP <id>" se ainda está pendente na fatura aberta) */
   c.noBanco = l => /\bOFP? [0-9a-f-]{20,}/i.test(l.obs || '');
-  c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m)));
+  /* conta fixa no cartão que o banco ainda não cobrou (fatura deste mês em diante): fica fora do total e aparece como "ainda não cobrado" */
+  c.fixaSemCobranca = l => l.status === 'Previsto' && !c.noBanco(l) && (/^LFX-/.test(l.id) || /^Fixa\b/.test(l.obs || '')) && u.mes(l.data) >= u.mes(u.hoje());
+  c.fatura = (nome, m) => u.r2(-u.sum(c.itensFatura(nome, m).filter(l => !c.fixaSemCobranca(l))));
   c.pagFatura = (nome, m) => c.lancs().find(l => l.obs.indexOf(`Fatura ${nome} ${m}`) === 0);
   c.emUso = nome => { const m0 = u.mes(u.hoje()); return u.r2(-u.sum(c.lancs().filter(l => l.tipo === 'cartão' && l.banco === nome && c.naFatura(l) && u.mes(l.data) >= m0 && !(u.mes(l.data) === m0 && c.pagFatura(nome, m0))))); };
   c.contaQuePaga = nome => { const k = c.cartao(nome) || {}; return String(k['PAGA PELA CONTA'] || nome).split('·')[0].trim(); };

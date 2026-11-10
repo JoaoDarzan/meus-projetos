@@ -314,6 +314,19 @@ test('cartão: compras pendentes (fatura aberta e parcelas futuras) entram como 
   } finally { await fim(); }
 });
 
+test('cartão: a compra conferida vai para a data (e a fatura) que o banco diz', async () => {
+  const extras = [T('11', 'cartao1', 'DEBIT', 55, 'LOJA MANUAL TESTE', '2026-11-30T12:00:00Z', { status: 'PENDING', creditCardMetadata: { purchaseDate: '2026-10-30T12:00:00Z', billId: 'fat-nov' } })];
+  const { st, env, fim } = await preparar({ extras });
+  try {
+    st.tabelas.extrato.push({ id: 'LMANUAL', user_id: 'u-joao', data: '2026-12-01', banco: 'BancoTeste', descricao: 'loja manual', grupo: 'Desejos', tipo: 'cartão', valor: -55, categoria: 'Compras', subcategoria: 'Para casa', status: 'Previsto', parcela: '', obs: '' });
+    const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(i.codigo, 0, i.saida);
+    const l = st.linhas('extrato').find(x => x.id === 'LMANUAL');
+    assert.ok(l.data === '2026-11-30' && /OFP aaaaaaaa-0000-0000-0000-000000000011/.test(l.obs) && l.status === 'Previsto', 'foi para a data do banco: ' + JSON.stringify([l.data, l.obs, l.status]));
+    assert.equal(st.linhas('extrato').filter(x => /LOJA MANUAL TESTE/i.test(x.descricao)).length, 0, 'não criou outra');
+  } finally { await fim(); }
+});
+
 test('conferência do dia: a conta que bateu fica conferida, as caixinhas ficam iguais ao total do banco, e a foto do dia vai para a tabela saldos', async () => {
   const inv = [{ id: 'i1', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 1000.5, amount: 1004.5, taxes: 4, taxes2: 0, date: '2026-10-26T00:00:00Z', name: 'CDB - BANCOTESTE' }, { id: 'i2', type: 'FIXED_INCOME', status: 'ACTIVE', balance: 610, name: 'CDB - BANCOTESTE' },
     { id: 'i3', type: 'FIXED_INCOME', status: 'TOTAL_WITHDRAWAL', balance: 0, name: 'CDB - BANCOTESTE' }];

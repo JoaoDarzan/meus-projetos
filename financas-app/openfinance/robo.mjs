@@ -132,7 +132,8 @@ async function principal() {
       /* conferido pelo banco (no holerite, todas as linhas que somam o depósito ganham a marca) */
       if (p.acao === 'conferir') (p.grupo || [p.app]).forEach(id => {
         const l = extrato.find(x => x.id === id), obs = [String(l.obs || '').replace(/\s*·?\s*OFP [0-9a-f-]{20,}/gi, '').trim(), `${p.pendente ? 'OFP' : 'OF'} ${p.pid}`].filter(Boolean).join(' · ');
-        ops.push({ tabela: 'extrato', op: 'salvar', linha: Object.assign({ id: l.id, obs }, !p.pendente && l.status === 'Previsto' && p.data <= hoje ? { status: 'Pago', data: p.data } : {}) });
+        /* no cartão, a data do banco diz em qual fatura a compra cai: a linha do app vai para a mesma data (e a mesma fatura) */
+        ops.push({ tabela: 'extrato', op: 'salvar', linha: Object.assign({ id: l.id, obs }, p.tipo === 'cartão' && !p.grupo && String(l.data).slice(0, 10) !== p.data ? { data: p.data } : {}, !p.pendente && l.status === 'Previsto' && p.data <= hoje ? { status: 'Pago', data: p.data } : {}) });
       });
     });
     await gravar(ops);
