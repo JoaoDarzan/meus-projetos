@@ -72,11 +72,12 @@ async function principal() {
       em: ativos.map(v => String(v.date || '').slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().pop() || it.lastUpdatedAt || '' });
     console.log(`  · caixinhas e aplicações: ${invs.length} pelo banco${contas.some(c => c.subtype === 'SAVINGS_ACCOUNT') ? ' + poupança' : ''}${invs.length ? ' (' + Object.entries(contar(invs, v => `${v.type || '?'}/${v.status || 'sem status'}/${v.balance != null ? 'com saldo' : v.amount != null ? 'só amount' : 'sem valor'}`)).map(([k, n]) => `${n} ${k}`).join(', ') + ')' : ''}`);
     for (const c of contas) {
-      const ts = await pg.lancamentos(c.id, DESDE), faturas = {};
+      /* no cartão, o banco pode mandar a compra com a data em que ela entrou na fatura (antes do começo); busca 45 dias antes e fica só com o que cai a partir de DESDE */
+      const ts = await pg.lancamentos(c.id, c.type === 'CREDIT' ? new Date(Date.parse(DESDE + 'T12:00:00Z') - 45 * 864e5).toISOString().slice(0, 10) : DESDE), faturas = {};
       if (c.type === 'CREDIT' && MODO !== 'diagnostico') (await pg.faturas(c.id)).forEach(f => { faturas[f.id] = f.dueDate; });
       const tipos = contar(ts, t => t.type), pend = ts.filter(t => t.status === 'PENDING').length, parc = ts.filter(t => t.creditCardMetadata && t.creditCardMetadata.totalInstallments > 1).length;
       console.log(`  · ${c.type === 'CREDIT' ? 'cartão de crédito' : c.subtype === 'SAVINGS_ACCOUNT' ? 'poupança' : 'conta'}: ${ts.length} lançamentos (${tipos.DEBIT || 0} saídas, ${tipos.CREDIT || 0} entradas${pend ? `, ${pend} pendentes` : ''}${parc ? `, ${parc} parcelados` : ''})`);
-      if (MODO !== 'diagnostico') ts.forEach(t => propostas.push(paraApp(t, c, banco, cartoes, faturas)));
+      if (MODO !== 'diagnostico') ts.forEach(t => { const p = paraApp(t, c, banco, cartoes, faturas); if (c.type !== 'CREDIT' || p.data >= DESDE) propostas.push(p); });
     }
   }
   if (!abertos) throw new Error('nenhum banco abriu: confira o segredo PLUGGY_ITEMS');
