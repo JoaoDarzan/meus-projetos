@@ -280,6 +280,11 @@ test('dia do banco no horário de Brasília: atualização à noite não vira o 
   } finally { await fim(); }
 });
 
+test('pagamento da fatura do Inter ("PAGTO DEBITO AUTOMATICO") é reconhecido e ignorado no cartão', () => {
+  const p = paraApp({ id: 'x1', type: 'CREDIT', amount: 542.51, description: 'PAGTO DEBITO AUTOMATICO', date: '2026-11-26T12:00:00Z', status: 'PENDING' }, { type: 'CREDIT' }, 'Inter', [], {});
+  assert.equal(p.pagFatura, true);
+});
+
 test('cartão: compras pendentes (fatura aberta e parcelas futuras) entram como previstas, juntas no Revisar, sem aviso; quando o banco lança, a mesma linha é conferida (não duplica)', async () => {
   const cc = (n, d, extra = {}) => T(n, 'cartao1', 'DEBIT', 80, 'LOJA PARCELADA TESTE', d, Object.assign({ status: 'PENDING', creditCardMetadata: { purchaseDate: '2026-09-20T15:00:00Z', billId: 'fat-nov', installmentNumber: +n - 6, totalInstallments: 4 } }, extra));
   const extras = [cc('8', '2026-11-20T12:00:00Z'), cc('9', '2026-12-20T12:00:00Z')];

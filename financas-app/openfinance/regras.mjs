@@ -88,7 +88,7 @@ export function paraApp(t, conta, banco, cartoes, faturas = {}) {
     if (cm.totalInstallments > 1 && cm.installmentNumber) parcela = `${cm.installmentNumber}/${cm.totalInstallments}`;
   }
   /* pagamento da fatura que aparece dentro do cartão: o app já registra pelo lado da conta */
-  const pagFatura = ehCartao && valor > 0 && /pagamento|pgto|payment|pag fatura/i.test(t.description || '');
+  const pagFatura = ehCartao && valor > 0 && /pagamento|pgto|pagto|payment|pag fatura/i.test(t.description || '');
   return { pid: t.id, data, banco, tipo: ehCartao ? 'cartão' : 'conta', valor, desc: String(t.description || '').trim(), parcela, pendente: t.status === 'PENDING', pagFatura,
     propria: entreMinhas(t.description, conta.owner), categoriaPluggy: t.category || '' };
 }
