@@ -88,7 +88,8 @@ async function principal() {
   if (MODO === 'diagnostico') { console.log('\nDiagnóstico pronto: a conexão com os bancos funciona. Nada foi gravado.'); return; }
 
   const extrato = await ler('extrato'), mem = memoria(extrato);
-  const casados = estornos(casar(propostas.filter(p => !p.pendente), extrato), extrato);
+  /* compras ainda pendentes (o Inter deixa a fatura aberta inteira como pendente) só entram na prévia, para conferir; importar espera ficarem lançadas */
+  const casados = estornos(casar(propostas.filter(p => !p.pendente || MODO === 'previa'), extrato), extrato);
   const resumo = contar(casados, p => p.acao);
   console.log(`\nComparando com o app: ${resumo.conferir || 0} já estavam lá, ${resumo.novo || 0} novos, ${resumo['ja-importado'] || 0} já importados antes, ${resumo.ignorar || 0} ignorados (pagamento de fatura ou compra estornada), ${propostas.filter(p => p.pendente).length} pendentes (ficam para quando confirmarem).`);
   Object.entries(contar(casados.filter(p => p.acao === 'novo'), p => `${p.banco} (${p.tipo})`)).forEach(([k, n]) => console.log(`  · novos em ${k}: ${n}`));
@@ -116,7 +117,7 @@ async function principal() {
     const antigas = extrato.filter(l => /^LOFP-/.test(l.id)).map(l => ({ tabela: 'extrato', op: 'apagar', linha: { id: l.id } }));
     const ops = casados.filter(p => p.acao !== 'ja-importado').map(p => {
       const l = linhaNova(p, mem, 'LOFP-');
-      return { tabela: 'extrato', op: 'salvar', linha: Object.assign(l, { status: 'Cancelado', obs: `Open Finance · prévia · ${p.acao}${p.app ? ' ' + p.app : ''} · ${l.obs}` }) };
+      return { tabela: 'extrato', op: 'salvar', linha: Object.assign(l, { status: 'Cancelado', obs: `Open Finance · prévia · ${p.acao}${p.app ? ' ' + p.app : ''}${p.pendente ? ' · pendente' : ''} · ${l.obs}` }) };
     });
     await gravar(antigas.concat(ops));
     console.log(`\nPrévia guardada (${ops.length} linhas escondidas para conferência). Nada mudou nas contas do app.`);
