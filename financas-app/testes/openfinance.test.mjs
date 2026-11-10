@@ -223,8 +223,9 @@ test('prévia fica escondida (cancelada) e importar grava sem repetir; rodar de 
   const p = await rodar(Object.assign({}, env, { MODO: 'previa' }));
   assert.equal(p.codigo, 0, p.saida);
   const previa = st.linhas('extrato').filter(l => /^LOFP-/.test(l.id));
-  assert.ok(previa.length === 5 && previa.every(l => l.status === 'Cancelado'), 'prévia escondida: ' + JSON.stringify(previa.map(l => [l.id, l.status])));
-  assert.match(p.saida, /1 já estavam lá, 3 novos/);
+  assert.ok(previa.length === 6 && previa.every(l => l.status === 'Cancelado'), 'prévia escondida (com a pendente, para conferir): ' + JSON.stringify(previa.map(l => [l.id, l.status])));
+  assert.ok(/pendente/.test(previa.find(l => /000000000006$/.test(l.id)).obs), 'a compra pendente aparece marcada como pendente na prévia');
+  assert.match(p.saida, /1 já estavam lá, 4 novos/);
   const i = await rodar(Object.assign({}, env, { MODO: 'importar' }));
   assert.equal(i.codigo, 0, i.saida);
   const ex = st.linhas('extrato');
