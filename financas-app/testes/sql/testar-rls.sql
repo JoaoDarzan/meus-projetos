@@ -95,6 +95,14 @@ select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"t
 select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"anexos","op":"salvar","linha":{"id":"XBAD","conteudo":"javascript:alert(1)"}}]')$q$, 'aceitou arquivo que não é data:');
 select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"equipamentos","op":"salvar","linha":{"id":"EBAD","foto":"https://site-falso/x.png"}}]')$q$, 'aceitou foto de fora');
 select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"salvar","linha":{"id":"AVBAD","titulo":"golpe"}}]')$q$, 'a chave gravou um aviso');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"salvar","linha":{"id":"AVBAD2","titulo":"golpe","tipo":"banco"}}]')$q$, 'a chave gravou aviso do banco sem o VOF-');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"salvar","linha":{"id":"VOF-BAD","titulo":"golpe","tipo":"tarefa"}}]')$q$, 'a chave gravou aviso que não é do banco');
+select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"apagar","linha":{"id":"AV1"}}]')$q$, 'a chave apagou um aviso');
+do $$ begin
+  perform public.claude_gravar('chave-do-joao', '[{"tabela":"avisos","op":"salvar","linha":{"id":"VOF-T1","titulo":"Saiu R$ 10,00 · Nubank","corpo":"teste","quando":"2026-10-27","tipo":"banco"}}]');
+  if public.claude_ler('chave-do-joao', 'avisos')::text not like '%VOF-T1%' then raise exception 'FALHOU: o robô não gravou o aviso do banco'; end if;
+end $$;
+select 'a chave só grava aviso do banco (VOF-)' as resultado;
 select pg_temp.espera_erro($q$select public.claude_gravar('chave-do-joao', (select jsonb_agg(jsonb_build_object('tabela','extrato','op','apagar','linha',jsonb_build_object('id','Z'||g))) from generate_series(1,1001) g))$q$, 'aceitou lote gigante');
 -- anexos: o Claude grava o arquivo, mas ao ler a tabela o arquivo (pesado) não vem junto
 do $$ declare j json; begin

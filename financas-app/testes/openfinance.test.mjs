@@ -306,6 +306,11 @@ test('cartão: compras pendentes (fatura aberta e parcelas futuras) entram como 
     assert.equal(pend().length, 2, 'lançada de vez: confere a mesma linha, não cria outra');
     const nov = pend().find(l => l.data === '2026-11-20');
     assert.ok(/\bOF aaaaaaaa-0000-0000-0000-000000000010/.test(nov.obs) && !/OFP/.test(nov.obs), 'a linha de novembro agora tem a marca de lançada: ' + nov.obs);
+    /* a parcela de dezembro você cancelou no app (não era sua): o robô não traz de volta */
+    const dez = st.tabelas.extrato.find(l => /LOJA PARCELADA TESTE/.test(l.descricao) && /OFP/.test(l.obs)); dez.status = 'Cancelado';
+    await rodar(Object.assign({}, env, { MODO: 'importar' }));
+    assert.equal(pend().length, 2, 'a cancelada não volta como nova');
+    assert.equal(pend().find(l => l.id === dez.id).status, 'Cancelado', 'continua cancelada');
   } finally { await fim(); }
 });
 

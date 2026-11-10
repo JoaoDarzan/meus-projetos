@@ -122,7 +122,7 @@ export function regraFixa(p) {
 export function casar(propostas, extrato) {
   const usados = new Set(), porPid = new Map();
   /* já importado = linha de verdade com a marca "OF <id>" (a prévia escondida não conta; a cancelada conta: foi excluída ou ignorada de propósito) */
-  extrato.forEach(l => { if (/^LOFP-/.test(l.id)) return; const m = String(l.obs || '').match(/OF ([0-9a-f-]{20,})/i); if (m) { porPid.set(m[1], l.id); usados.add(l.id); } });
+  extrato.forEach(l => { if (/^LOFP-/.test(l.id)) return; const m = String(l.obs || '').match(/OF ([0-9a-f-]{20,})/i) || (l.status === 'Cancelado' && String(l.obs || '').match(/OFP ([0-9a-f-]{20,})/i)); /* pendente que você cancelou também não volta */ if (m) { porPid.set(m[1], l.id); usados.add(l.id); } });
   return propostas.map(p => {
     if (porPid.has(p.pid)) return Object.assign({ acao: 'ja-importado', app: porPid.get(p.pid) }, p);
     const cands = extrato.filter(l => !usados.has(l.id) && l.status !== 'Cancelado' && !/^LOFP-|^LDV-/.test(l.id) && sem(l.banco) === sem(p.banco)

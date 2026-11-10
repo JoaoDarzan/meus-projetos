@@ -648,7 +648,7 @@ begin
   for o in select * from jsonb_array_elements(p_ops) loop
     t := o->>'tabela'; l := o->'linha';
     if not public.claude_tabela_ok(t) then raise exception 'tabela não permitida: %', t; end if;
-    if t = 'avisos' then raise exception 'a chave não grava avisos (só o app agenda os avisos)'; end if;
+    if t = 'avisos' and not (o->>'op' = 'salvar' and l->>'tipo' = 'banco' and left(coalesce(l->>'id', ''), 4) = 'VOF-') then raise exception 'a chave só grava avisos do banco (VOF-...); os outros avisos só o app agenda'; end if;
     if coalesce(l->>'id', '') = '' then raise exception 'linha sem id na tabela %', t; end if;
     if o->>'op' = 'apagar' then
       execute format('delete from public.%I where id = $1 and user_id = $2', t) using l->>'id', u;
