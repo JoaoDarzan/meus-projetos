@@ -35,8 +35,9 @@
     const R0 = 80, SW = 20, C = 2 * Math.PI * R0, gap = fatias.length > 1 ? 3 : 0;
     let acc = 0;
     const fat = fatias.map(f => {
-      const pc = f.valor / tot, len = Math.max(pc * C - gap, 1.2), off = C / 4 - acc; acc += pc * C;
-      return { forma: `<circle class="fat${aberta === f ? ' on' : ''}" cx="100" cy="100" r="${R0}" fill="none" style="stroke:${f.cor}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(pc)})</title></circle>`, rot: '' };
+      const pc = f.valor / tot, len = Math.max(pc * C - gap, 1.2), off = C / 4 - acc, meio = -Math.PI / 2 + (acc + len / 2) / C * 2 * Math.PI; acc += pc * C;
+      const rot = pc >= .06 ? `<text class="pzp" x="${(100 + R0 * Math.cos(meio)).toFixed(1)}" y="${(100 + R0 * Math.sin(meio)).toFixed(1)}" dominant-baseline="central">${Math.round(pc * 100)}%</text>` : '';
+      return { rot, forma: `<circle class="fat${aberta === f ? ' on' : ''}" cx="100" cy="100" r="${R0}" fill="none" style="stroke:${f.cor}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" data-a="abreCat" data-v="${u.esc(f.cat)}"><title>${u.esc(f.cat)}: ${u.brl(f.valor)} (${u.pct(pc)})</title></circle>` };
     });
     const centro = aberta
       ? `<text class="dc1" x="100" y="80">${u.esc(aberta.cat.length > 18 ? aberta.cat.slice(0, 17) + '…' : aberta.cat)}</text><text class="dc2 num" x="100" y="104">${u.brl(aberta.valor)}</text><text class="dc3" x="100" y="124">${u.pct(aberta.valor / tot)} do mês</text>`
@@ -44,9 +45,9 @@
     /* os lançamentos da categoria aberta (os mais recentes primeiro) */
     const lancsDe = f => c.doMes(r.m).filter(l => c.ehGasto(l) && (l.cat || 'Outros') === f.cat).sort((a, b) => a.data < b.data ? 1 : -1);
     const subs = f => f.outras ? f.outras.map(x => [x.cat, x.valor]) : Object.entries(f.subs || {}).map(([k, v]) => [k, u.r2(v)]).sort((a, b) => b[1] - a[1]);
-    return `<div class="ondefoi${aberta ? ' foco' : ''}"><div class="ofh"><div><span class="rl">Saiu em ${u.esc(u.nomeMes(r.m).toLowerCase())}</span><b class="rv num c-out">${u.brl(r.saiu)}</b></div>${cmp ? `<small class="ofcmp">${cmp}</small>` : ''}</div>
+    return `<div class="ondefoi${aberta ? ' foco' : ''}"><div class="ofh">${cmp ? `<small class="ofcmp">${cmp}</small>` : ''}</div>
       <div class="ofcorpo"><div class="pizza donut"><svg viewBox="0 0 200 200" role="img" aria-label="Gastos por categoria: ${u.esc(fatias.map(f => `${f.cat} ${u.pct(f.valor / tot)}`).join(', '))}">
-        <g class="pzg"><circle class="dtrilho" cx="100" cy="100" r="${R0}" fill="none" stroke-width="${SW}"/>${fat.map(x => x.forma).join('')}${centro}</g></svg></div>
+        <g class="pzg"><circle class="dtrilho" cx="100" cy="100" r="${R0}" fill="none" stroke-width="${SW}"/>${fat.map(x => x.forma).join('')}${fat.map(x => x.rot).join('')}${centro}</g></svg></div>
       <div class="ofl">${fatias.map(f => `<button type="button" class="catl${aberta === f ? ' on' : ''}" data-a="abreCat" data-v="${u.esc(f.cat)}" aria-expanded="${aberta === f}"><i style="background:${f.cor}"></i><span class="n">${u.esc(f.cat)}</span><b class="num">${u.brl(f.valor)}</b><small class="num">${u.pct(f.valor / tot)}</small></button>${aberta === f ? (() => { const ss = subs(f), m2 = Math.max(...ss.map(x => x[1]), 1); return `<div class="ofsubs">${ss.map(([k, v]) => `<div class="ofsub"><span>${u.esc(k === '—' ? 'Sem subcategoria' : k)}</span><b class="num">${u.brl(v)}</b><em><i style="width:${v / m2 * 100}%;background:${f.cor}"></i></em></div>`).join('')}${f.outras ? '' : (() => { const ls = lancsDe(f); return `<div class="oflancs">${ls.slice(0, 8).map(l => `<button type="button" class="ofl1" data-a="editL" data-id="${u.esc(l.id)}"><span class="d">${u.dm(l.data)}</span><span class="t">${u.esc(u.cap(l.desc))}<small>${u.esc(l.sub || 'sem subcategoria')}${l.tipo === 'cartão' ? ' · cartão' : ''}${l.status === 'Previsto' ? ' · previsto' : ''}</small></span><b class="num">${u.brl(Math.abs(l.valor))}</b></button>`).join('')}</div><button type="button" class="chip mini" data-a="filtroCat" data-v="${u.esc(f.cat)}">${u.svg('search')}${ls.length > 8 ? `Ver os ${ls.length} lançamentos` : 'Ver no extrato'}</button>`; })()}</div>`; })() : ''}`).join('')}<div class="tot-row"><span>Total que saiu</span><b class="num c-out">${u.brl(r.saiu)}</b></div></div></div></div>`;
   }
   /* passar o mouse ou o dedo numa linha da lista acende a fatia dela (e o contrário) */

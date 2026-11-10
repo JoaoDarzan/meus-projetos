@@ -112,6 +112,16 @@ module.exports = { etapa: 'Caixinhas e potes', testes: [
     await clica(p, '#view .atalhos [data-a=novoL][data-t=saida]');
     certo(await p.isVisible('#s2 #fV'), 'o atalho Lançar gasto abre o formulário');
   }],
+  ['computador: com muitas caixinhas e metas, os cartões ficam dentro da coluna (não invadem o resto da tela) e o anel não gira de novo a cada toque', async (st, abrir) => {
+    for (let k = 1; k <= 9; k++) st.tabelas.contas.push({ id: 'CXT' + k, user_id: 'u-joao', banco: 'Nubank', conta: 'Caixinha muitas ' + k, saldo_conferido: 1000 * k, data_da_conferencia: HOJE, obs: 'Rende 100% do CDI' });
+    for (let k = 1; k <= 3; k++) st.tabelas.metas.push({ id: 'MTT' + k, user_id: 'u-joao', meta: 'Meta muitas ' + k, valor_alvo: 10000, ja_guardado: 1000 * k, onde_esta: '', prazo: null, obs: '' });
+    const p = await abrir({ aparelho: 'notebook' });
+    await p.waitForSelector('#hCaixinhas .cxm');
+    const fora = await p.evaluate(() => { const col = document.querySelector('.home .col-l').getBoundingClientRect(); return [...document.querySelectorAll('#hCaixinhas .cxm')].filter(e => { const r = e.getBoundingClientRect(); return r.right > col.right + 1 || r.left < col.left - 1; }).length; });
+    certo(fora === 0, fora + ' cartões de caixinha/meta saem da coluna da esquerda');
+    certo(await p.$eval('#view .pizza.donut .pzg', e => getComputedStyle(e).animationName) === 'none', 'o anel não tem animação de girar');
+    certo(await p.$$eval('#view .pizza.donut .pzp', t => t.length) >= 1, 'a porcentagem aparece em cima do anel');
+  }],
   ['lembrete do mês: com caixinhas que rendem no banco, o app cria "Conferir as caixinhas" no dia 1º (uma vez só) e dá para marcar como feito', async (st, abrir) => {
     const m0 = HOJE.slice(0, 7);
     Object.assign(st.tabelas.contas.find(c => c.conta === 'Caixinha Reserva'), { obs: 'Rende 100% do CDI' });

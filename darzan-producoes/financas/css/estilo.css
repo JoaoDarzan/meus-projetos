@@ -977,3 +977,16 @@ body{background:transparent}body::before{background:rgba(7,13,28,.85)}
 .hero .flow b{font-size:.84rem;letter-spacing:-.02em;text-overflow:clip}.hero .flow{padding:8px 9px}
 .tk.urgent{border-color:rgba(169,209,245,.5);box-shadow:0 10px 30px -14px rgba(117,170,219,.55)}
 .rv-aviso{border-color:rgba(169,209,245,.35);background:linear-gradient(135deg,rgba(117,170,219,.18),rgba(255,255,255,.05))}
+
+/* ===== correções da revisão (v51) ===== */
+body.topo-azul::before{background:transparent}
+.home .col-l,.home .col-r{min-width:0}
+#hCaixinhas .rail{margin-right:0;padding-right:4px}
+.pizza.donut .pzg{animation:none}
+.pizza.donut .pzp{font-size:10px;text-anchor:middle;fill:#fff;font-weight:800;stroke:rgba(0,0,0,.35);stroke-width:2.2px;paint-order:stroke}
+.ofh:empty{display:none}.ofh{justify-content:flex-end}
+.home .col-r .ofcorpo{grid-template-columns:1fr;gap:16px}.home .col-r .pizza{margin:0 auto}
+#tbBancos{min-width:0;font-size:.82rem}#tbBancos th,#tbBancos td{padding:8px 5px}#tbBancos th{font-size:.7rem;white-space:normal;line-height:1.2}
+.miniplayer{background:linear-gradient(150deg,rgba(117,170,219,.35),rgba(255,255,255,.06));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.xpbar i{background:linear-gradient(90deg,#75aadb,#e8f3ff);box-shadow:0 0 12px rgba(117,170,219,.7)}
+@media (min-width:1000px){.home #hCaixinhas .rail{overflow:visible;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:4px 0 8px}.home #hCaixinhas .cxm{width:auto;min-width:0}}
