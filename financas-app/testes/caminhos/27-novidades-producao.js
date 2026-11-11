@@ -56,7 +56,8 @@ module.exports = { etapa: 'Novidades, produção e equipamentos', testes: [
     st.tabelas.equipamentos.push(E('ETESTE1', { nome: 'Camera Teste Um', obs: 'guardada na case' }), E('ETESTE2', { nome: 'Lente Teste Dois', obs: `Vale hoje 700 em ${HOJE}` }));
     const p = await abrir({ aparelho: 'iphone-15' });
     await ir(p, 'equip'); await p.waitForSelector('#view .eq');
-    const um = await p.textContent('#view .eq[data-id=ETESTE1]'), dois = await p.textContent('#view .eq[data-id=ETESTE2]');
+    const det = async id => { await clica(p, `#view .eq[data-id=${id}]`); await p.waitForSelector('#s2 .eqres'); const t = await p.textContent('#s2 .eqres'); await clica(p, '#s2 [data-a=fechar]'); return t; };
+    const um = await det('ETESTE1'), dois = await det('ETESTE2');
     certo(/Paguei/.test(um) && /R\$\s1\.000,00/.test(um) && /estimado/.test(um) && /R\$\s80\d,\d\d/.test(um), 'estimado: perde uns 20% em 1 ano: ' + um);
     certo(/R\$\s700,00/.test(dois) && !/estimado/.test(dois) && /perdeu 30%/.test(dois), 'anotado: R$ 700 (perdeu 30%): ' + dois);
     certo(/Vale hoje/.test(await p.textContent('#view .eqval .eqtop')), 'o total do que vale hoje aparece no painel de valores');

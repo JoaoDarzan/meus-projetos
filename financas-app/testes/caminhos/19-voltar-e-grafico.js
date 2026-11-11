@@ -78,9 +78,9 @@ module.exports = { etapa: 'Voltar e Para onde foi', testes: [
     const m = await p.evaluate(() => A.ui.mes);
     const nomes = await p.$$eval('#view .rail .gcard .k', ks => ks.map(k => k.textContent));
     certo(nomes.length && nomes.every(t => t === 'Fatura de ' + new Date(m + '-15T12:00').toLocaleDateString('pt-BR', { month: 'long' })), 'cartões com a fatura do mês escolhido: ' + nomes + ' / ' + m);
-    const esperado = await p.evaluate(() => A.c.contas().filter(x => A.u.sem(x['CONTA']) === 'conta').map(x => [x['BANCO'], A.c.saldo(x)]));
+    const esperado = await p.evaluate(() => A.c.contas().filter(x => A.u.sem(x['CONTA']) === 'conta').map(x => [x['BANCO'], A.c.saldo(x)]).filter(([, v]) => v != null && Math.abs(v) >= 0.005)); /* banco zerado ou sem saldo não aparece (v59) */
     const pills = await p.$$eval('#view .bp[data-a=irBancos][aria-label]', bs => bs.map(b => [b.getAttribute('aria-label'), !!b.querySelector('.logob')]));
-    igual(pills.length, esperado.length, 'um por conta corrente');
+    igual(pills.length, esperado.length, 'um por conta corrente com saldo');
     certo(pills.every(([, logo]) => logo), 'cada banco com o ícone');
     certo(esperado.every(([b, v], i) => pills[i][0].startsWith(b + ':') && (v == null || pills[i][0].includes(A_brl(v)))), 'só o saldo da conta corrente: ' + JSON.stringify(pills));
     const vis = await p.$$eval('#view .bp[data-a=irBancos][aria-label] b', bs => bs.map(b => b.textContent));

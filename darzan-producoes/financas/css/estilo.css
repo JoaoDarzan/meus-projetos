@@ -1120,3 +1120,16 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
 .fmodos button.on{background:var(--fg);color:var(--bg)}
 .fbts{display:flex;flex-wrap:wrap;gap:8px}.fbts label{cursor:pointer;position:relative}.fbts input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 .fperigo{color:var(--out,#ff8f8f)!important}
+/* v59: visual mais calmo (pedido do João): ícones neutros, sino com pontinho, aba do meio igual às outras, dia do extrato com total, resumo do equipamento no detalhe */
+.ti{background:rgba(117,170,219,.10)!important;color:#a9cdf0;box-shadow:inset 0 0 0 1px rgba(169,205,240,.14)!important}
+.ti::after{display:none}.ti svg{filter:none}
+.bell .cnt{font-size:0;width:9px;height:9px;min-width:0;padding:0;top:9px;right:10px;border-radius:50%}
+.tab.mid{padding:8px 2px 7px}
+.tab.mid .orb{display:block;width:22px;height:22px;line-height:0;margin:0;padding:0;background:none;color:inherit;box-shadow:none;border:0;border-radius:0}
+.tab.mid .orb svg{width:22px;height:22px}
+.tab.mid .orb::before,.tab.mid .orb::after{display:none}
+.day{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;color:var(--muted);border-bottom:1px solid var(--stroke);padding:16px 0 6px}
+.day b{font-weight:600;color:var(--fg)}.day b.c-in{color:var(--in)}
+.eqres{padding:12px 14px;border-radius:14px;background:var(--glass);border:1px solid var(--stroke);margin-bottom:12px}
+.eqres .m{margin:6px 0 0;font-size:.8rem;color:var(--muted)}
+.tab.mid[aria-current="page"]{color:var(--blue-hi);background:rgba(117,170,219,.16)}

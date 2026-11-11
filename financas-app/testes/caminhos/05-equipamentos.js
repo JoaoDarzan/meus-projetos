@@ -57,10 +57,12 @@ module.exports = { etapa: 'Equipamentos', testes: [
     const E = st.linhas('equipamentos').find(r => r.nome === 'Kit teste câmera e lente');
     certo(E && /Peças: Câmera teste = 4500; Lente teste = 1500/.test(E.obs) && !/Vale hoje/.test(E.obs), 'gravou as peças: ' + (E && E.obs));
     const card = (await p.textContent(`#view .eq[data-id="${E.id}"]`)).replace(/\s+/g, ' ');
-    certo(/Câmera teste\s*paguei R\$\s3\.750 · vale R\$\s4\.500/.test(card) && /valorizou 20%/.test(card), 'o card mostra cada peça e que valorizou: ' + card);
+    certo(/Paguei/.test(card) && /Vale hoje/.test(card) && !/valorizou/.test(card), 'o cartão fica limpo (paguei e vale hoje): ' + card);
     const kp = await p.evaluate(() => A.c.valeHoje(A.db.achar('EQUIPAMENTOS', [...A.db.linhas('EQUIPAMENTOS')].find(e => e['NOME'] === 'Kit teste câmera e lente').ID)).v);
     igual(kp, 6000, 'o total "vale hoje" soma as peças');
     await clica(p, `#view .eq[data-id="${E.id}"]`);
+    const det = (await p.textContent('#s2 .eqres')).replace(/\s+/g, ' ');
+    certo(/Câmera teste\s*paguei R\$\s3\.750 · vale R\$\s4\.500/.test(det) && /valorizou 20%/.test(det), 'ao tocar, mostra cada peça e que valorizou: ' + det);
     certo(await p.inputValue('#ePecas .peca:nth-child(2) .pn') === 'Lente teste' && !/Peças/.test(await p.inputValue('#eO')), 'ao editar, as peças voltam nos campos (e não aparecem nas anotações)');
     await clica(p, '#ePecas .peca:nth-child(2) .pdel'); await clica(p, '#s2 .save'); await calmo(p);
     certo(/Peças: Câmera teste = 4500(?!;)/.test(st.linhas('equipamentos').find(r => r.id === E.id).obs), 'tirar uma peça');
