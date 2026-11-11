@@ -518,8 +518,7 @@
   /* ================= EQUIPAMENTOS ================= */
   const TIPOS_EQ = ['Câmera', 'Lente', 'Drone', 'Celular', 'Áudio', 'Iluminação', 'Estabilizador', 'Armazenamento', 'Computador', 'Acessório'];
   const ICON_EQ = { 'Drone': ['plane', '#9cc6ff', '#2a62e0'], 'Câmera': ['camera', '#8fb6ff', '#2148d6'], 'Lente': ['camera', '#8fb6ff', '#2148d6'], 'Celular': ['smartphone', '#c2a8ff', '#6b34e0'], 'Áudio': ['music', '#ff9cd0', '#d2257f'], 'Iluminação': ['lightbulb', '#ffe066', '#d08a00'], 'Estabilizador': ['video', '#6cc8ff', '#1f5fe0'], 'Armazenamento': ['hard-drive', '#5fe3f5', '#0a8bb0'], 'Computador': ['cpu', '#7cf0c0', '#068a5a'], 'Acessório': ['battery', '#9aa5ff', '#4a46e0'] };
-  const FOTOP = [[/zv-?e?10.*(23|lente)|zve10 \+|c[aâ]mera/i, 'zve10'], [/iphone/i, 'iphone'], [/gimbal|scorp/i, 'scorp'], [/ssd|xs1000/i, 'ssd'], [/sokani|bast[aã]o/i, 'sokani'], [/cart[aã]o de mem/i, 'cartao'], [/bateria/i, 'bateria'], [/mem[oó]ria ram|\bram\b/i, 'ram'], [/case hd|hd externo/i, 'casehd']];
-  c.fotoEquip = e => { if (e['FOTO']) return e['FOTO']; const P = window.FOTOS_PADRAO || {}; const k = (FOTOP.find(([re]) => re.test(e['NOME'])) || [])[1]; return k && P[k] ? P[k] : null; };
+  c.fotoEquip = e => e['FOTO'] || null;
   /* quanto paguei x quanto vale hoje, item por item (barras na mesma escala) */
   function valoresEquip(es) {
     const it = es.map(e => { const x = c.valeHoje(e); return { e, p: x.pago || 0, v: x.v || 0, est: x.estimado }; }).sort((a, b) => b.v - a.v), mx = Math.max(1, ...it.map(x => Math.max(x.p, x.v)));
@@ -1065,7 +1064,12 @@
     const notas = e ? String(e['OBS'] || '').replace(/(Compra P[\w-]+|Lançamento L[\w-]+|Vale hoje \d+(?:\.\d+)?(?: em \d{4}-\d{2}-\d{2})?|Peças: [^·]*)\s*·?\s*/g, '').trim() : '';
     const vh = e ? c.valeHoje(e) : null;
     abrir(`<h3 style="margin:0 0 12px">${ed ? 'Editar equipamento' : 'Novo equipamento'}</h3>
-      <div class="fotoedit"><div class="ph" id="fotoPrev">${f ? `<img src="${u.esc(u.dadoSeguro(f))}" alt="">` : u.svg('camera')}</div><div><label class="btn2">${u.svg('camera')}${f ? 'Trocar foto' : 'Pôr foto'}<input type="file" accept="image/*" id="fFoto"></label><p class="c-muted" style="font-size:.78rem;margin:8px 0 0">No celular, dá para tirar a foto na hora.</p></div></div>
+      <div class="fotoedit2">
+        <div class="fcrop" id="fCrop"${f ? '' : ' hidden'}><img id="fCropImg" alt="" draggable="false"><span class="fdica">Arraste para posicionar · assim aparece no cartão</span></div>
+        <div class="fvazio" id="fVazio"${f ? ' hidden' : ''}>${u.svg('camera')}<span>Sem foto</span></div>
+        <div class="fctl" id="fCtl"${f ? '' : ' hidden'}><label class="fzoom">${u.svg('search')}<input type="range" id="fZoom" min="1" max="4" step="0.01" value="1" aria-label="Aproximar a foto"></label><div class="fmodos" role="group" aria-label="Como a foto ocupa o cartão"><button type="button" data-fm="contain">Inteira</button><button type="button" data-fm="cover">Preencher</button></div></div>
+        <div class="fbts"><label class="btn2">${u.svg('camera')}<span id="fFotoT">${f ? 'Trocar foto' : 'Pôr foto'}</span><input type="file" accept="image/*" id="fFoto"></label><button type="button" class="btn2 fperigo" id="fTirar"${f ? '' : ' hidden'}>${u.svg('trash-2')}Tirar foto</button></div>
+      </div>
       ${campo('Nome', `<input class="txt" id="eN" required value="${u.esc(e ? e['NOME'] : '')}" placeholder="Ex.: Rode Wireless GO II">`)}
       <div class="grid2">${campo('Tipo', `<select class="txt" id="eT">${opts(TIPOS_EQ, e ? e['TIPO'] : 'Câmera')}</select>`)}${campo('Quanto paguei', `<input class="txt num" id="eV" inputmode="decimal" value="${u.esc(e ? String(c.num(e['VALOR']).toFixed(2)).replace('.', ',') : '')}" placeholder="R$ 0,00" required>`)}</div>
       ${campo('Quanto vale hoje', `<input class="txt num" id="eVh" inputmode="decimal" value="${u.esc(vh && !vh.estimado && !vh.vendido ? String(vh.v.toFixed(2)).replace('.', ',') : '')}" placeholder="${vh && vh.estimado ? `estimado: ${u.esc(u.brl(vh.v))}` : 'quanto conseguiria vender (opcional)'}">`)}
@@ -1087,7 +1091,9 @@
     $('eAddPeca').addEventListener('click', () => { $('ePecas').insertAdjacentHTML('beforeend', pecaLinha()); contaPecas(); $('ePecas').lastElementChild.querySelector('.pn').focus(); });
     $('ePecas').addEventListener('click', ev => { const b = ev.target.closest('.pdel'); if (b) { b.closest('.peca').remove(); contaPecas(); } });
     $('ePecas').addEventListener('input', contaPecas); $('eV').addEventListener('input', contaPecas); if (e && c.pecas(e).length) contaPecas();
-    $('fFoto').addEventListener('change', ev => { const arq = ev.target.files[0]; if (arq) reduzirFoto(arq).then(url => { fotoNova = url; $('fotoPrev').innerHTML = `<img src="${url}" alt="">`; }).catch(() => toast('Não consegui ler essa foto')); });
+    const ed2 = editorFoto(f);
+    $('fFoto').addEventListener('change', ev => { const arq = ev.target.files[0]; if (arq) reduzirFoto(arq, 1400, 2500000).then(url => ed2.carregar(url, true)).catch(() => toast('Não consegui ler essa foto')); ev.target.value = ''; });
+    $('fTirar').addEventListener('click', () => ed2.tirar());
     document.querySelectorAll('input[name=eF]').forEach(r => r.addEventListener('change', () => {
       const k = document.querySelector('input[name=eF]:checked').value;
       $('eLinha').hidden = k === 'catalogo';
@@ -1095,6 +1101,42 @@
       $('eB').innerHTML = opts(k === 'cartao' ? c.cartoes().map(x => x['CARTÃO']) : c.BANCOS, k === 'cartao' ? '' : 'Nubank');
       $('eAviso').innerHTML = k === 'catalogo' ? '“Já tinha” só cataloga: não mexe no dinheiro de nenhum mês.' : k === 'vista' ? 'Sai do banco na data da compra.' : 'Não pesa no mês da compra: as parcelas entram nas próximas faturas do cartão.';
     }));
+  }
+  /* editor da foto do equipamento: a moldura tem a mesma proporção do cartão (4:3); arrastar posiciona, a barra aproxima,
+     "Inteira" mostra a foto toda e "Preencher" ocupa o cartão. Ao salvar, a foto sai já enquadrada (480×360). */
+  const FOTO_W = 480, FOTO_H = 360;
+  function editorFoto(inicial) {
+    const box = $('fCrop'), img = $('fCropImg'), zoom = $('fZoom');
+    const st = { src: null, iw: 0, ih: 0, z: 1, x: 0, y: 0, modo: 'contain', mexeu: false };
+    const medida = () => ({ W: box.clientWidth || 320, H: box.clientHeight || 240 });
+    const escala = () => { const { W, H } = medida(), s0 = st.modo === 'cover' ? Math.max(W / st.iw, H / st.ih) : Math.min(W / st.iw, H / st.ih); return s0 * st.z; };
+    function prender() { const { W, H } = medida(), k = escala(), dw = st.iw * k, dh = st.ih * k, mx = Math.max(0, (dw - W) / 2), my = Math.max(0, (dh - H) / 2); st.x = Math.max(-mx, Math.min(mx, st.x)); st.y = Math.max(-my, Math.min(my, st.y)); return { W, H, dw, dh }; }
+    function desenhar() { if (!st.iw) return; const { dw, dh } = prender(); img.style.width = dw + 'px'; img.style.height = dh + 'px'; img.style.transform = `translate(calc(-50% + ${st.x}px), calc(-50% + ${st.y}px))`; document.querySelectorAll('[data-fm]').forEach(b => b.classList.toggle('on', b.dataset.fm === st.modo)); }
+    const mostrar = tem => { box.hidden = !tem; $('fCtl').hidden = !tem; $('fTirar').hidden = !tem; $('fVazio').hidden = tem; $('fFotoT').textContent = tem ? 'Trocar foto' : 'Pôr foto'; };
+    function carregar(src, nova) {
+      const im = new Image();
+      im.onload = () => { st.src = src; st.iw = im.naturalWidth; st.ih = im.naturalHeight; st.z = 1; st.x = 0; st.y = 0; st.modo = nova ? 'cover' : 'contain'; st.mexeu = !!nova; zoom.value = 1; img.src = src; mostrar(true); requestAnimationFrame(desenhar); if (nova) fotoNova = exportar(); };
+      im.onerror = () => toast('Não consegui abrir essa foto');
+      im.src = src;
+    }
+    function exportar() {
+      const { W, dw, dh } = prender(), k = FOTO_W / W, cv = document.createElement('canvas'); cv.width = FOTO_W; cv.height = FOTO_H;
+      const g = cv.getContext('2d'); g.fillStyle = getComputedStyle(box).backgroundColor || '#f3f5fa'; g.fillRect(0, 0, FOTO_W, FOTO_H);
+      g.imageSmoothingQuality = 'high'; g.drawImage(img, (FOTO_W - dw * k) / 2 + st.x * k, (FOTO_H - dh * k) / 2 + st.y * k, dw * k, dh * k);
+      let q = 0.86, url = cv.toDataURL('image/jpeg', q); while (url.length > 70000 && q > 0.45) { q -= 0.08; url = cv.toDataURL('image/jpeg', q); }
+      return url;
+    }
+    const mexeu = () => { st.mexeu = true; desenhar(); fotoNova = exportar(); };
+    let arr = null;
+    box.addEventListener('pointerdown', ev => { if (!st.iw) return; arr = { px: ev.clientX, py: ev.clientY, x: st.x, y: st.y }; box.setPointerCapture(ev.pointerId); box.classList.add('arrastando'); });
+    box.addEventListener('pointermove', ev => { if (!arr) return; st.x = arr.x + ev.clientX - arr.px; st.y = arr.y + ev.clientY - arr.py; desenhar(); });
+    const soltar = () => { if (!arr) return; arr = null; box.classList.remove('arrastando'); mexeu(); };
+    box.addEventListener('pointerup', soltar); box.addEventListener('pointercancel', soltar);
+    box.addEventListener('wheel', ev => { if (!st.iw) return; ev.preventDefault(); st.z = Math.max(1, Math.min(4, st.z * (ev.deltaY < 0 ? 1.08 : 0.93))); zoom.value = st.z; mexeu(); }, { passive: false });
+    zoom.addEventListener('input', () => { st.z = +zoom.value; desenhar(); }); zoom.addEventListener('change', mexeu);
+    document.querySelectorAll('[data-fm]').forEach(b => b.addEventListener('click', () => { st.modo = b.dataset.fm; st.z = 1; zoom.value = 1; st.x = 0; st.y = 0; mexeu(); }));
+    if (inicial) carregar(u.dadoSeguro(inicial), false);
+    return { carregar, tirar() { st.iw = 0; img.removeAttribute('src'); fotoNova = ''; mostrar(false); } };
   }
   /* foto pequena (até 420px) para caber na célula da planilha */
   function reduzirFoto(arq, lado = 420, maximo = 45000) {
@@ -1152,7 +1194,7 @@
     const nome = val('eN').trim(), v = u.num(val('eV'));
     if (!nome) { toast('Dê um nome para o equipamento'); return false; }
     const base = { 'NOME': nome, 'TIPO': val('eT'), 'VALOR': u.r2(v), 'DATA DA COMPRA': val('eD'), 'ESTADO': val('eE'), 'Nº DE SÉRIE': val('eS') };
-    if (fotoNova) base['FOTO'] = fotoNova;
+    if (fotoNova !== null) base['FOTO'] = fotoNova; /* '' = o João tirou a foto */
     const pecas = [...document.querySelectorAll('#ePecas .peca')].map(r => ({ nome: r.querySelector('.pn').value.replace(/[=;·]/g, ' ').replace(/\s+/g, ' ').trim(), vale: u.r2(u.num(r.querySelector('.pv').value)) })).filter(p => p.nome && p.vale > 0);
     const pecasT = pecas.length ? 'Peças: ' + pecas.map(p => `${p.nome} = ${p.vale}`).join('; ') : '';
     const notas = [pecasT, val('eO').trim()].filter(Boolean).join(' · '), vhs = pecas.length ? '' : val('eVh').trim(), vale = vhs && u.num(vhs) >= 0 ? `Vale hoje ${u.r2(u.num(vhs))} em ${u.hoje()}` : '';

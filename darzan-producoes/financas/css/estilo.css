@@ -1105,3 +1105,18 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
 .peca .txt{height:44px;min-height:0;padding-block:0}
 /* PC: a fileira de bancos mostra que dá para rolar */
 @media (min-width:1000px){.bankpills{scrollbar-width:thin;flex-wrap:wrap}}
+/* v57: foto do equipamento na proporção do cartão (4:3) + editor de enquadramento */
+.eq .ph{height:auto;aspect-ratio:4/3}
+.fotoedit2{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.fcrop{position:relative;width:100%;max-width:340px;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#f3f5fa;border:1px solid var(--stroke);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.fcrop.arrastando{cursor:grabbing}
+.fcrop img{position:absolute;left:50%;top:50%;max-width:none;transform:translate(-50%,-50%);pointer-events:none}
+.fdica{position:absolute;left:8px;bottom:8px;right:8px;width:max-content;max-width:calc(100% - 16px);padding:4px 9px;border-radius:99px;background:rgba(5,10,24,.62);color:#fff;font-size:.7rem;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.fvazio{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;padding:18px;border-radius:14px;border:1px dashed var(--stroke);color:var(--muted);font-size:.85rem}
+.fctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;max-width:340px}
+.fzoom{flex:1 1 150px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:16px}.fzoom .i{width:18px;height:18px;flex:none}.fzoom input{flex:1;font-size:16px;accent-color:var(--blue,#75aadb)}
+.fmodos{display:inline-flex;padding:3px;border-radius:99px;background:var(--glass-2,rgba(255,255,255,.09));border:1px solid var(--stroke)}
+.fmodos button{border:0;background:none;color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;padding:6px 12px;border-radius:99px;cursor:pointer;min-height:32px}
+.fmodos button.on{background:var(--fg);color:var(--bg)}
+.fbts{display:flex;flex-wrap:wrap;gap:8px}.fbts label{cursor:pointer;position:relative}.fbts input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
+.fperigo{color:var(--out,#ff8f8f)!important}

@@ -15,3 +15,5 @@ contornaria as regras de rede deste ambiente) e `shadcn-ui-mcp-server` (componen
 React, e servidor MCP se liga no app do Claude, não no projeto).
 
 - `skills/economia/`: criada para este projeto (sem origem externa): regras para gastar menos tokens.
+
+- 11/2026: `ui-ux-pro-max` atualizado para a v2.15.0 e mais 6 skills do mesmo repositório (nextlevelbuilder/ui-ux-pro-max-skill, MIT): `banner-design`, `brand`, `design`, `design-system`, `slides`, `ui-styling`. Algumas usam serviços pagos de imagem: só com chave e pedido do João.
