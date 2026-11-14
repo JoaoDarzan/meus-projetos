@@ -10,7 +10,7 @@ const CATS = [ /* mesmas categorias do app (lista aprovada pelo João em 11/2026
   ['Alimentação', ['Restaurante e lanche', 'Delivery'], 'Desejos'],
   ['Casa', ['Contas da casa', 'Moradia', 'Limpeza e higiene'], 'Necessidades'],
   ['Casa', ['Móveis e eletros'], 'Desejos'],
-  ['Carro e transporte', ['Gasolina', 'Manutenção', 'Seguro', 'IPVA e licenciamento', 'Multas', 'Pedágio', 'Estacionamento', 'Uber/99'], 'Necessidades'],
+  ['Carro e transporte', ['Gasolina', 'Manutenção', 'Seguro', 'IPVA e licenciamento', 'Multas', 'Pedágio', 'Estacionamento', 'Uber/99', 'Lavagem'], 'Necessidades'],
   ['Saúde', ['Farmácia', 'Consultas e exames'], 'Necessidades'],
   ['Saúde', ['Academia e esporte'], 'Desejos'],
   ['Cuidados pessoais', ['Cabelo e barba'], 'Necessidades'],

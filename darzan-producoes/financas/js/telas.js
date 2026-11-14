@@ -144,7 +144,7 @@
 
   /* ================= TAREFAS ================= */
   R.tarefas = () => {
-    const F = ui.tfil, hj = u.hoje(), m0 = u.mes(hj), M = ui.tmes || (ui.tmes = m0), dia = ui.tdia && u.mes(ui.tdia) === M ? ui.tdia : null;
+    const F = ui.tfil, hj = u.hoje(), m0 = u.mes(hj), M = ui.mes || m0, dia = null; /* Agenda: o mês é o mesmo do seletor do app */
     const doGrupo = t => F === 'todas' || t.grupo === F || (F === 'conta' && t.grupo === 'receber');
     const doMes = c.tarefas(M).filter(t => u.mes(t.data) === M && doGrupo(t)), abertas = doMes.filter(t => !t.feita);
     const antes = M === m0 ? c.tarefas().filter(t => !t.feita && u.mes(t.data) < m0 && doGrupo(t)) : [];
@@ -157,13 +157,11 @@
     const lista = (dia ? doMes.filter(t => t.data === dia) : doMes);
     const dias = [...new Set(lista.map(t => t.data))].sort();
     const sem = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], nomeDia = d => `${sem[new Date(d + 'T12:00:00').getDay()]}, ${u.dm(d)}${d === hj ? ' · hoje' : ''}`;
-    return bar('Tarefas', null, false) + `
-      <div class="tmes sec"><button type="button" class="chip" data-a="tMes" data-v="${u.addMes(M, -1)}" aria-label="Mês anterior">${u.svg('chevron-left')}</button><b>${u.nomeMes(M)} ${M.slice(0, 4)}</b><button type="button" class="chip" data-a="tMes" data-v="${u.addMes(M, 1)}" aria-label="Próximo mês">${u.svg('chevron-right')}</button></div>
-      <h3 class="divt">Resumo do mês</h3><div class="kpis k4" id="tResumo"><div class="kpi"><span>A pagar no mês</span><b class="num c-out">${u.brl(aPagar)}</b></div><div class="kpi"><span>A receber no mês</span><b class="num c-in">${u.brl(aRec)}</b></div><div class="kpi"><span>Abertas</span><b class="num">${abertas.length}</b></div><div class="kpi"><span>Feitas</span><b class="num">${doMes.length - abertas.length} de ${doMes.length}</b></div></div>
+    return bar('Agenda', null, false) + calendario(true) + `
+      <h3 class="divt">A fazer</h3><div class="kpis k4" id="tResumo"><div class="kpi"><span>A pagar no mês</span><b class="num c-out">${u.brl(aPagar)}</b></div><div class="kpi"><span>A receber no mês</span><b class="num c-in">${u.brl(aRec)}</b></div><div class="kpi"><span>Abertas</span><b class="num">${abertas.length}</b></div><div class="kpi"><span>Feitas</span><b class="num">${doMes.length - abertas.length} de ${doMes.length}</b></div></div>
       ${antes.length ? `<button type="button" class="rv-aviso" data-a="tMes" data-v="${u.mes(antes[0].data)}">${u.ti(['clock', '#ffd36b', '#c07a12'])}<span><b>${antes.length} atrasada${antes.length > 1 ? 's' : ''} de meses anteriores</b><small>ficam no mês delas, sem misturar com ${u.nomeMes(M).toLowerCase()} · toque para ver</small></span></button>` : ''}
       <div class="sec" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div class="chips">${[['todas', 'Todas'], ['conta', 'Contas'], ['darzan', 'Darzan'], ['pessoal', 'Pessoais']].map(([k, n]) => `<button class="chip" type="button" data-a="seg" data-s="tfil" data-v="${u.esc(k)}" aria-pressed="${F === k}">${n} · ${cnt(k)}</button>`).join('')}</div><button class="chip" type="button" data-a="novoT" style="border-color:var(--blue);color:var(--blue-hi)">${u.svg('plus')} Nova tarefa</button></div>
-      <h3 class="divt">Calendário e lista</h3><div class="two"><div class="panel tcal" id="tCal"><div class="tc-s">${sem.map(x => `<span>${x[0].toUpperCase()}</span>`).join('')}</div><div class="tc-g">${cel}</div>${dia ? `<button type="button" class="more" data-a="tDia" data-v="">Ver o mês inteiro</button>` : ''}</div>
-      <div id="tLista">${dias.map(d => `<div class="grp"><span>${nomeDia(d)}</span><b>${lista.filter(t => t.data === d && !t.feita).length || '✓'}</b></div>${lista.filter(t => t.data === d).sort((a, b) => a.feita - b.feita).map(tkLinha).join('')}`).join('') || `<div class="panel" style="margin-top:16px">${vazio(['party-popper', '#cf9cff', '#7a35e6'], dia ? 'Nada neste dia.' : 'Nada para este mês.')}</div>`}
+      <div class="tlistw"><div id="tLista">${dias.map(d => `<div class="grp"><span>${nomeDia(d)}</span><b>${lista.filter(t => t.data === d && !t.feita).length || '✓'}</b></div>${lista.filter(t => t.data === d).sort((a, b) => a.feita - b.feita).map(tkLinha).join('')}`).join('') || `<div class="panel" style="margin-top:16px">${vazio(['party-popper', '#cf9cff', '#7a35e6'], dia ? 'Nada neste dia.' : 'Nada para este mês.')}</div>`}
       <p class="aviso">Cada tarefa fica no mês dela. As contas do mês (seguro, boletos) e as faturas dos cartões entram aqui sozinhas. Marcar uma fatura como paga tira o valor do banco que paga o cartão.</p></div></div>`;
   };
 
@@ -256,7 +254,7 @@
   const SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   const semDias = () => db.faltando && db.faltando.has('DIAS');
   const diaLongo = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  function calendario() {
+  function calendario(agenda) {
     if (semDias()) return `<section class="sec"><div class="panel" style="padding:18px"><h2 style="margin:0 0 8px">${u.svg('calendar-days')}Falta 1 passo para usar o calendário</h2>
       <p class="c-muted" style="margin:0">O Supabase ainda não tem a “gaveta” dos dias. Abra o Supabase › SQL Editor › New query, cole o arquivo <b>atualizacao-novembro.sql</b> e toque em Run. Depois é só abrir o app de novo.</p></div></section>`;
     const m = ui.mes, k = c.calendario(m), h = u.hoje(), sel = ui.calSel || (ui.calSel = new Set()), multi = !!ui.calMulti;
@@ -270,9 +268,18 @@
       const rot = `${d} de ${u.nomeMes(m).toLowerCase()}: ${cores.length ? cores.length + (cores.length > 1 ? ' trabalhos' : ' trabalho') : 'sem trabalho'}${falta ? ', falta receber' : ''}`;
       cel += `<button type="button" class="cd${dow === 0 || dow === 6 ? ' fds' : ''}${data === h ? ' hoje' : ''}${cores.length ? ' tem' : ''}${falta ? ' falta' : ''}${sel.has(data) ? ' sel' : ''}${data > h ? ' fut' : ''}" data-a="calDia" data-v="${data}" aria-label="${u.esc(rot)}"${multi ? ` aria-pressed="${sel.has(data)}"` : ''}><b>${d}</b><span class="pts">${itens.slice(0, 3).map(([cor, t]) => `<i style="--c:${cor}"><em>${u.esc(t)}</em></i>`).join('')}${itens.length > 3 ? `<em class="mais">+${itens.length - 3}</em>` : ''}</span>${vd ? `<small class="vd num">${vd >= 1000 ? (vd / 1000).toFixed(1).replace('.0', '').replace('.', ',') + 'k' : Math.round(vd)}</small>` : ''}</button>`;
     }
+    const vistos = new Set();
     const linhas = k.datas.flatMap(dt => k.porData[dt].dias.map(z => { const pg = c.diaPago(z);
-      return `<button type="button" class="it btn diai" data-a="editDia" data-id="${u.esc(z.id)}"><span class="pto" style="background:${c.corEmpresa(z.empresa)}"></span><div style="min-width:0"><div class="t">${u.esc(z.desc || z.empresa)}</div><div class="m"><span>${u.esc(u.dm(z.data))}</span><span>·</span><span>${u.esc(z.empresa)}</span>${z.valor ? (pg ? '<span class="pago">pago</span>' : '<span class="prev">a receber</span>') : ''}</div></div><div class="v num">${z.valor ? u.brl(z.valor) : ''}</div></button>`; })
+      if (z.grupo) { if (vistos.has(z.grupo)) return ''; vistos.add(z.grupo); }
+      const g = c.doGrupo(z.grupo), vt = g.length ? u.r2(u.sum(g, d => d.valor)) : z.valor, quando = g.length > 1 ? `${g.map(d => +d.data.slice(8, 10)).join(g.length === 2 ? ' e ' : ', ')}/${u.dm(g[0].data).split('/')[1] || ''} · ${g.length} dias, uma paga` : u.dm(z.data);
+      return `<button type="button" class="it btn diai${g.length > 1 ? ' junto' : ''}" data-a="editDia" data-id="${u.esc(z.id)}"><span class="pto" style="background:${c.corEmpresa(z.empresa)}"></span><div style="min-width:0"><div class="t">${u.esc(z.desc || z.empresa)}</div><div class="m"><span>${u.esc(quando)}</span><span>·</span><span>${u.esc(z.empresa)}</span>${vt ? (pg ? '<span class="pago">pago</span>' : '<span class="prev">a receber</span>') : g.length > 1 ? '<span class="prev">valor a combinar</span>' : ''}</div></div><div class="v num">${vt ? u.brl(vt) : ''}</div></button>`; })
       .concat(k.porData[dt].eventos.map(j => `<button type="button" class="it btn diai" data-a="editJ" data-id="${u.esc(j.ID)}"><span class="pto" style="background:${c.corEmpresa('Darzan Produções')}"></span><div style="min-width:0"><div class="t">${u.esc(j['CLIENTE'])}</div><div class="m"><span>${u.esc(u.dm(dt))}</span><span>·</span><span>evento da Darzan</span></div></div><div class="v num"></div></button>`))).join('');
+    if (agenda) return `<section class="sec"><div class="sec-h"><h2>${u.svg('calendar-days')}Calendário</h2><button class="chip" type="button" data-a="calMulti" aria-pressed="${multi}">${u.svg(multi ? 'x' : 'list-checks')}${multi ? 'Cancelar' : 'Marcar vários dias'}</button></div>
+        ${multi ? `<p class="dica-q">${u.svg('hand-coins')}Toque nos dias que você trabalhou e depois em “Marcar”.</p>` : ''}
+        <div class="panel calw"><div class="calh"><button type="button" class="chip mini" data-a="mes" data-d="-1" aria-label="Mês anterior" ${c.meses().indexOf(m) <= 0 ? 'disabled' : ''}>${u.svg('chevron-left')}</button><b>${u.esc(u.cap(u.nomeMes(m)))} ${m.slice(0, 4)}</b><button type="button" class="chip mini" data-a="mes" data-d="1" aria-label="Próximo mês" ${c.meses().indexOf(m) >= c.meses().length - 1 ? 'disabled' : ''}>${u.svg('chevron-right')}</button>${m !== u.mes(h) ? `<button type="button" class="chip mini" data-a="irMes" data-v="${u.mes(h)}">Hoje</button>` : ''}</div>
+        <div class="cal" role="group" aria-label="Dias de ${u.esc(u.nomeMes(m).toLowerCase())}">${cel}</div></div>
+        ${multi ? `<button type="button" class="save" data-a="calMarcar" ${sel.size ? '' : 'disabled'} style="margin-top:12px">Marcar ${sel.size || ''} ${sel.size === 1 ? 'dia' : 'dias'}</button>` : ''}
+        <div class="leg">${c.empresasDias().map(e => `<span><i style="background:${c.corEmpresa(e)}"></i>${u.esc(e)}</span>`).join('')}<span><i class="lf"></i>falta receber</span></div></section>`;
     return `<section class="sec"><div class="kpis k4"><div class="kpi"><span>Dias trabalhados</span><b class="num">${k.trabalhados}</b><small>${k.agendados ? `+ ${k.agendados} marcado${k.agendados > 1 ? 's' : ''} para frente` : u.nomeMes(m).toLowerCase()}</small></div><div class="kpi"><span>Valor dos dias</span><b class="num c-in">${u.k0(k.valor)}</b><small>soma do mês</small></div><div class="kpi"><span>A receber</span><b class="num c-warn">${u.k0(k.aReceber)}</b><small>dias ainda sem pagamento</small></div><div class="kpi"><span>Média por dia</span><b class="num">${u.k0(k.media)}</b><small>nos dias com valor</small></div></div></section>
       <section class="sec"><div class="sec-h"><h2>${u.svg('calendar-days')}Calendário</h2><button class="chip" type="button" data-a="calMulti" aria-pressed="${multi}">${u.svg(multi ? 'x' : 'list-checks')}${multi ? 'Cancelar' : 'Marcar vários dias'}</button></div>
         ${multi ? `<p class="dica-q">${u.svg('hand-coins')}Toque nos dias que você trabalhou e depois em “Marcar”.</p>` : ''}
@@ -303,12 +310,17 @@
   function formDia(datas, z) {
     if (semDias()) { toast('Falta rodar a atualização no Supabase para usar o calendário'); return; }
     const emps = c.empresasDias(), emp0 = z ? z.empresa : 'JPL SOM', outro = !emps.includes(emp0);
+    /* dias perto (até 10 dias) da mesma empresa: dá para dizer que são o mesmo trabalho, com uma paga só */
+    const viz = z ? c.dias().filter(d => d.id !== z.id && d.empresa === z.empresa && Math.abs(u.ateHoje(d.data) - u.ateHoje(z.data)) <= 10).sort((a, b) => a.data < b.data ? -1 : 1) : [];
+    const grp = new Set(z && z.grupo ? c.doGrupo(z.grupo).filter(d => d.id !== z.id).map(d => d.id) : []), vz = z ? (grp.size ? u.sum(c.doGrupo(z.grupo), d => d.valor) : z.valor) : 0;
     abrir(`<h3 style="margin:0 0 4px">${z ? 'Editar dia trabalhado' : datas.length > 1 ? `Marcar ${datas.length} dias trabalhados` : 'Marcar dia trabalhado'}</h3>
       <p class="c-muted" style="margin:0 0 12px">${u.esc(datas.map(d => u.cap(diaLongo(d))).join(' · '))}</p>
       ${campo('Para quem', `<div class="rchips">${emps.map((e, i) => `<input type="radio" name="wE" id="wE${i}" value="${u.esc(e)}" ${e === emp0 ? 'checked' : ''}><label for="wE${i}">${u.esc(e)}</label>`).join('')}<input type="radio" name="wE" id="wEo" value="" ${outro ? 'checked' : ''}><label for="wEo">Outro</label></div>`)}
       <div id="boxOutro" ${outro ? '' : 'hidden'}>${campo('Nome de quem', `<input class="txt" id="wEn" value="${u.esc(outro ? emp0 : '')}" placeholder="Ex.: Buffet Alegria">`)}</div>
       ${campo('O que foi', `<input class="txt" id="wD" value="${u.esc(z ? z.desc : '')}" placeholder="Ex.: som no casamento, corrida, ensaio">`)}
-      ${campo(datas.length > 1 ? 'Valor de cada dia' : 'Valor do dia', `<input class="txt num" id="wV" inputmode="decimal" value="${u.esc(z && z.valor ? String(z.valor.toFixed(2)).replace('.', ',') : '')}" placeholder="Opcional. Ex.: 250,00">`)}
+      ${datas.length > 1 ? `<div class="checkline"><input type="checkbox" id="wJ"><label for="wJ">É um trabalho só (uma paga para todos esses dias)</label></div>` : ''}
+      ${viz.length ? campo('Mesmo trabalho de outros dias? (uma paga só)', `<div class="panel" style="padding:4px 10px">${viz.map(d => `<div class="checkline"><input type="checkbox" id="wJd-${u.esc(d.id)}" data-jd="${u.esc(d.id)}" ${grp.has(d.id) ? 'checked' : ''}><label for="wJd-${u.esc(d.id)}">${u.esc(u.cap(diaLongo(d.data)))} · ${u.esc(d.desc || d.empresa)}</label></div>`).join('')}</div>`) : ''}
+      ${campo(grp.size ? 'Valor do trabalho (todos os dias juntos)' : datas.length > 1 ? 'Valor de cada dia' : 'Valor do dia', `<input class="txt num" id="wV" inputmode="decimal" value="${u.esc(vz ? String(vz.toFixed(2)).replace('.', ',') : '')}" placeholder="Opcional. Ex.: 250,00">`)}
       ${campo('Já recebeu?', `<select class="txt" id="wP">${opts([['', 'Ainda não (fica a receber)']].concat(pagamentosRecentes().map(l => [l.id, rotPag(l)])), z ? z.pag : '')}</select>`)}
       <p class="aviso">Se escolher um pagamento e deixar o valor em branco, o app divide o pagamento entre ${datas.length > 1 ? 'esses dias' : 'os dias ligados a ele'}.</p>
       ${z ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarDia" data-id="${u.esc(z.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Marcar</button>'}`,
@@ -318,8 +330,15 @@
   function salvarDia(datas, z) {
     const r = document.querySelector('#s2 input[name=wE]:checked'), empresa = (r && r.value) || val('wEn').trim() || 'Outro';
     const desc = val('wD').trim(), pag = val('wP'), v = u.num(val('wV'));
-    const regs = datas.map(d => ({ ID: z ? z.id : db.novoId('DIAS'), 'DATA': d, 'EMPRESA': empresa, 'O QUE FOI': desc, 'VALOR': v > 0 ? u.r2(v) : '', 'PAGAMENTO': pag }));
+    const juntos = z ? [...document.querySelectorAll('#s2 input[data-jd]:checked')].map(i => i.dataset.jd) : [], juntoNovo = !z && datas.length > 1 && !!($('wJ') && $('wJ').checked);
+    const g = juntoNovo ? 'G' + Date.now().toString(36).toUpperCase() : z && juntos.length ? (z.grupo || (c.dias().find(d => juntos.includes(d.id) && d.grupo) || {}).grupo || 'G' + Date.now().toString(36).toUpperCase()) : '';
+    let regs = datas.map(d => ({ ID: z ? z.id : db.novoId('DIAS'), 'DATA': d, 'EMPRESA': empresa, 'O QUE FOI': desc, 'VALOR': v > 0 ? u.r2(v) : '', 'PAGAMENTO': pag, 'OBS': c.obsGrupo(z ? z.obs : '', g) }));
+    /* um trabalho de vários dias: o valor é do trabalho todo (dividido igual entre os dias) e o pagamento vale para todos */
+    const soltos = z && z.grupo ? c.doGrupo(z.grupo).filter(d => d.id !== z.id && !juntos.includes(d.id)) : [];
+    if (z && juntos.length) regs = regs.concat(juntos.map(id => { const d = c.dias().find(x => x.id === id); return { ID: id, 'PAGAMENTO': pag, 'OBS': c.obsGrupo(d.obs, g) }; }));
+    if (g && v > 0) { const p = dividir(v, regs.length); regs.forEach((x, i) => { x['VALOR'] = p[i]; }); } else if (g) regs.forEach(x => { x['VALOR'] = ''; });
     let ops = regs.map(x => ({ op: 'salvar', aba: 'DIAS', registro: x }));
+    soltos.forEach(d => ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: d.id, 'OBS': c.obsGrupo(d.obs, '') } }));
     /* pagamento sem valor: divide o pagamento igual entre todos os dias ligados a ele (os de antes e estes) */
     if (pag && !(v > 0)) { const l = c.lancs().find(x => x.id === pag), ids = new Set(regs.map(x => x.ID)), todos = c.diasDoPagamento(pag).filter(d => !ids.has(d.id)).map(d => d.id).concat([...ids]);
       if (l) { const partes = dividir(l.valor, todos.length); ops = ops.map(o => Object.assign(o, { registro: Object.assign(o.registro, { 'VALOR': partes[todos.indexOf(o.registro.ID)] }) }))
@@ -359,6 +378,8 @@
     document.querySelectorAll('#s2 .lpd').forEach(x => { const id = x.querySelector('input[type=checkbox]').dataset.id, d = c.dias().find(z => z.id === id), v = u.num(x.querySelector('input[data-v]').value);
       if (x.querySelector('input[type=checkbox]').checked) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'PAGAMENTO': pag, 'VALOR': v > 0 ? u.r2(v) : '' } });
       else if (d && d.pag === pag) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'PAGAMENTO': '' } }); });
+    /* trabalho de vários dias: ligou um dia, ligam todos (uma paga só) */
+    ops.filter(o => o.registro['PAGAMENTO']).forEach(o => { const d = c.dias().find(z => z.id === o.registro.ID); if (d && d.grupo) c.doGrupo(d.grupo).forEach(x => { if (!ops.some(y => y.registro.ID === x.id)) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: x.id, 'PAGAMENTO': pag } }); }); });
     db.lote(ops); const n = ops.filter(o => o.registro['PAGAMENTO']).length;
     $('s2').oninput = null; $('s2').onchange = null; fechar(); render(false); toast(n ? `Pagamento ligado a ${n} ${n > 1 ? 'dias' : 'dia'}` : 'Pagamento sem dias');
   }
@@ -866,7 +887,9 @@
     const catsSaida = c.listaCats().filter(k => !['Renda', 'Guardado', 'Transferência', 'Reembolso'].includes(c.grupoDe(k)));
     const catsEntrada = c.listaCats().filter(k => c.grupoDe(k) === 'Renda' || c.grupoDe(k) === 'Reembolso');
     const cats = tipo === 'entrada' ? catsEntrada : catsSaida;
-    const cat0 = l ? l.cat : tipo === 'entrada' ? 'Darzan Produções' : cats[0];
+    /* sem categoria: abre com o palpite (histórico ou descrição) ou em branco, nunca na primeira da lista (antes caía sempre em "Alimentação") */
+    const sug0 = l && !l.cat && (tipo === 'saida' || tipo === 'entrada') ? c.sugerir(l.desc) : null;
+    const cat0 = l ? (l.cat || (sug0 && cats.includes(sug0.cat) ? sug0.cat : '')) : tipo === 'entrada' ? 'Darzan Produções' : cats[0], sub0 = l ? (l.sub || (sug0 && sug0.cat === cat0 ? sug0.sub : '')) : '';
     const forma0 = l ? l.tipo : 'conta';
     const bancosConta = c.BANCOS, cartoes = c.cartoes().map(k => k['CARTÃO']);
     const compra = l && (l.obs.match(/Compra (P[\w-]+)/) || [])[1];
@@ -878,7 +901,7 @@
       <div class="grid2">${campo('Data', `<input class="txt" id="fDt" type="date" value="${u.esc(l ? l.data : hoje)}">`)}${tipo === 'saida' && !ed ? campo('Como pagou', `<select class="txt" id="fF">${opts([['conta', 'Pix / débito'], ['cartão', 'Cartão de crédito']], forma0)}</select>`) : campo('Banco', `<select class="txt" id="fB">${opts(l && l.tipo === 'cartão' ? cartoes : bancosConta, l ? l.banco : 'Nubank')}</select>`)}</div>
       ${tipo === 'saida' && !ed ? `<div class="grid2" id="linhaBanco">${campo('Banco', `<select class="txt" id="fB">${opts(bancosConta, 'Nubank')}</select>`)}<div id="boxParc" hidden>${campo('Parcelas', `<select class="txt" id="fP">${opts(Array.from({ length: 24 }, (_, i) => [i + 1, i ? i + 1 + 'x' : 'À vista']), 1)}</select>`)}</div></div><p class="aviso" id="avisoCartao" hidden></p>` : ''}
       ${tipo === 'guardar' ? campo('Para onde foi', `<select class="txt" id="fX">${opts(c.caixinhas().map(x => [x['CONTA'], `${x['CONTA']} (${x['BANCO']})`]).concat([['', 'Outro lugar']]), l ? ((l.obs.match(/(?:^|· )Para ([^·]+?)\s*(?:·|$)/) || [])[1] || '') : '')}</select>`) + (c.metas().length ? campo('Para qual pote (meta)', `<select class="txt" id="fPt">${opts([['', 'Nenhum, só guardar']].concat(c.metas().map(g => [g.ID, g['META']])), l ? ((l.obs.match(/(?:^|· )Pote (M[\w-]+)/) || [])[1] || '') : '')}</select>`) : '') : ''}
-      ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), l ? l.sub : '')}</select>`)}</div>` : ''}
+      ${tipo === 'saida' || tipo === 'entrada' ? `<div class="grid2">${campo(tipo === 'entrada' ? 'De onde veio' : 'Categoria', `<select class="txt" id="fC">${cat0 ? '' : '<option value="" selected>Escolha a categoria</option>'}${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="fS">${opts(c.subsDe(cat0), sub0)}</select>`)}</div>` : ''}
       ${tipo === 'saida' ? campo('Grupo', `<div class="rchips"><input type="radio" name="fG" id="fG1" value="Necessidades" ${(l ? l.grupo : c.grupoDe(cat0, l ? l.sub : c.subsDe(cat0)[0])) === 'Necessidades' ? 'checked' : ''}><label for="fG1">Necessidade</label><input type="radio" name="fG" id="fG2" value="Desejos" ${!['Necessidades', 'Reembolso'].includes(l ? l.grupo : c.grupoDe(cat0, l ? l.sub : c.subsDe(cat0)[0])) ? 'checked' : ''}><label for="fG2">Desejo</label><input type="radio" name="fG" id="fG3" value="Reembolso" ${l && l.grupo === 'Reembolso' ? 'checked' : ''}><label for="fG3">Reembolsado</label></div>`) + '<p class="dica-g">Reembolsado: alguém te devolve (ex.: gasto da JPL SOM). Fica no extrato, mas não conta como gasto.</p>' : ''}
       <div class="checkline"><input type="checkbox" id="fPrev" ${l && l.status === 'Previsto' ? 'checked' : ''}><label for="fPrev">${tipo === 'entrada' ? 'Ainda não recebi (previsto)' : 'Ainda não paguei (previsto)'}</label></div>
       ${campo('Anotação', `<input class="txt" id="fO" value="${u.esc(l ? obsLivre(l.obs) : '')}" placeholder="opcional">`)}
@@ -938,6 +961,7 @@
   function salvarLanc(tipo, l) {
     const v = u.num(val('fV'));
     if (!(v > 0)) { toast('Digite um valor, por exemplo 25,90'); return false; }
+    if ((tipo === 'saida' || tipo === 'entrada') && !(l && l.grupo === 'Transferência') && !val('fC')) { toast('Escolha a categoria'); return false; }
     const desc = val('fD').trim() || ({ saida: 'Gasto', entrada: 'Recebimento', guardar: 'Guardado' }[tipo]);
     const data = val('fDt') || u.hoje(), prev = $('fPrev').checked, obs = val('fO').trim();
     const transf = tipo === 'transf' && l; /* pagamento de fatura e outras transferências: só muda valor, data, banco e anotação */
@@ -1574,7 +1598,7 @@
   }
 
   /* ================= navegação ================= */
-  const TABS = [['inicio', 'Início', 'house'], ['trabalhos', 'Trabalhos', 'clapperboard'], ['tarefas', 'Tarefas', 'list-checks'], ['equip', 'Equipamentos', 'camera'], ['fin', 'Finanças', 'wallet']];
+  const TABS = [['inicio', 'Início', 'house'], ['trabalhos', 'Trabalhos', 'clapperboard'], ['tarefas', 'Agenda', 'calendar-days'], ['equip', 'Equipamentos', 'camera'], ['fin', 'Finanças', 'wallet']];
   function nav() {
     const urg = c.urgentes();
     $('tabbar').innerHTML = TABS.map(([k, n, i]) => k === 'tarefas' ? `<button class="tab mid" type="button" data-a="go" data-v="tarefas" ${ui.view === k ? 'aria-current="page"' : ''}><span class="orb">${u.svg(i)}</span>${urg ? `<span class="cnt">${urg}</span>` : ''}<span>${n}</span></button>` : `<button class="tab" type="button" data-a="go" data-v="${u.esc(k)}" ${ui.view === k ? 'aria-current="page"' : ''}>${u.svg(i)}<span>${n}</span></button>`).join('');
@@ -1637,7 +1661,7 @@
     irRevisar: () => { ui.fseg = 'revisar'; go('fin'); },
     irMetas: () => { ui.fseg = 'metas'; go('fin'); },
     menu: () => { document.body.classList.toggle('menu-aberto'); },
-    tMes: b => { ui.tmes = b.dataset.v; ui.tdia = null; render(false); },
+    tMes: b => { ui.mes = ui.tmes = b.dataset.v; ui.tdia = null; render(false); }, /* Agenda: o mês é o do app */
     tDia: b => { ui.tdia = b.dataset.v && ui.tdia !== b.dataset.v ? b.dataset.v : null; render(false); },
     rvMarcaG: b => { const ids = b.dataset.ids.split(','), tudo = ids.every(id => ui.rvsel.has(id)); ids.forEach(id => tudo ? ui.rvsel.delete(id) : ui.rvsel.add(id)); render(false); },
     rvOk: b => { const ids = b.dataset.ids.split(','), desfazer = mudarVarios(ids, { conferido: true }); ids.forEach(id => ui.rvsel.delete(id)); render(false); toast('Conferido' + (ids.length > 1 ? ` (${ids.length} parcelas)` : ''), desfazer); },
@@ -1808,6 +1832,67 @@
     });
   }
   /* sua conta: cópia de segurança, dados no Supabase, sair */
+  /* ---------- categorias: criar, renomear e apagar (o João pediu para mexer sozinho, v60) ---------- */
+  /* categorias que o app usa pelo nome (rendas, guardar, transferir): dá para pôr subcategoria, mas não renomear nem apagar */
+  const CAT_FIXAS = ['Salário CLT', 'Darzan Produções', 'JPL SOM', 'Guardado', 'Transferência', 'Reembolso'];
+  const ABAS_CAT = ['EXTRATO', 'FIXAS', 'PARCELADOS'];
+  const usoCat = (cat, sub) => ABAS_CAT.reduce((n, a) => n + db.linhas(a).filter(r => r['CATEGORIA'] === cat && (sub == null || r['SUB-CATEGORIA'] === sub)).length, 0);
+  /* troca categoria/subcategoria em tudo que usa (lançamentos, contas fixas, parcelados) */
+  const trocaCat = (de, para) => ABAS_CAT.flatMap(a => db.linhas(a).filter(r => r['CATEGORIA'] === de.cat && (de.sub == null || r['SUB-CATEGORIA'] === de.sub))
+    .map(r => ({ op: 'salvar', aba: a, registro: Object.assign({ ID: r.ID, 'CATEGORIA': para.cat }, para.sub != null ? { 'SUB-CATEGORIA': para.sub } : {}) })));
+  const nomeLimpo = v => String(v || '').replace(/[|·;=<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  function formCategorias(aberta) {
+    const cats = c.listaCats();
+    abrir(`<h3 style="margin:0 0 4px">Categorias</h3><p class="c-muted" style="margin:0 0 14px">Toque numa categoria para ver as subcategorias, renomear ou criar uma nova. Renomear muda também os lançamentos que já usam o nome.</p>
+      <div class="catl2">${cats.map(k => { const subs = c.subsDe(k).filter(Boolean), fixa = CAT_FIXAS.includes(k);
+        return `<details class="catg"${aberta === k ? ' open' : ''}><summary>${u.ti(c.icone(k))}<span><b>${u.esc(k)}</b><small>${subs.length} subcategoria${subs.length === 1 ? '' : 's'} · ${u.esc(c.grupoDe(k))}</small></span>${u.svg('chevron-down')}</summary>
+          <div class="catsubs">${subs.map(sb => `<div class="catsub"><span>${u.esc(sb)}</span><button type="button" class="chip mini" data-a="catRen" data-cat="${u.esc(k)}" data-sub="${u.esc(sb)}" aria-label="Renomear ${u.esc(sb)}">${u.svg('pencil')}</button><button type="button" class="chip mini" data-a="catDel" data-cat="${u.esc(k)}" data-sub="${u.esc(sb)}" aria-label="Apagar ${u.esc(sb)}">${u.svg('trash-2')}</button></div>`).join('')}
+            <div class="catacoes"><button type="button" class="chip" data-a="catNova" data-cat="${u.esc(k)}">${u.svg('plus')}Subcategoria</button>${fixa ? '' : `<button type="button" class="chip" data-a="catRen" data-cat="${u.esc(k)}">${u.svg('pencil')}Renomear</button><button type="button" class="chip" data-a="catDel" data-cat="${u.esc(k)}">${u.svg('trash-2')}Apagar</button>`}</div></div></details>`; }).join('')}</div>
+      <button type="button" class="btn2" data-a="catNova" style="margin-top:12px">${u.svg('plus')}Nova categoria</button>`, null);
+  }
+  /* nova categoria (sem data-cat) ou nova subcategoria (com data-cat) */
+  function formCatNova(cat) {
+    abrir(`<h3 style="margin:0 0 12px">${cat ? `Nova subcategoria em ${u.esc(cat)}` : 'Nova categoria'}</h3>
+      ${cat ? '' : campo('Nome da categoria', `<input class="txt" id="cN" maxlength="40" required placeholder="Ex.: Pets">`)}
+      ${campo(cat ? 'Nome da subcategoria' : 'Primeira subcategoria', `<input class="txt" id="cS" maxlength="40" required placeholder="Ex.: ${cat === 'Carro e transporte' ? 'Lavagem' : 'Ração'}">`)}
+      ${campo('É necessidade ou desejo?', `<select class="txt" id="cG">${opts(cat && c.grupoDe(cat) === 'Renda' ? ['Renda'] : ['Necessidades', 'Desejos', 'Renda'], cat ? c.grupoDe(cat) : 'Necessidades')}</select>`)}
+      <button class="save" type="submit">Criar</button>`, () => {
+      const k = cat || nomeLimpo(val('cN')), sb = nomeLimpo(val('cS'));
+      if (!k || !sb) { toast('Preencha o nome'); return false; }
+      if (!cat && c.listaCats().some(x => u.sem(x) === u.sem(k))) { toast('Já existe uma categoria com esse nome'); return false; }
+      if (c.subsDe(k).some(x => u.sem(x) === u.sem(sb))) { toast('Essa subcategoria já existe'); return false; }
+      db.lote([{ op: 'salvar', aba: 'CATEGORIAS', registro: { 'CATEGORIA': k, 'SUB-CATEGORIA': sb, 'GRUPO': val('cG') } }]);
+      toast(`${sb} criada em ${k}`); formCategorias(k); render(false);
+    });
+  }
+  function formCatRen(cat, sub) {
+    abrir(`<h3 style="margin:0 0 12px">Renomear ${u.esc(sub || cat)}</h3>
+      ${campo('Novo nome', `<input class="txt" id="cR" maxlength="40" required value="${u.esc(sub || cat)}">`)}
+      <p class="c-muted" style="font-size:.84rem;margin:0 0 12px">${usoCat(cat, sub)} lançamento(s), conta(s) fixa(s) e parcelado(s) usam esse nome e vão mudar junto.</p>
+      <button class="save" type="submit">Renomear</button>`, () => {
+      const novo = nomeLimpo(val('cR'));
+      if (!novo) { toast('Digite o nome'); return false; }
+      if (sub ? c.subsDe(cat).some(x => x !== sub && u.sem(x) === u.sem(novo)) : c.listaCats().some(x => x !== cat && u.sem(x) === u.sem(novo))) { toast('Esse nome já existe'); return false; }
+      const linhas = c.categorias().filter(r => r['CATEGORIA'] === cat && (!sub || r['SUB-CATEGORIA'] === sub));
+      const ops = linhas.map(r => ({ op: 'salvar', aba: 'CATEGORIAS', registro: Object.assign({ ID: r.ID }, sub ? { 'SUB-CATEGORIA': novo } : { 'CATEGORIA': novo }) }))
+        .concat(trocaCat({ cat, sub: sub || null }, sub ? { cat, sub: novo } : { cat: novo, sub: null }));
+      db.lote(ops); toast('Renomeado'); formCategorias(sub ? cat : novo); render(false);
+    });
+  }
+  /* apagar: se alguém usa, escolhe para onde vão esses lançamentos */
+  function formCatDel(cat, sub) {
+    const n = usoCat(cat, sub || null), destinos = sub ? c.subsDe(cat).filter(x => x && x !== sub).map(x => [cat + '|' + x, x])
+      : c.listaCats().filter(x => x !== cat).flatMap(k => c.subsDe(k).filter(Boolean).map(x => [k + '|' + x, `${k} › ${x}`]));
+    abrir(`<h3 style="margin:0 0 12px">Apagar ${u.esc(sub || cat)}</h3>
+      ${n ? `<p class="aviso" style="margin:0 0 12px">${n} lançamento(s) usam ${sub ? 'essa subcategoria' : 'essa categoria'}. Escolha para onde eles vão:</p>${campo('Mover para', `<select class="txt" id="cD">${opts(destinos, '')}</select>`)}` : '<p class="c-muted" style="margin:0 0 12px">Ninguém usa: pode apagar sem medo.</p>'}
+      <button class="save perigo" type="submit">Apagar</button>`, () => {
+      if (n && !destinos.length) { toast('Crie outra subcategoria antes de apagar esta'); return false; }
+      const [dc, ds] = n ? val('cD').split('|') : [];
+      const ops = (n ? trocaCat({ cat, sub: sub || null }, { cat: dc, sub: ds }) : [])
+        .concat(c.categorias().filter(r => r['CATEGORIA'] === cat && (!sub || r['SUB-CATEGORIA'] === sub)).map(r => ({ op: 'apagar', aba: 'CATEGORIAS', id: r.ID })));
+      db.lote(ops); toast(`${sub || cat} apagada`); formCategorias(sub ? cat : dc); render(false);
+    });
+  }
   function formConta() {
     const demo = N.ehDemo(), ref = !demo && (N.config.url.match(/https:\/\/([^.]+)\./) || [])[1];
     abrir(`<h3 style="margin:0 0 4px">Sua conta</h3><p class="c-muted" style="margin:0 0 16px">${u.esc((N.sessao && N.sessao.user.email) || '')}</p>
@@ -1816,6 +1901,7 @@
         <button type="button" class="btn2" data-a="correcoes">${u.svg('upload')}Trazer correções de um arquivo</button>
         <button type="button" class="btn2" data-a="baixarCopia">${u.svg('file-text')}Baixar uma cópia dos dados</button>
         ${ref ? `<a class="btn2" href="https://supabase.com/dashboard/project/${ref}/editor" target="_blank" rel="noopener">${u.svg('pencil')}Ver e mexer nos dados no Supabase</a>` : ''}
+        <button type="button" class="btn2" data-a="categorias">${u.svg('tag')}Categorias (criar, renomear, apagar)</button>
         <button type="button" class="btn2" data-a="ocultar">${u.svg(ui.oculto ? 'eye' : 'eye-off')}${ui.oculto ? 'Mostrar os valores' : 'Esconder os valores'}</button>
         ${demo ? '' : `<h4 class="fl" style="margin:6px 0 0">Avisos no celular</h4>${blocoAvisos()}
         <h4 class="fl" style="margin:6px 0 0">Acesso do Claude</h4><div id="blClaude" style="display:grid;gap:10px"><p class="c-muted" style="margin:0;font-size:.86rem">Carregando…</p></div>`}
@@ -1836,6 +1922,10 @@
   }
   Object.assign(ACOES, {
     conta: () => formConta(),
+    categorias: () => formCategorias(),
+    catNova: b => formCatNova(b.dataset.cat || ''),
+    catRen: b => formCatRen(b.dataset.cat, b.dataset.sub || ''),
+    catDel: b => formCatDel(b.dataset.cat, b.dataset.sub || ''),
     baixarCopia: () => baixarCopia(),
     sair: b => {
       if (db.pendentes() && b.dataset.certeza !== '1') { b.dataset.certeza = '1'; b.innerHTML = u.svg('log-out') + 'Tem mudança sem salvar. Toque de novo para sair mesmo assim'; return; }

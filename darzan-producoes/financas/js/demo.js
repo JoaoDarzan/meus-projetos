@@ -147,7 +147,7 @@ window.A = window.A || {};
       ['Renda extra', ['Venda', 'Play One', 'Apps e pesquisas', 'Latinha', 'Rendimentos'], 'Renda'],
       ['Alimentação', ['Mercado', 'Padaria', 'Almoço do trabalho'], 'Necessidades'], ['Alimentação', ['Restaurante e lanche', 'Delivery'], 'Desejos'],
       ['Casa', ['Contas da casa', 'Moradia', 'Limpeza e higiene'], 'Necessidades'], ['Casa', ['Móveis e eletros'], 'Desejos'],
-      ['Carro e transporte', ['Gasolina', 'Manutenção', 'Seguro', 'IPVA e licenciamento', 'Multas', 'Pedágio', 'Estacionamento', 'Uber/99'], 'Necessidades'],
+      ['Carro e transporte', ['Gasolina', 'Manutenção', 'Seguro', 'IPVA e licenciamento', 'Multas', 'Pedágio', 'Estacionamento', 'Uber/99', 'Lavagem'], 'Necessidades'],
       ['Saúde', ['Farmácia', 'Consultas e exames'], 'Necessidades'], ['Saúde', ['Academia e esporte'], 'Desejos'],
       ['Cuidados pessoais', ['Cabelo e barba'], 'Necessidades'], ['Cuidados pessoais', ['Perfume e cosméticos', 'Tatuagem e estética'], 'Desejos'],
       ['Assinaturas', ['Streaming', 'Apps'], 'Desejos'], ['Compras', ['Roupas e calçados', 'Eletrônicos', 'Colecionáveis', 'Para casa'], 'Desejos'],

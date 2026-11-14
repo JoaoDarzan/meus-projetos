@@ -322,7 +322,7 @@ tfoot td{font-weight:800;border-top:1px solid var(--stroke)}
 .tab.mid .orb{width:54px;height:54px;margin-top:-26px;border-radius:50%;display:grid;place-items:center;color:#3a2500;background:conic-gradient(from 200deg,#ffe9a8,#f0b23c,#fff1c4,#d8901e,#ffe9a8);box-shadow:0 10px 26px -6px rgba(240,178,60,.8),0 0 0 5px rgba(16,26,56,.9)}
 .tab.mid .orb svg{width:26px;height:26px}
 .tab.mid[aria-current="page"]{background:none}
-.tab .cnt,.snav .cnt{position:absolute;top:-24px;right:calc(50% - 32px);min-width:18px;height:18px;border-radius:9px;background:#ff5f6d;color:#fff;font-size:.64rem;font-weight:800;display:grid;place-items:center;padding:0 4px}
+.tab .cnt,.snav .cnt{position:absolute;top:2px;right:calc(50% - 24px);min-width:18px;height:18px;border-radius:9px;background:#ff5f6d;color:#fff;font-size:.64rem;font-weight:800;display:grid;place-items:center;padding:0 4px}
 .fab{position:fixed;z-index:26;right:calc(20px + var(--sa-r));bottom:calc(98px + var(--sa-b));width:56px;height:56px;border-radius:50%;border:0;background:linear-gradient(160deg,#5b8bff,#2c55d6);color:#fff;display:grid;place-items:center;box-shadow:0 14px 30px -8px rgba(60,110,255,.8)}
 .fab svg{width:26px;height:26px}
 .snav{display:grid;gap:4px;margin-top:22px}
@@ -1133,3 +1133,23 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
 .eqres{padding:12px 14px;border-radius:14px;background:var(--glass);border:1px solid var(--stroke);margin-bottom:12px}
 .eqres .m{margin:6px 0 0;font-size:.8rem;color:var(--muted)}
 .tab.mid[aria-current="page"]{color:var(--blue-hi);background:rgba(117,170,219,.16)}
+/* v60: categorias (criar, renomear, apagar), trabalho de vários dias, Agenda */
+.catl2{display:grid;gap:8px}
+.catg{border:1px solid var(--stroke);border-radius:14px;background:var(--glass)}
+.catg summary{list-style:none;display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer;min-height:56px}
+.catg summary::-webkit-details-marker{display:none}
+.catg summary>span{flex:1;min-width:0}.catg summary b{display:block;overflow-wrap:anywhere}.catg summary small{color:var(--muted);font-size:.78rem}
+.catg summary>.i{width:18px;height:18px;color:var(--muted);transition:transform .2s}.catg[open] summary>.i{transform:rotate(180deg)}
+.catsubs{padding:2px 12px 12px;display:grid;gap:6px}
+.catsub{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--stroke)}.catsub span{flex:1;min-width:0;overflow-wrap:anywhere}
+.catacoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.diai.junto .pto{height:24px;border-radius:4px}
+.tlistw{margin-top:4px}
+/* v60: tarefa no celular pequeno: sem o ícone e com o "Desfazer" só de ícone, para o título caber em 1–2 linhas */
+@media (max-width:430px){
+  .tk{grid-template-columns:auto minmax(0,1fr) auto;gap:10px}
+  .tk>.ti{display:none}
+  .tk .undo{font-size:0;gap:0;padding:0 10px;min-width:40px}.tk .undo svg{width:18px;height:18px}
+}
+.grp{text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:700}
+@media (max-width:400px){.sec-h h2{font-size:1.05rem}.sec-h .chip{white-space:nowrap}}

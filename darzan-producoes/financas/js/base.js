@@ -277,7 +277,7 @@ window.A = window.A || {};
   };
   const ISUB = { 'Mercado': ['shopping-cart', '#4ee0a0', '#05905c'], 'Padaria': ['shopping-bag', '#ffc996', '#d0621e'], 'Almoço do trabalho': ['briefcase', '#ff8aa0', '#d61c4e'], 'Delivery': ['pizza', '#ff8a7a', '#d42a1f'],
     'Contas da casa': ['lightbulb', '#ffe066', '#b98a00'], 'Limpeza e higiene': ['sparkles', '#5ff0d6', '#0b8a78'], 'Móveis e eletros': ['zap', '#5ff0d6', '#0b8a78'],
-    'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Manutenção': ['wrench', '#6cc8ff', '#1f5fe0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'IPVA e licenciamento': ['file-text', '#6cc8ff', '#1f5fe0'], 'Multas': ['receipt', '#ffaab8', '#c0183f'], 'Pedágio': ['map-pin', '#9cc6ff', '#2a62e0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'],
+    'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Lavagem': ['car', '#6cc8ff', '#1f5fe0'], 'Manutenção': ['wrench', '#6cc8ff', '#1f5fe0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'IPVA e licenciamento': ['file-text', '#6cc8ff', '#1f5fe0'], 'Multas': ['receipt', '#ffaab8', '#c0183f'], 'Pedágio': ['map-pin', '#9cc6ff', '#2a62e0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'],
     'Farmácia': ['pill', '#7cf0a8', '#15a352'], 'Consultas e exames': ['heart', '#7cf0a8', '#15a352'], 'Academia e esporte': ['trophy', '#7cf0a8', '#15a352'],
     'Cabelo e barba': ['scissors', '#f2a0ff', '#a51fc4'], 'Tatuagem e estética': ['palette', '#f2a0ff', '#a51fc4'],
     'Streaming': ['tv', '#9aa5ff', '#4a46e0'], 'Apps': ['cloud', '#9cd3ff', '#2a7ad0'],
@@ -600,7 +600,10 @@ window.A = window.A || {};
   const COR_EMPRESA = Object.assign(Object.create(null), { 'JPL SOM': '#4fb3ff', 'Darzan Produções': '#f2c46d' });
   c.corEmpresa = e => COR_EMPRESA[e] || '#c39bff';
   c.dias = () => db.linhas('DIAS').filter(d => d['DATA']).map(d => ({ id: d.ID, data: String(d['DATA']).slice(0, 10), empresa: String(d['EMPRESA'] || 'Outro'), desc: String(d['O QUE FOI'] || ''),
-    valor: c.num(d['VALOR']) || 0, pag: String(d['PAGAMENTO'] || ''), obs: String(d['OBS'] || ''), r: d }));
+    valor: c.num(d['VALOR']) || 0, pag: String(d['PAGAMENTO'] || ''), obs: String(d['OBS'] || ''), grupo: (String(d['OBS'] || '').match(/Junto: (\S+)/) || [])[1] || '', r: d }));
+  /* vários dias que são um trabalho só (uma paga para todos): "Junto: G…" na OBS de cada dia */
+  c.doGrupo = g => g ? c.dias().filter(d => d.grupo === g).sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0) : [];
+  c.obsGrupo = (obs, g) => [String(obs || '').replace(/(^|\s*·\s*)Junto: \S+/g, '').replace(/^\s*·\s*/, '').trim(), g ? 'Junto: ' + g : ''].filter(Boolean).join(' · ');
   c.empresasDias = () => [...new Set(c.EMPRESAS.concat(c.dias().map(d => d.empresa)))];
   /* o dia está pago quando o lançamento ligado existe e já entrou (previsto não conta) */
   c.pagamentoDoDia = d => d.pag ? c.lancs().find(l => l.id === d.pag && l.status !== 'Previsto') || null : null;
@@ -710,8 +713,13 @@ window.A = window.A || {};
     });
     return melhor;
   };
+  /* palpite pela descrição quando ainda não há histórico (lava-rápido, posto, pedágio…); só vale se a subcategoria existir */
+  const PALPITES = [[/lava ?rapido|lava ?jato|lavagem|lava ?car|estetica automotiva|higieniza/, 'Carro e transporte', 'Lavagem'],
+    [/posto |combustivel|gasolina|etanol|shell|ipiranga|petrobras/, 'Carro e transporte', 'Gasolina'], [/estaciona|zona azul|estapar/, 'Carro e transporte', 'Estacionamento'],
+    [/pedagio|sem parar|conectcar|veloe/, 'Carro e transporte', 'Pedágio'], [/\buber\b|99 ?app|99 ?pop|\b99\b/, 'Carro e transporte', 'Uber/99']];
+  c.palpite = desc => { const d = u.sem(desc); const p = PALPITES.find(([re]) => re.test(d)); return p && c.subsDe(p[1]).includes(p[2]) ? { cat: p[1], sub: p[2], grupo: c.grupoDe(p[1], p[2]), palpite: true } : null; };
   c.sugerir = (desc, mem) => {
-    const x = conhecida(desc, mem || c.memoria()); if (!x) return null;
+    const x = conhecida(desc, mem || c.memoria()); if (!x) return c.palpite(desc);
     const [id, n] = Object.entries(x.op).sort((a, b) => b[1] - a[1])[0];
     if (n / x.total < .6) return null;
     const [cat, sub, grupo] = id.split('|');

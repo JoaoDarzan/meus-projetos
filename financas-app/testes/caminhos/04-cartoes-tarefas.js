@@ -10,12 +10,12 @@ module.exports = { etapa: 'Cartões e tarefas', testes: [
     const lista = () => p.textContent('#tLista');
     { const t = await lista(); certo(/conta deste mês teste/i.test(t) && !/conta velha teste|conta do mês que vem teste/i.test(t), 'só as do mês: ' + [/conta deste mês teste/i.test(t), /conta velha teste/i.test(t), /conta do mês que vem teste/i.test(t)]); }
     certo(/atrasada.* de meses anteriores/.test(await p.textContent('#view')), 'avisa as atrasadas de meses anteriores');
-    certo(await p.$$eval('#tCal .tc-d', ds => ds.length) >= 28 && await p.$(`#tCal [data-v="${m0}-28"].tem`), 'calendário do mês com o dia 28 marcado');
-    await clica(p, `#tCal [data-v="${m0}-28"]`);
-    certo(/conta deste mês teste/i.test(await lista()) && (await p.$$('#tLista .tk')).length === (await p.evaluate(d => A.c.tarefas().filter(t => t.data === d).length, m0 + '-28')), 'tocar no dia mostra só ele');
-    await clica(p, `[data-a=tMes][data-v="${prox}"]`);
+    /* Agenda (v60): em cima o calendário dos trabalhos, embaixo as tarefas a fazer do mês */
+    certo(/Agenda/.test(await p.textContent('#view')) && await p.$$eval('#view .cal .cd:not(.vaz)', ds => ds.length) >= 28, 'Agenda com o calendário dos trabalhos');
+    certo(!(await p.$('#tCal')), 'sem o calendário antigo de tarefas');
+    await p.evaluate(m => { A.ui.mes = m; A.render(false); }, prox);
     certo(/conta do mês que vem teste/i.test(await lista()) && !/conta deste mês teste/i.test(await lista()), 'mês seguinte: só as dele');
-    await clica(p, `[data-a=tMes][data-v="${m0}"]`); await clica(p, '#view .rv-aviso');
+    await p.evaluate(m => { A.ui.mes = m; A.render(false); }, m0); await clica(p, '#view .rv-aviso');
     certo(/conta velha teste/i.test(await lista()), 'a atrasada fica no mês dela');
     certo(/A pagar no mês\s*R\$\s[\d.]*\d+,\d\d/.test((await p.textContent('#tResumo')).replace(/\s+/g, ' ')), 'resumo do mês com valor exato');
   }],

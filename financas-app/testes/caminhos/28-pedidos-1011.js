@@ -11,7 +11,7 @@ module.exports = { etapa: 'Pedidos de 10/11', testes: [
     await ir(p, 'tarefas');
     const t = await p.textContent('#view');
     certo(!/\bXP\b|Nv \d|nível/i.test(t) && !(await p.$('#view .miniplayer')), 'sem cara de jogo');
-    certo((await p.$$eval('#view .divt', xs => xs.map(x => x.textContent))).join('|') === 'Resumo do mês|Calendário e lista', 'partes separadas com título');
+    certo((await p.$$eval('#view .divt', xs => xs.map(x => x.textContent))).join('|') === 'A fazer', 'tarefas com título "A fazer" embaixo do calendário');
     await conferirLayout(p, 'tarefas sem jogo');
   }],
   ['tarefa atrasada: o iPhone recebe um lembrete por dia até fazer (além da véspera e do dia)', async (st, abrir) => {
