@@ -198,7 +198,25 @@ window.A = window.A || {};
         const nome = String(f['DESCRIÇÃO']).trim().toLowerCase(), id = `LFX-${f.ID}-${m}`, tipo = /cart/i.test(f['TIPO']) ? 'cartão' : 'conta', dia = parseInt(f['DIA'], 10) || 1;
         /* no cartão, o lançamento fica no mês da fatura em que a cobrança cai */
         const mf = tipo === 'cartão' && A.c.cartao(f['BANCO']) ? A.c.faturaDe(u.dataNoMes(m, dia), f['BANCO']) : m;
-        if (db.achar('EXTRATO', id) || ext.some(l => String(l['DATA']).slice(0, 7) === mf && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
+        /* ligou ou desligou a divisão com alguém: troca as previsões do mês que ainda não aconteceram (pagas ficam como estão) */
+        const dv0 = /Divide: \d/i.test(String(f['OBS'] || '')) && tipo === 'conta', code0 = 'F' + String(f.ID).replace(/[^A-Za-z0-9]/g, '') + mf.replace('-', '');
+        const prev = x => x && x['STATUS'] === 'Previsto' && !String(x['OBS'] || '').match(/\bOF [0-9a-f-]{20,}/i);
+        if (dv0 && prev(db.achar('EXTRATO', id))) ops.push({ op: 'apagar', aba: 'EXTRATO', id });
+        else if (!dv0) { const ls = [`LDV-${code0}-EU`, `LDV-${code0}-OUTRO`].map(k => db.achar('EXTRATO', k)); if (ls.every(prev)) ls.forEach(x => ops.push({ op: 'apagar', aba: 'EXTRATO', id: x.ID })); else if (ls.some(Boolean)) return; }
+        const sai = new Set(ops.filter(o => o.op === 'apagar').map(o => o.id));
+        if ((db.achar('EXTRATO', id) && !sai.has(id)) || ext.some(l => !sai.has(l.ID) && String(l['DATA']).slice(0, 7) === mf && String(l['DESCRIÇÃO']).trim().toLowerCase() === nome)) return;
+        /* conta dividida com alguém (ex.: Netflix com o irmão): "Divide: 50% com Lucas" na OBS da fixa. Vira duas partes previstas
+           (LDV-<código>-EU e -OUTRO, a do outro é Reembolso > Família); o robô do banco confere o débito inteiro com a soma das duas */
+        const dv = String(f['OBS'] || '').match(/Divide: (\d+(?:[.,]\d+)?)% com ([^·]+)/i);
+        if (dv && tipo === 'conta') {
+          const code = 'F' + String(f.ID).replace(/[^A-Za-z0-9]/g, '') + mf.replace('-', ''), idE = `LDV-${code}-EU`, idO = `LDV-${code}-OUTRO`;
+          if ((db.achar('EXTRATO', idE) && !sai.has(idE)) || (db.achar('EXTRATO', idO) && !sai.has(idO))) return;
+          const total = -Math.abs(u.num(f['VALOR'])), outro = u.r2(total * Math.min(100, +dv[1].replace(',', '.')) / 100), quem = dv[2].trim(), obs = `Fixa ${f.ID} · dividida com ${quem} (${dv[1]}%)`;
+          const comum = { 'DATA': u.dataNoMes(mf, dia), 'BANCO': f['BANCO'], 'TIPO': 'conta', 'STATUS': 'Previsto', 'PARCELA': '', 'OBS': obs };
+          ops.push({ op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: idE, 'DESCRIÇÃO': `${f['DESCRIÇÃO']} (sua parte)`, 'GRUPO': f['GRUPO'] || 'Desejos', 'VALOR': u.r2(total - outro), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'] }, comum) },
+            { op: 'salvar', aba: 'EXTRATO', registro: Object.assign({ ID: idO, 'DESCRIÇÃO': `${f['DESCRIÇÃO']} (parte de ${quem})`, 'GRUPO': 'Reembolso', 'VALOR': outro, 'CATEGORIA': 'Reembolso', 'SUB-CATEGORIA': 'Família' }, comum) });
+          return;
+        }
         ops.push({ op: 'salvar', aba: 'EXTRATO', registro: { ID: id, 'DATA': u.dataNoMes(mf, dia), 'BANCO': f['BANCO'], 'DESCRIÇÃO': f['DESCRIÇÃO'], 'GRUPO': f['GRUPO'] || 'Necessidades', 'TIPO': tipo, 'VALOR': -Math.abs(u.num(f['VALOR'])), 'CATEGORIA': f['CATEGORIA'], 'SUB-CATEGORIA': f['SUB-CATEGORIA'], 'STATUS': 'Previsto', /* no cartão também: fica prevista até o banco mostrar a cobrança */ 'PARCELA': '', 'OBS': /d[eé]bito/i.test(f['TIPO']) ? 'Fixa · débito automático' : 'Fixa' } });
       });
     });

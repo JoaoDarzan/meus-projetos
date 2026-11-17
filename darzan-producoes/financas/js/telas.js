@@ -753,13 +753,14 @@
       <div class="grid2">${campo('Como paga', `<select class="txt" id="xT">${opts(tipos, t0)}</select>`)}${campo('Banco ou cartão', `<select class="txt" id="xB">${opts(onde, f ? f['BANCO'] : 'Inter')}</select>`)}</div>
       <div class="grid2">${campo('Categoria', `<select class="txt" id="xC">${opts(cats, cat0)}</select>`)}${campo('Sub-categoria', `<select class="txt" id="xS">${opts(c.subsDe(cat0), f ? f['SUB-CATEGORIA'] : '')}</select>`)}</div>
       <div class="checkline"><input type="checkbox" id="xA" ${!f || c.fixaAtiva(f) ? 'checked' : ''}><label for="xA">Ativa (ainda pago)</label></div>
-      ${campo('Anotação', `<input class="txt" id="xO" value="${u.esc(f ? f['OBS'] || '' : '')}" placeholder="opcional, ex.: promoção até nov/2027">`)}
+      ${(() => { const m = f && String(f['OBS'] || '').match(/Divide: (\d+(?:[.,]\d+)?)% com ([^·]+)/i); return `<div class="grid2">${campo('Divide com alguém?', `<input class="txt" id="xQ" maxlength="30" value="${u.esc(m ? m[2].trim() : '')}" placeholder="Ex.: Lucas (deixe vazio se não)">`)}${campo('Parte da outra pessoa', `<input class="txt num" id="xP" inputmode="decimal" value="${u.esc(m ? m[1] : '50')}" placeholder="50">`)}</div><p class="c-muted" style="font-size:.8rem;margin:-4px 0 10px">O valor acima é o total que sai do banco. Todo mês entra a sua parte como gasto e a parte da outra pessoa como reembolso.</p>`; })()}
+      ${campo('Anotação', `<input class="txt" id="xO" value="${u.esc(f ? String(f['OBS'] || '').replace(/\s*·?\s*Divide: [^·]+/i, '').trim() : '')}" placeholder="opcional, ex.: promoção até nov/2027">`)}
       ${f ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarF" data-id="${u.esc(f.ID)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Criar conta fixa</button>'}`,
       () => {
         const d = val('xD').trim(), v = u.num(val('xV')); if (!d) return false;
         if (!(v > 0)) { toast('Digite o valor, por exemplo 19,90'); return false; }
         const cat = val('xC');
-        db.salvar('FIXAS', Object.assign(f ? { ID: f.ID } : {}, { 'DESCRIÇÃO': d, 'VALOR': v, 'DIA': parseInt(val('xDia'), 10) || '', 'BANCO': val('xB'), 'TIPO': val('xT'), 'GRUPO': c.grupoDe(cat, val('xS')) === 'Necessidades' ? 'Necessidades' : 'Desejos', 'CATEGORIA': cat, 'SUB-CATEGORIA': val('xS'), 'ATIVA': $('xA').checked ? 'Sim' : 'Não', 'OBS': val('xO').trim() }));
+        db.salvar('FIXAS', Object.assign(f ? { ID: f.ID } : {}, { 'DESCRIÇÃO': d, 'VALOR': v, 'DIA': parseInt(val('xDia'), 10) || '', 'BANCO': val('xB'), 'TIPO': val('xT'), 'GRUPO': c.grupoDe(cat, val('xS')) === 'Necessidades' ? 'Necessidades' : 'Desejos', 'CATEGORIA': cat, 'SUB-CATEGORIA': val('xS'), 'ATIVA': $('xA').checked ? 'Sim' : 'Não', 'OBS': [val('xO').trim(), val('xQ').trim() && u.num(val('xP')) > 0 ? `Divide: ${u.r2(Math.min(100, u.num(val('xP'))))}% com ${val('xQ').replace(/[·%]/g, ' ').trim()}` : ''].filter(Boolean).join(' · ') }));
         db.garantirFixas(); fechar(); render(false); toast('Conta fixa salva');
       });
     $('xC').addEventListener('change', () => { $('xS').innerHTML = opts(c.subsDe(val('xC')), ''); });

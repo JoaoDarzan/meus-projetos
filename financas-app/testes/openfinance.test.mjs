@@ -380,3 +380,12 @@ test('avisos do banco: até 4 movimentos um aviso para cada (entrou/saiu, banco,
   assert.equal(muitos[0].corpo, 'Entrou R$ 100,00 · Saiu R$ 40,00. Toque para ver no app.');
   assert.ok(!/[<>"'`&\\]/.test(muitos[0].id) && muitos[0].id.length <= 120);
 });
+
+test('conta fixa dividida (Netflix com o irmão): o débito inteiro do banco confere as duas partes previstas (sua parte + parte do outro)', () => {
+  /* valores inventados */
+  const ex = [{ id: 'LDV-FF009203001-EU', banco: 'BancoTeste', tipo: 'conta', valor: -20.5, data: '2030-01-15', status: 'Previsto', obs: 'Fixa F009 · dividida com Irmão (50%)' },
+    { id: 'LDV-FF009203001-OUTRO', banco: 'BancoTeste', tipo: 'conta', valor: -20.5, data: '2030-01-15', status: 'Previsto', obs: 'Fixa F009 · dividida com Irmão (50%)' }];
+  const r = casar([{ pid: 'n1', banco: 'BancoTeste', tipo: 'conta', valor: -41, data: '2030-01-15', desc: 'Card Débito - Streaming' }], ex)[0];
+  assert.deepEqual([r.acao, [...r.grupo].sort()], ['conferir', ['LDV-FF009203001-EU', 'LDV-FF009203001-OUTRO']]);
+  assert.equal(casar([{ pid: 'n2', banco: 'BancoTeste', tipo: 'conta', valor: -20.5, data: '2030-01-15', desc: 'x' }], ex)[0].acao, 'novo', 'só metade não confere');
+});
