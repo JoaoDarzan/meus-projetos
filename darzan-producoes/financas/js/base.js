@@ -277,7 +277,7 @@ window.A = window.A || {};
   };
   const ISUB = { 'Mercado': ['shopping-cart', '#4ee0a0', '#05905c'], 'Padaria': ['shopping-bag', '#ffc996', '#d0621e'], 'Almoço do trabalho': ['briefcase', '#ff8aa0', '#d61c4e'], 'Delivery': ['pizza', '#ff8a7a', '#d42a1f'],
     'Contas da casa': ['lightbulb', '#ffe066', '#b98a00'], 'Limpeza e higiene': ['sparkles', '#5ff0d6', '#0b8a78'], 'Móveis e eletros': ['zap', '#5ff0d6', '#0b8a78'],
-    'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Lavagem': ['car', '#6cc8ff', '#1f5fe0'], 'Manutenção': ['wrench', '#6cc8ff', '#1f5fe0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'IPVA e licenciamento': ['file-text', '#6cc8ff', '#1f5fe0'], 'Multas': ['receipt', '#ffaab8', '#c0183f'], 'Pedágio': ['map-pin', '#9cc6ff', '#2a62e0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'],
+    'Gasolina': ['fuel', '#ffc94d', '#e3600e'], 'Lavagem': ['car', '#6cc8ff', '#1f5fe0'], 'Site e domínio': ['link-2', '#6cc8ff', '#1f5fe0'], 'Manutenção': ['wrench', '#6cc8ff', '#1f5fe0'], 'Seguro': ['shield-check', '#6cc8ff', '#1f5fe0'], 'IPVA e licenciamento': ['file-text', '#6cc8ff', '#1f5fe0'], 'Multas': ['receipt', '#ffaab8', '#c0183f'], 'Pedágio': ['map-pin', '#9cc6ff', '#2a62e0'], 'Estacionamento': ['map-pin', '#9cc6ff', '#2a62e0'], 'Uber/99': ['car-taxi-front', '#ffe066', '#b98a00'],
     'Farmácia': ['pill', '#7cf0a8', '#15a352'], 'Consultas e exames': ['heart', '#7cf0a8', '#15a352'], 'Academia e esporte': ['trophy', '#7cf0a8', '#15a352'],
     'Cabelo e barba': ['scissors', '#f2a0ff', '#a51fc4'], 'Tatuagem e estética': ['palette', '#f2a0ff', '#a51fc4'],
     'Streaming': ['tv', '#9aa5ff', '#4a46e0'], 'Apps': ['cloud', '#9cd3ff', '#2a7ad0'],

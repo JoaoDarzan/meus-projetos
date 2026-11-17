@@ -153,7 +153,7 @@ window.A = window.A || {};
       ['Assinaturas', ['Streaming', 'Apps'], 'Desejos'], ['Compras', ['Roupas e calçados', 'Eletrônicos', 'Colecionáveis', 'Para casa'], 'Desejos'],
       ['Lazer', ['Bares e festas', 'Passeios e cinema', 'Viagens', 'Futebol', 'Apostas e loteria'], 'Desejos'],
       ['Presentes e doações', ['Presentes', 'Igreja', 'Caridade'], 'Desejos'], ['Presentes e doações', ['Ajuda à família'], 'Necessidades'],
-      ['Trabalho', ['Equipamentos', 'Software', 'Equipe e freelancers', 'Viagem de trabalho', 'Cursos', 'Impostos e MEI'], 'Necessidades'],
+      ['Trabalho', ['Equipamentos', 'Software', 'Equipe e freelancers', 'Viagem de trabalho', 'Cursos', 'Impostos e MEI', 'Site e domínio'], 'Necessidades'],
       ['Dívidas e taxas', ['Juros e multas', 'Tarifas de banco', 'Pagamento de dívida'], 'Necessidades'],
       ['Reembolso', ['Compra devolvida', 'Família', 'JPL SOM', 'Amigos'], 'Reembolso'],
       ['Guardado', ['Reserva', 'Caixinha', 'Investimento'], 'Guardado'], ['Transferência', ['Entre minhas contas', 'Pagamento de fatura'], 'Transferência']]

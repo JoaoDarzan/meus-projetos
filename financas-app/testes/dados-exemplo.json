@@ -1649,72 +1649,78 @@
    },
    {
     "ID": "G0143",
-    "CATEGORIA": "Dívidas e taxas",
-    "SUB-CATEGORIA": "Juros e multas",
+    "CATEGORIA": "Trabalho",
+    "SUB-CATEGORIA": "Site e domínio",
     "GRUPO": "Necessidades"
    },
    {
     "ID": "G0144",
     "CATEGORIA": "Dívidas e taxas",
-    "SUB-CATEGORIA": "Tarifas de banco",
+    "SUB-CATEGORIA": "Juros e multas",
     "GRUPO": "Necessidades"
    },
    {
     "ID": "G0145",
     "CATEGORIA": "Dívidas e taxas",
-    "SUB-CATEGORIA": "Pagamento de dívida",
+    "SUB-CATEGORIA": "Tarifas de banco",
     "GRUPO": "Necessidades"
    },
    {
     "ID": "G0146",
+    "CATEGORIA": "Dívidas e taxas",
+    "SUB-CATEGORIA": "Pagamento de dívida",
+    "GRUPO": "Necessidades"
+   },
+   {
+    "ID": "G0147",
     "CATEGORIA": "Reembolso",
     "SUB-CATEGORIA": "Compra devolvida",
     "GRUPO": "Reembolso"
    },
    {
-    "ID": "G0147",
+    "ID": "G0148",
     "CATEGORIA": "Reembolso",
     "SUB-CATEGORIA": "Família",
     "GRUPO": "Reembolso"
    },
    {
-    "ID": "G0148",
+    "ID": "G0149",
     "CATEGORIA": "Reembolso",
     "SUB-CATEGORIA": "JPL SOM",
     "GRUPO": "Reembolso"
    },
    {
-    "ID": "G0149",
+    "ID": "G0150",
     "CATEGORIA": "Reembolso",
     "SUB-CATEGORIA": "Amigos",
     "GRUPO": "Reembolso"
    },
    {
-    "ID": "G0150",
+    "ID": "G0151",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Reserva",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0151",
+    "ID": "G0152",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Caixinha",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0152",
+    "ID": "G0153",
     "CATEGORIA": "Guardado",
     "SUB-CATEGORIA": "Investimento",
     "GRUPO": "Guardado"
    },
    {
-    "ID": "G0153",
+    "ID": "G0154",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Entre minhas contas",
     "GRUPO": "Transferência"
    },
    {
-    "ID": "G0154",
+    "ID": "G0155",
     "CATEGORIA": "Transferência",
     "SUB-CATEGORIA": "Pagamento de fatura",
     "GRUPO": "Transferência"
