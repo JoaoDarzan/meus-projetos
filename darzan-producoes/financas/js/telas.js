@@ -313,11 +313,16 @@
     /* dias perto (até 10 dias) da mesma empresa: dá para dizer que são o mesmo trabalho, com uma paga só */
     const viz = z ? c.dias().filter(d => d.id !== z.id && d.empresa === z.empresa && Math.abs(u.ateHoje(d.data) - u.ateHoje(z.data)) <= 10).sort((a, b) => a.data < b.data ? -1 : 1) : [];
     const grp = new Set(z && z.grupo ? c.doGrupo(z.grupo).filter(d => d.id !== z.id).map(d => d.id) : []), vz = z ? (grp.size ? u.sum(c.doGrupo(z.grupo), d => d.valor) : z.valor) : 0;
+    /* trabalho de mais de um dia (montagem no sábado, evento no domingo): marca os outros dias aqui mesmo, o valor vira do trabalho todo */
+    const d0 = z ? z.data : datas[0], ocup = new Set(viz.map(d => d.data).concat(z && z.grupo ? c.doGrupo(z.grupo).map(d => d.data) : []));
+    const perto = datas.length > 1 ? [] : [-3, -2, -1, 1, 2, 3].map(n => u.addDias(d0, n)).filter(d => !ocup.has(d));
+    const curto = d => { const x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '') + ' ' + x.getDate(); };
     abrir(`<h3 style="margin:0 0 4px">${z ? 'Editar dia trabalhado' : datas.length > 1 ? `Marcar ${datas.length} dias trabalhados` : 'Marcar dia trabalhado'}</h3>
       <p class="c-muted" style="margin:0 0 12px">${u.esc(datas.map(d => u.cap(diaLongo(d))).join(' · '))}</p>
       ${campo('Para quem', `<div class="rchips">${emps.map((e, i) => `<input type="radio" name="wE" id="wE${i}" value="${u.esc(e)}" ${e === emp0 ? 'checked' : ''}><label for="wE${i}">${u.esc(e)}</label>`).join('')}<input type="radio" name="wE" id="wEo" value="" ${outro ? 'checked' : ''}><label for="wEo">Outro</label></div>`)}
       <div id="boxOutro" ${outro ? '' : 'hidden'}>${campo('Nome de quem', `<input class="txt" id="wEn" value="${u.esc(outro ? emp0 : '')}" placeholder="Ex.: Buffet Alegria">`)}</div>
       ${campo('O que foi', `<input class="txt" id="wD" value="${u.esc(z ? z.desc : '')}" placeholder="Ex.: som no casamento, corrida, ensaio">`)}
+      ${perto.length ? campo('O trabalho teve mais dias?', `<p class="c-muted" style="margin:0 0 8px;font-size:.84rem">Ex.: montagem no sábado e evento no domingo. Marque os outros dias: o valor fica para o trabalho todo.</p><div class="rchips wdias"><input type="checkbox" id="wX0" checked disabled><label for="wX0">${u.esc(curto(d0))}</label>${perto.map(d => `<input type="checkbox" id="wX-${d}" data-xd="${d}"><label for="wX-${d}">${u.esc(curto(d))}</label>`).join('')}</div>`) : ''}
       ${datas.length > 1 ? `<div class="checkline"><input type="checkbox" id="wJ"><label for="wJ">É um trabalho só (uma paga para todos esses dias)</label></div>` : ''}
       ${viz.length ? campo('Mesmo trabalho de outros dias? (uma paga só)', `<div class="panel" style="padding:4px 10px">${viz.map(d => `<div class="checkline"><input type="checkbox" id="wJd-${u.esc(d.id)}" data-jd="${u.esc(d.id)}" ${grp.has(d.id) ? 'checked' : ''}><label for="wJd-${u.esc(d.id)}">${u.esc(u.cap(diaLongo(d.data)))} · ${u.esc(d.desc || d.empresa)}</label></div>`).join('')}</div>`) : ''}
       ${campo(grp.size ? 'Valor do trabalho (todos os dias juntos)' : datas.length > 1 ? 'Valor de cada dia' : 'Valor do dia', `<input class="txt num" id="wV" inputmode="decimal" value="${u.esc(vz ? String(vz.toFixed(2)).replace('.', ',') : '')}" placeholder="Opcional. Ex.: 250,00">`)}
@@ -325,16 +330,22 @@
       <p class="aviso">Se escolher um pagamento e deixar o valor em branco, o app divide o pagamento entre ${datas.length > 1 ? 'esses dias' : 'os dias ligados a ele'}.</p>
       ${z ? `<div class="acoes"><button type="button" class="btn2 perigo" data-a="apagarDia" data-id="${u.esc(z.id)}">${u.svg('trash-2')}Excluir</button><button class="save" type="submit">Salvar</button></div>` : '<button class="save" type="submit">Marcar</button>'}`,
       () => salvarDia(datas, z));
+    const rotV = () => { const lb = $('wV') && $('wV').closest('.campo') && $('wV').closest('.campo').querySelector('.fl'), n = document.querySelectorAll('#s2 input[data-xd]:checked, #s2 input[data-jd]:checked').length + ($('wJ') && $('wJ').checked ? 1 : 0);
+      if (lb) lb.textContent = n ? 'Valor do trabalho (todos os dias juntos)' : datas.length > 1 ? 'Valor de cada dia' : 'Valor do dia'; };
+    $('s2').addEventListener('change', e => { if (e.target.matches('[data-xd],[data-jd],#wJ')) rotV(); });
     document.querySelectorAll('#s2 input[name=wE]').forEach(r => r.addEventListener('change', () => { $('boxOutro').hidden = !$('wEo').checked; if ($('wEo').checked) $('wEn').focus(); }));
   }
   function salvarDia(datas, z) {
     const r = document.querySelector('#s2 input[name=wE]:checked'), empresa = (r && r.value) || val('wEn').trim() || 'Outro';
     const desc = val('wD').trim(), pag = val('wP'), v = u.num(val('wV'));
-    const juntos = z ? [...document.querySelectorAll('#s2 input[data-jd]:checked')].map(i => i.dataset.jd) : [], juntoNovo = !z && datas.length > 1 && !!($('wJ') && $('wJ').checked);
-    const g = juntoNovo ? 'G' + Date.now().toString(36).toUpperCase() : z && juntos.length ? (z.grupo || (c.dias().find(d => juntos.includes(d.id) && d.grupo) || {}).grupo || 'G' + Date.now().toString(36).toUpperCase()) : '';
+    const extras = [...document.querySelectorAll('#s2 input[data-xd]:checked')].map(i => i.dataset.xd);
+    if (!z && extras.length) datas = datas.concat(extras).sort();
+    const juntos = z ? [...document.querySelectorAll('#s2 input[data-jd]:checked')].map(i => i.dataset.jd) : [], juntoNovo = !z && datas.length > 1 && (extras.length > 0 || !!($('wJ') && $('wJ').checked));
+    const g = juntoNovo ? 'G' + Date.now().toString(36).toUpperCase() : z && (juntos.length || extras.length) ? (z.grupo || (c.dias().find(d => juntos.includes(d.id) && d.grupo) || {}).grupo || 'G' + Date.now().toString(36).toUpperCase()) : '';
     let regs = datas.map(d => ({ ID: z ? z.id : db.novoId('DIAS'), 'DATA': d, 'EMPRESA': empresa, 'O QUE FOI': desc, 'VALOR': v > 0 ? u.r2(v) : '', 'PAGAMENTO': pag, 'OBS': c.obsGrupo(z ? z.obs : '', g) }));
     /* um trabalho de vários dias: o valor é do trabalho todo (dividido igual entre os dias) e o pagamento vale para todos */
     const soltos = z && z.grupo ? c.doGrupo(z.grupo).filter(d => d.id !== z.id && !juntos.includes(d.id)) : [];
+    if (z && extras.length) regs = regs.concat(extras.map(d => ({ ID: db.novoId('DIAS'), 'DATA': d, 'EMPRESA': empresa, 'O QUE FOI': desc, 'VALOR': '', 'PAGAMENTO': pag, 'OBS': c.obsGrupo('', g) })));
     if (z && juntos.length) regs = regs.concat(juntos.map(id => { const d = c.dias().find(x => x.id === id); return { ID: id, 'PAGAMENTO': pag, 'OBS': c.obsGrupo(d.obs, g) }; }));
     if (g && v > 0) { const p = dividir(v, regs.length); regs.forEach((x, i) => { x['VALOR'] = p[i]; }); } else if (g) regs.forEach(x => { x['VALOR'] = ''; });
     let ops = regs.map(x => ({ op: 'salvar', aba: 'DIAS', registro: x }));
@@ -343,8 +354,21 @@
     if (pag && !(v > 0)) { const l = c.lancs().find(x => x.id === pag), ids = new Set(regs.map(x => x.ID)), todos = c.diasDoPagamento(pag).filter(d => !ids.has(d.id)).map(d => d.id).concat([...ids]);
       if (l) { const partes = dividir(l.valor, todos.length); ops = ops.map(o => Object.assign(o, { registro: Object.assign(o.registro, { 'VALOR': partes[todos.indexOf(o.registro.ID)] }) }))
         .concat(todos.filter(id => !ids.has(id)).map(id => ({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'VALOR': partes[todos.indexOf(id)] } }))); } }
+    if (pag) ops = ops.concat(categorizarPag(pag, empresa));
     db.lote(ops); fechar(); ui.calMulti = false; if (ui.calSel) ui.calSel.clear(); render(false);
-    toast(z ? 'Dia atualizado' : datas.length > 1 ? `${datas.length} dias marcados` : 'Dia marcado');
+    toast(z ? (extras.length ? `Trabalho de ${regs.length} dias salvo` : 'Dia atualizado') : datas.length > 1 ? `${datas.length} dias marcados` : 'Dia marcado');
+  }
+  /* pagamento ligado a dias de trabalho: sem categoria, vira renda igual aos outros pagamentos dessa empresa; sai do Revisar */
+  function categorizarPag(pag, empresa) {
+    const l = c.lancs().find(x => x.id === pag); if (!l || !empresa) return [];
+    const reg = { ID: l.id };
+    if (c.semCategoria(l)) {
+      const ref = c.lancs().filter(x => x.id !== l.id && x.grupo === 'Renda' && !c.semCategoria(x) && (u.sem(x.cat) === u.sem(empresa) || c.diasDoPagamento(x.id).some(d => d.empresa === empresa))).sort((a, b) => a.data < b.data ? 1 : -1)[0];
+      if (!ref) return [];
+      Object.assign(reg, { 'GRUPO': 'Renda', 'CATEGORIA': ref.cat, 'SUB-CATEGORIA': ref.sub || '' });
+    }
+    if (/conferir/i.test(l.obs || '')) reg['OBS'] = String(l.obs).replace(/\s*·\s*conferir\b[^·]*/ig, '').replace(/^\s*conferir\b[^·]*·?\s*/i, '').trim();
+    return Object.keys(reg).length > 1 ? [{ op: 'salvar', aba: 'EXTRATO', registro: reg }] : [];
   }
   /* divide um valor em n partes de centavos certos (a última leva a sobra) */
   const dividir = (v, n) => { if (!n) return []; const p = Math.floor(v / n * 100) / 100; return Array.from({ length: n }, (_, i) => i === n - 1 ? u.r2(v - p * (n - 1)) : p); };
@@ -380,7 +404,9 @@
       else if (d && d.pag === pag) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: id, 'PAGAMENTO': '' } }); });
     /* trabalho de vários dias: ligou um dia, ligam todos (uma paga só) */
     ops.filter(o => o.registro['PAGAMENTO']).forEach(o => { const d = c.dias().find(z => z.id === o.registro.ID); if (d && d.grupo) c.doGrupo(d.grupo).forEach(x => { if (!ops.some(y => y.registro.ID === x.id)) ops.push({ op: 'salvar', aba: 'DIAS', registro: { ID: x.id, 'PAGAMENTO': pag } }); }); });
-    db.lote(ops); const n = ops.filter(o => o.registro['PAGAMENTO']).length;
+    const d1 = ops.map(o => c.dias().find(z => z.id === o.registro.ID && o.registro['PAGAMENTO'])).find(Boolean);
+    const n = ops.filter(o => o.registro['PAGAMENTO']).length;
+    db.lote(ops.concat(d1 ? categorizarPag(pag, d1.empresa) : []));
     $('s2').oninput = null; $('s2').onchange = null; fechar(); render(false); toast(n ? `Pagamento ligado a ${n} ${n > 1 ? 'dias' : 'dia'}` : 'Pagamento sem dias');
   }
 

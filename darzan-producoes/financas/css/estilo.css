@@ -1177,3 +1177,9 @@ body{overflow-x:hidden;overflow-x:clip;background-attachment:scroll}
   .rv-barra .btn2{flex:1 1 auto;justify-content:center}
 }
 @media (max-width:999px){body:has(.rv-barra:not([hidden])) .sync{bottom:calc(178px + var(--sa-b))}}
+/* v64: barra de marcados do Revisar sempre presa logo acima das abas (não sobe junto com a lista) */
+@media (max-width:999px){
+  .rv-barra{position:fixed;left:max(16px,var(--sa-l));right:max(16px,var(--sa-r));bottom:calc(88px + var(--sa-b));margin:0;z-index:24}
+  .rvwrap:has(.rv-barra:not([hidden])){padding-bottom:96px}
+  body:has(.rv-barra:not([hidden])) .sync{bottom:calc(166px + var(--sa-b))}
+}
