@@ -24,4 +24,13 @@ module.exports = { etapa: 'Barra e Revisar no celular', testes: [
     certo(sy && bar && sy.bottom <= bar.top + 1, `aviso Salvo em cima da barra de marcados (${sy && Math.round(sy.bottom)} > ${bar && Math.round(bar.top)})`);
     await conferirLayout(p, 'revisar no celular');
   }],
+  ['barra de baixo parada no iPhone: página não quica e some enquanto o teclado está aberto no filtro do Revisar', async (st, abrir) => {
+    const p = await abrir({ aparelho: 'iphone-15' });
+    await p.evaluate(() => { Object.assign(A.ui, { view: 'fin', fseg: 'revisar', rvfil: 'banco' }); A.render(false); }); await calmo(p);
+    certo(await p.evaluate(() => ['html', 'body'].every(t => getComputedStyle(document.querySelector(t)).overscrollBehaviorY === 'none')), 'a página ainda quica');
+    const vis = () => p.evaluate(() => getComputedStyle(document.getElementById('tabbar')).visibility);
+    certo(await vis() === 'visible', 'barra sumiu sem teclado');
+    await p.focus('#rvBusca'); certo(await vis() === 'hidden', 'barra continua aparecendo com o teclado aberto');
+    await p.evaluate(() => document.activeElement.blur()); certo(await vis() === 'visible', 'barra não voltou depois de fechar o teclado');
+  }],
 ] };

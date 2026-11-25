@@ -105,12 +105,16 @@ export function entreMinhas(desc, dono) {
 /* regras fixas (valem mais que a memória): o que é sempre a mesma coisa em qualquer banco */
 export function regraFixa(p) {
   const d = sem(p.desc);
-  if (p.propria) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
+  /* multa de trânsito (EMDEC, DETRAN, DER, PRF): o banco às vezes manda como "pagamento de convênio" com o nome do João, mas é gasto do carro */
+  if (p.valor < 0 && /\b(emdec|detran|dersa|prf|der sp|infracao|multa de transito)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Carro e transporte', subcategoria: 'Multas' };
+  /* boleto/convênio pago nunca é transferência para mim mesmo, mesmo que o banco ponha o nome do João na descrição */
+  const conta = /convenio|boleto|concessionaria|tributo|darf|guia /.test(d);
+  if (p.propria && !conta) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
   if (p.valor > 0 && /salario/.test(d)) return { grupo: 'Renda', categoria: 'Salário CLT', subcategoria: 'Salário' };
   if (p.valor > 0 && /rendimento/.test(d)) return { grupo: 'Renda', categoria: 'Renda extra', subcategoria: 'Rendimentos' };
   /* o salário cai no Inter e o João redistribui: dinheiro para cofrinho/caixinha (ou de volta) é "guardado", e para outra conta dele é
      transferência. Nenhum dos dois é renda nova nem gasto. */
-  if (/same (person|owner)|mesma titularidade/i.test(p.categoriaPluggy || '')) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
+  if (!conta && /same (person|owner)|mesma titularidade/i.test(p.categoriaPluggy || '')) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Entre minhas contas' };
   if (/cofrinho|caixinha|porquinho|dinheiro guardado|guardad[oa] |aplicacao|resgate|\brdb\b|\bcdb\b|poupanca|meu porquinho/.test(d)) return { grupo: 'Guardado', categoria: 'Guardado', subcategoria: 'Reserva' };
   if (p.valor < 0 && /\b(iof|juros|multa|encargos?|mora|rotativo)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Dívidas e taxas', subcategoria: 'Juros e multas' };
   if (p.reembolso || (p.valor > 0 && (p.tipo === 'cartão' ? /estorno|ajuste a credito|devolu|reembolso|cancelamento/ : /estorno|devolu/).test(d))) return { grupo: 'Reembolso', categoria: 'Reembolso', subcategoria: 'Compra devolvida' };

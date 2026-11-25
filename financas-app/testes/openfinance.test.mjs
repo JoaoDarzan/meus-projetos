@@ -93,6 +93,8 @@ test('regras: itens, fatura e formato do app', () => {
   assert.ok(!entreMinhas('Pix recebido - Beltrano Pereira Silva', 'Fulano Pereira Silva') && !entreMinhas('Pix enviado', ''), 'outra pessoa da família não é "minhas contas"');
   const ln = (desc, valor, tipo = 'conta', propria = false) => { const l = linhaNova({ pid: 'x', data: '2026-11-01', banco: 'B', tipo, valor, desc, parcela: '', propria }, new Map()); return [l.grupo, l.categoria, l.subcategoria]; };
   assert.deepEqual(ln('Pix enviado - eu', -100, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas']);
+  assert.deepEqual(ln('Pagamento de Convênio - EMDEC DE CAMPINAS - FULANO', -176.08, 'conta', true), ['Necessidades', 'Carro e transporte', 'Multas'], 'multa da EMDEC não é transferência');
+  assert.notEqual(ln('Pagamento de Convênio - SANASA FULANO', -80, 'conta', true)[0], 'Transferência', 'convênio com meu nome não é transferência');
   assert.deepEqual(ln('Salário recebido - Portabilidade', 5000), ['Renda', 'Salário CLT', 'Salário']);
   assert.deepEqual(ln('Rendimento de Conta de Pagamento', 3), ['Renda', 'Renda extra', 'Rendimentos']);
   assert.deepEqual(ln('IOF DIARIO DB PF', -0.2, 'cartão'), ['Necessidades', 'Dívidas e taxas', 'Juros e multas']);
