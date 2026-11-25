@@ -1192,3 +1192,13 @@ body{min-height:100dvh}
   body:has(input:not([type=checkbox]):not([type=radio]):focus,textarea:focus) .rv-barra,
   body:has(input:not([type=checkbox]):not([type=radio]):focus,textarea:focus) .fabwrap{visibility:hidden}
 }
+/* v66: no computador a Agenda e o Calendário dos trabalhos ficam em duas colunas (calendário | lista), sem esticar */
+.cal-pc{display:contents}
+@media (min-width:1100px){
+  .ag-pc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 32px;align-items:start}
+  .ag-fazer>.divt:first-child{margin-top:30px}
+  .ag-fazer .kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cal-pc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"cal dias" "emp emp" "prox prox" "ano ano";gap:0 32px;align-items:start}
+  .cal-pc>.cal-s{grid-area:cal}.cal-pc>.dias-s{grid-area:dias}.cal-pc>.emp-s{grid-area:emp}.cal-pc>.prox-s{grid-area:prox}.cal-pc>.ano-s{grid-area:ano}
+}
+@media (min-width:1600px){.ag-pc,.cal-pc{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
