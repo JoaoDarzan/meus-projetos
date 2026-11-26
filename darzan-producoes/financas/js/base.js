@@ -753,9 +753,10 @@ window.A = window.A || {};
   /* parcelas da mesma compra contam como uma só: marca "Compra P…" (do app ou do robô) ou, sem a marca,
      mesmo banco + descrição sem o "k/n" + mesmo valor + mesmo total de parcelas */
   c.grupoCompra = l => {
-    const m = String(l.obs || '').match(/Compra ([A-Z0-9-]+) ·/); if (m) return 'c:' + m[1];
+    /* o banco divide os centavos (33,78 + 33,77 + 33,77): o valor entra arredondado para não separar a 1ª parcela */
     const pm = String(l.parcela || '').match(/^\s*\d+\s*\/\s*(\d+)\s*$/);
-    return pm && +pm[1] > 1 ? 'p:' + [l.banco, u.sem(String(l.desc || '').replace(/\s*\d+\s*\/\s*\d+\s*$/, '')), Math.abs(+l.valor).toFixed(2), pm[1]].join('|') : l.id;
+    if (pm && +pm[1] > 1) return 'p:' + [l.banco, u.sem(String(l.desc || '').replace(/\s*\d+\s*\/\s*\d+\s*$/, '')), Math.round(Math.abs(+l.valor)), pm[1]].join('|');
+    const m = String(l.obs || '').match(/Compra ([A-Z0-9-]+) ·/); return m ? 'c:' + m[1] : l.id;
   };
   c.contaCompras = ls => new Set(ls.map(c.grupoCompra)).size;
   c.totalRevisar = () => { const ls = new Map(); Object.keys(c.REVISAR).forEach(k => c.paraRevisar(k).forEach(l => ls.set(l.id, l))); return c.contaCompras([...ls.values()]); };

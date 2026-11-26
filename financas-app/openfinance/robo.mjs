@@ -146,7 +146,8 @@ async function principal() {
 /* conferência de todo dia: a conta que bateu com o banco fica "conferida hoje"; as caixinhas que rendem ficam iguais ao total
    que o banco informou; e o saldo de cada conta e caixinha vai para a foto diária (tabela saldos), que mostra quanto rendeu */
 /* as parcelas futuras de uma mesma compra ganham a mesma marca "Compra OF…" (no Revisar aparecem juntas, uma vez só) */
-const grupoParcelas = p => { const k = `${sem(p.banco)}|${sem(String(p.desc || '').replace(/\s*\d+\/\d+\s*$/, ''))}|${Math.abs(+p.valor).toFixed(2)}`; let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 'POF' + h.toString(36).toUpperCase(); };
+/* valor arredondado: o banco divide os centavos (33,78 + 33,77 + 33,77) e as parcelas têm que cair na mesma compra */
+const grupoParcelas = p => { const k = `${sem(p.banco)}|${sem(String(p.desc || '').replace(/\s*\d+\/\d+\s*$/, ''))}|${Math.round(Math.abs(+p.valor))}|${String(p.parcela || '').split('/')[1] || ''}`; let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 'POF' + h.toString(36).toUpperCase(); };
 async function conferenciaDiaria(saldos, caixas, contasApp, extrato) {
   const ops = [], dataDe = em => diaNoBrasil(em, hoje), ajustado = new Map();
   console.log('\nConferência do dia:');
