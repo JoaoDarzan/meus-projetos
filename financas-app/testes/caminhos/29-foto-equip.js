@@ -42,7 +42,8 @@ module.exports = { etapa: 'Foto do equipamento', testes: [
     await p.waitForSelector('#fCrop:not([hidden])');
     const r = await p.$eval('#fCrop', e => e.clientWidth / e.clientHeight);
     certo(Math.abs(r - 4 / 3) < 0.03, 'moldura na proporção do cartão: ' + r.toFixed(3));
-    certo(await p.$eval('[data-fm="cover"]', b => b.classList.contains('on')), 'foto nova começa preenchendo o cartão');
+    /* a foto é lida e desenhada depois de carregar: com a máquina ocupada isso leva um instante */
+    certo(await p.waitForFunction(() => { const b = document.querySelector('[data-fm="cover"]'); return b && b.classList.contains('on'); }, null, { timeout: 5000 }).then(() => true, () => false), 'foto nova começa preenchendo o cartão');
     await p.waitForFunction(() => document.getElementById('fCropImg').style.width);
     const antes = await p.$eval('#fCropImg', i => i.style.transform);
     await p.locator('#fCrop').scrollIntoViewIfNeeded(); await p.waitForTimeout(500); /* espera a janela terminar de subir */
