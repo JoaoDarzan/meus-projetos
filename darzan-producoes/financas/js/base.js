@@ -750,7 +750,15 @@ window.A = window.A || {};
     conferir: { nome: 'Para conferir', f: l => /conferir/i.test(l.obs) },
   };
   c.paraRevisar = k => c.lancs().filter(c.REVISAR[k].f);
-  c.totalRevisar = () => { const ids = new Set(); Object.keys(c.REVISAR).forEach(k => c.paraRevisar(k).forEach(l => ids.add(l.id))); return ids.size; };
+  /* parcelas da mesma compra contam como uma só: marca "Compra P…" (do app ou do robô) ou, sem a marca,
+     mesmo banco + descrição sem o "k/n" + mesmo valor + mesmo total de parcelas */
+  c.grupoCompra = l => {
+    const m = String(l.obs || '').match(/Compra ([A-Z0-9-]+) ·/); if (m) return 'c:' + m[1];
+    const pm = String(l.parcela || '').match(/^\s*\d+\s*\/\s*(\d+)\s*$/);
+    return pm && +pm[1] > 1 ? 'p:' + [l.banco, u.sem(String(l.desc || '').replace(/\s*\d+\s*\/\s*\d+\s*$/, '')), Math.abs(+l.valor).toFixed(2), pm[1]].join('|') : l.id;
+  };
+  c.contaCompras = ls => new Set(ls.map(c.grupoCompra)).size;
+  c.totalRevisar = () => { const ls = new Map(); Object.keys(c.REVISAR).forEach(k => c.paraRevisar(k).forEach(l => ls.set(l.id, l))); return c.contaCompras([...ls.values()]); };
 
   /* ---------- avisos no celular: 1 dia antes e no dia ---------- */
   /* contas para pagar na mão, faturas, tarefas com data e trabalhos (evento e entrega) */

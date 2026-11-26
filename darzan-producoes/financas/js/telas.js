@@ -671,7 +671,7 @@
   /* o que aparece na lista do Revisar (com o filtro digitado) */
   const listaRevisar = () => { const q = u.sem(ui.rvq); return c.paraRevisar(ui.rvfil).filter(l => !q || u.sem(l.desc + ' ' + l.cat + ' ' + l.sub + ' ' + l.banco).indexOf(q) >= 0).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0); };
   /* Para conferir: uma compra parcelada (ou um Pix) aparece uma vez só, com tudo o que se sabe dela e o botão "Está certo" */
-  const grupoConf = l => { const m = String(l.obs || '').match(/Compra ([A-Z0-9-]+) ·/); return m ? 'c:' + m[1] : l.id; };
+  const grupoConf = l => c.grupoCompra(l);
   const detalheObs = o => String(o || '').split(' · ').map(p => p.trim()).filter(p => p && !/^(Open Finance|OF [0-9a-f-]{8,}|conferir|planilha antiga|Compra [A-Z0-9-]+$)/i.test(p)).map(p => p.replace(/\s*\(lançado pelo Claude\)/, '')).join(' · ');
   function gruposConferir(L) {
     const gs = new Map(); L.forEach(l => { const k = grupoConf(l); if (!gs.has(k)) gs.set(k, []); gs.get(k).push(l); });
@@ -694,23 +694,29 @@
     const ids = new Set(c.lancs().map(l => l.id));
     [...ui.rvsel].forEach(id => { if (!ids.has(id)) ui.rvsel.delete(id); });
     const sel = ui.rvsel.size, todosVis = L.length && L.every(l => ui.rvsel.has(l.id));
-    const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${u.esc(k)}" aria-pressed="${K === k}">${x.nome} · ${c.paraRevisar(k).length}</button>`).join('');
+    const chips = Object.entries(c.REVISAR).map(([k, x]) => `<button class="chip" type="button" data-a="seg" data-s="rvfil" data-v="${u.esc(k)}" aria-pressed="${K === k}">${x.nome} · ${c.contaCompras(c.paraRevisar(k))}</button>`).join('');
     let html = '', mes = null;
     if (K === 'conferir') html = gruposConferir(L);
-    else L.forEach(l => {
-      const m = u.mes(l.data);
-      if (m !== mes) { mes = m; const doMes = L.filter(x => u.mes(x.data) === m), tudo = doMes.every(x => ui.rvsel.has(x.id)); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${u.esc(m)}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
-      const sug = K === 'categoria' ? c.sugerir(l.desc, mem) : null, on = ui.rvsel.has(l.id);
-      html += `<div class="rv ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarca" data-id="${u.esc(l.id)}" aria-pressed="${on}" aria-label="Marcar ${u.esc(l.desc)}">${u.svg('check')}</button>
-        <button type="button" class="rv-txt" data-a="rvMarca" data-id="${u.esc(l.id)}"><span class="t">${u.esc(u.cap(l.desc))}</span><span class="m">${u.dm(l.data)} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ''} · ${u.esc(l.sub || l.cat || 'sem categoria')}</span>${sug ? `<span class="sug">${u.svg('sparkles')}Sugestão: ${u.esc(sug.cat)} · ${u.esc(sug.sub)}</span>` : ''}</button>
-        <span class="v num ${l.grupo === 'Renda' ? 'c-in' : ''}">${u.brl(Math.abs(l.valor))}</span>
+    else {
+      /* parcelas da mesma compra viram uma linha só: marcar ou mudar vale para todas */
+      const gs = new Map(); L.forEach(l => { const k = grupoConf(l); if (!gs.has(k)) gs.set(k, []); gs.get(k).push(l); });
+      const linhas = [...gs.values()].map(ls => ls.sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+      linhas.forEach(ls => {
+        const l = ls[0], m = u.mes(l.data), ids = ls.map(x => x.id), on = ids.every(id => ui.rvsel.has(id)), n = ls.length;
+        if (m !== mes) { mes = m; const doMes = linhas.filter(x => u.mes(x[0].data) === m), tudo = doMes.every(x => x.every(y => ui.rvsel.has(y.id))); html += `<div class="rv-mes"><span>${u.nomeMes(m)} ${m.slice(0, 4)} · ${doMes.length}</span><button type="button" class="more" data-a="rvMes" data-v="${u.esc(m)}">${tudo ? 'Desmarcar o mês' : 'Marcar o mês'}</button></div>`; }
+        const sug = K === 'categoria' ? c.sugerir(l.desc, mem) : null, desc = n > 1 ? String(l.desc).replace(/\s*\d+\s*\/\s*\d+\s*$/, '') : l.desc;
+        const quando = n > 1 ? `${n} parcelas de ${u.brl(Math.abs(l.valor))} · ${u.dm(l.data)} a ${u.dm(ls[n - 1].data)}` : u.dm(l.data);
+        html += `<div class="rv ${on ? 'on' : ''}"><button type="button" class="rv-ck" data-a="rvMarcaG" data-ids="${u.esc(ids.join(','))}" aria-pressed="${on}" aria-label="Marcar ${u.esc(desc)}">${u.svg('check')}</button>
+        <button type="button" class="rv-txt" data-a="rvMarcaG" data-ids="${u.esc(ids.join(','))}"><span class="t">${u.esc(u.cap(desc))}</span><span class="m">${quando} · ${u.esc(l.banco || 'sem banco')}${l.tipo === 'cartão' ? ' (cartão)' : ''} · ${u.esc(l.sub || l.cat || 'sem categoria')}</span>${sug ? `<span class="sug">${u.svg('sparkles')}Sugestão: ${u.esc(sug.cat)} · ${u.esc(sug.sub)}</span>` : ''}</button>
+        <span class="v num ${l.grupo === 'Renda' ? 'c-in' : ''}">${u.brl(u.sum(ls, x => Math.abs(x.valor)))}</span>
         <button type="button" class="rv-ed" data-a="editL" data-id="${u.esc(l.id)}" aria-label="Editar">${u.svg('pencil')}</button></div>`;
-    });
+      });
+    }
     const comSug = K === 'categoria' ? [...ui.rvsel].filter(id => { const l = c.lancs().find(x => x.id === id); return l && c.sugerir(l.desc, mem); }).length : 0;
     return `<section class="sec rvwrap">
       <p class="c-muted" style="margin:0 0 12px;font-size:.88rem">Marque os lançamentos e conserte todos de uma vez. Toque no lápis para mudar só um.</p>
       <div class="chips">${chips}</div>
-      <div class="rv-topo"><input class="search" id="rvBusca" type="search" placeholder="Filtrar: uber, gasolina, cliente…" value="${u.esc(ui.rvq)}" aria-label="Filtrar"><button type="button" class="chip" data-a="rvTodos">${todosVis ? 'Desmarcar todos' : `Marcar todos (${L.length})`}</button></div>
+      <div class="rv-topo"><input class="search" id="rvBusca" type="search" placeholder="Filtrar: uber, gasolina, cliente…" value="${u.esc(ui.rvq)}" aria-label="Filtrar"><button type="button" class="chip" data-a="rvTodos">${todosVis ? 'Desmarcar todos' : `Marcar todos (${c.contaCompras(L)})`}</button></div>
       <div class="panel rvlista">${html || vazio(['circle-check', '#7cf0c0', '#068a5a'], K === 'banco' ? 'Todos os lançamentos têm banco.' : K === 'categoria' ? 'Todos têm categoria.' : 'Nada para conferir.')}</div>
       <div class="rv-barra" ${sel ? '' : 'hidden'}><b>${sel} marcado${sel > 1 ? 's' : ''}</b>${comSug ? `<button type="button" class="btn2" data-a="rvSugestoes">${u.svg('sparkles')}Usar sugestões (${comSug})</button>` : ''}<button type="button" class="btn2 pri" data-a="rvMudar">${u.svg('pencil')}Mudar</button></div>
     </section>`;
@@ -1001,7 +1007,7 @@
     if (l) {
       db.salvar('EXTRATO', { ID: l.id, 'DATA': data, 'BANCO': val('fB') || l.banco, 'DESCRIÇÃO': desc, 'GRUPO': grupo, 'VALOR': (transf || tipo === 'saida') && l.valor > 0 ? v : tipo === 'entrada' ? v : -v, 'CATEGORIA': cat, 'SUB-CATEGORIA': sub, 'STATUS': status, 'OBS': obsFinal });
       /* parcelas da mesma compra andam juntas: conferiu ou mudou a categoria de uma, vale para todas */
-      const irmas = /^c:/.test(grupoConf(l)) ? c.lancs().filter(x => x.id !== l.id && grupoConf(x) === grupoConf(l)) : [];
+      const irmas = /^[cp]:/.test(grupoConf(l)) ? c.lancs().filter(x => x.id !== l.id && grupoConf(x) === grupoConf(l)) : [];
       if (irmas.length && !transf) mudarVarios(irmas.map(x => x.id), { cat: cat !== l.cat || sub !== l.sub ? cat : '', sub, grupo, conferido: /conferir/i.test(l.obs) && !ainda });
       fechar(); render(false);
       /* mudou a categoria: oferece mudar também os outros com a mesma descrição */
@@ -1693,7 +1699,8 @@
     rvMarcaG: b => { const ids = b.dataset.ids.split(','), tudo = ids.every(id => ui.rvsel.has(id)); ids.forEach(id => tudo ? ui.rvsel.delete(id) : ui.rvsel.add(id)); render(false); },
     rvOk: b => { const ids = b.dataset.ids.split(','), desfazer = mudarVarios(ids, { conferido: true }); ids.forEach(id => ui.rvsel.delete(id)); render(false); toast('Conferido' + (ids.length > 1 ? ` (${ids.length} parcelas)` : ''), desfazer); },
     rvMarca: b => { const id = b.dataset.id; if (ui.rvsel.has(id)) ui.rvsel.delete(id); else ui.rvsel.add(id); render(false); },
-    rvMes: b => { const L = listaRevisar().filter(l => u.mes(l.data) === b.dataset.v), tudo = L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
+    rvMes: b => { const T = listaRevisar(), ini = new Map(); T.forEach(l => { const k = grupoConf(l); if (!ini.has(k) || l.data < ini.get(k)) ini.set(k, l.data); });
+      const L = T.filter(l => u.mes(ini.get(grupoConf(l))) === b.dataset.v), tudo = L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
     rvTodos: () => { const L = listaRevisar(), tudo = L.length && L.every(l => ui.rvsel.has(l.id)); L.forEach(l => tudo ? ui.rvsel.delete(l.id) : ui.rvsel.add(l.id)); render(false); },
     rvMudar: () => formMudar(),
     rvSugestoes: () => {

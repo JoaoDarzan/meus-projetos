@@ -128,7 +128,7 @@ async function principal() {
   if (MODO === 'importar') {
     const ops = extrato.filter(l => /^LOFP-/.test(l.id)).map(l => ({ tabela: 'extrato', op: 'apagar', linha: { id: l.id } }));
     casados.forEach(p => {
-      if (p.acao === 'novo') { const l = linhaNova(p, mem); if (p.pendente) Object.assign(l, { status: 'Previsto', obs: (p.parcela ? `Compra ${grupoParcelas(p)} · ` : '') + l.obs.replace(`OF ${p.pid}`, `OFP ${p.pid}`) }); ops.push({ tabela: 'extrato', op: 'salvar', linha: l }); }
+      if (p.acao === 'novo') { const l = linhaNova(p, mem); if (p.parcela) l.obs = `Compra ${grupoParcelas(p)} · ` + l.obs; /* parcelas da mesma compra andam juntas no app (uma linha só no Revisar) */ if (p.pendente) Object.assign(l, { status: 'Previsto', obs: l.obs.replace(`OF ${p.pid}`, `OFP ${p.pid}`) }); ops.push({ tabela: 'extrato', op: 'salvar', linha: l }); }
       /* conferido pelo banco (no holerite, todas as linhas que somam o depósito ganham a marca) */
       if (p.acao === 'conferir') (p.grupo || [p.app]).forEach(id => {
         const l = extrato.find(x => x.id === id), obs = [String(l.obs || '').replace(/\s*·?\s*OFP [0-9a-f-]{20,}/gi, '').trim(), `${p.pendente ? 'OFP' : 'OF'} ${p.pid}`].filter(Boolean).join(' · ');
