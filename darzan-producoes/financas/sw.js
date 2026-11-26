@@ -1,19 +1,28 @@
 /* Deixa o app abrir mesmo sem internet: tenta buscar a versão nova e, se não der, usa a guardada. */
-const CACHE = 'darzan-financas-v66';
+const CACHE = 'darzan-financas-v67';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+/* Como busca cada arquivo:
+   - a página (index.html) e o sw.js: sempre pergunta ao servidor se mudou (sem usar cópia velha do navegador);
+     sem internet ou muito lenta (6 s), usa a guardada;
+   - arquivos com versão no nome (?v=66): nunca mudam, então vêm da cópia guardada na hora (abre mais rápido);
+   - o resto: tenta a internet e guarda; sem internet, usa a guardada. */
+const espera = (ms, p) => Promise.race([p, new Promise((_, n) => setTimeout(() => n(new Error('lento')), ms))]);
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   const nosso = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (req.method !== 'GET' || !nosso) return; /* dados do Supabase nunca passam por aqui */
+  const pagina = req.mode === 'navigate' || /\/(index\.html)?$/.test(url.pathname);
+  const comVersao = url.origin === location.origin && /[?&]v=/.test(url.search);
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    if (comVersao) { const ja = await cache.match(req); if (ja) return ja; }
     try {
-      const resp = await Promise.race([fetch(req), new Promise((_, n) => setTimeout(() => n(new Error('lento')), 4000))]);
+      const resp = await espera(pagina ? 6000 : 8000, fetch(req, pagina ? { cache: 'no-cache' } : undefined));
       if (resp && resp.ok) cache.put(req, resp.clone());
       return resp;
     } catch (err) {
-      const guardado = await cache.match(req, { ignoreSearch: url.origin === location.origin });
+      const guardado = await cache.match(req) || (!comVersao && await cache.match(req, { ignoreSearch: url.origin === location.origin }));
       if (guardado) return guardado;
       throw err;
     }

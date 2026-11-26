@@ -59,7 +59,10 @@ function criar(op = {}) {
         const arq = path.join(SITE, decodeURIComponent(p.endsWith('/') ? p + 'index.html' : p));
         if (!arq.startsWith(SITE) || !fs.existsSync(arq) || fs.statSync(arq).isDirectory()) { res.writeHead(404); return res.end('não achei'); }
         res.writeHead(200, { 'Content-Type': TIPOS[path.extname(arq)] || 'application/octet-stream' });
-        return res.end(fs.readFileSync(arq));
+        /* st.trocar = { 'financas/sw.js': texto => texto } imita uma versão nova publicada */
+        (st.estaticos = st.estaticos || []).push(req.url);
+        const troca = st.trocar && st.trocar[path.relative(SITE, arq)];
+        return res.end(troca ? troca(fs.readFileSync(arq, 'utf8')) : fs.readFileSync(arq));
       }
       st.pedidos.push({ metodo: req.method, caminho: req.url });
       if (st.fora) { req.socket.destroy(); return; } /* "sem internet" */
