@@ -93,6 +93,12 @@ test('regras: itens, fatura e formato do app', () => {
   assert.ok(!entreMinhas('Pix recebido - Beltrano Pereira Silva', 'Fulano Pereira Silva') && !entreMinhas('Pix enviado', ''), 'outra pessoa da família não é "minhas contas"');
   const ln = (desc, valor, tipo = 'conta', propria = false) => { const l = linhaNova({ pid: 'x', data: '2026-11-01', banco: 'B', tipo, valor, desc, parcela: '', propria }, new Map()); return [l.grupo, l.categoria, l.subcategoria]; };
   assert.deepEqual(ln('Pix enviado - eu', -100, 'conta', true), ['Transferência', 'Transferência', 'Entre minhas contas']);
+  { const l = linhaNova({ pid: 'x', data: '2026-11-25', banco: 'Inter', tipo: 'conta', valor: -1436.04, desc: 'Pagamento efetuado - Pagamento Fatura - FULANO PEREIRA SILVA', parcela: '', propria: true }, new Map());
+    assert.deepEqual([l.grupo, l.categoria, l.subcategoria], ['Transferência', 'Transferência', 'Pagamento de fatura'], 'pagamento da fatura do cartão');
+    assert.ok(l.obs.startsWith('Fatura Inter 2026-11 · '), 'marca da fatura paga: ' + l.obs); }
+  { const l = linhaNova({ pid: 'y', data: '2026-11-25', banco: 'Inter', tipo: 'conta', valor: -166.18, desc: 'Pix enviado  - Mercado Pago Instituicao De Pagamento Ltda', parcela: '' }, new Map([['mercado', 'Alimentação|Mercado|Necessidades']]));
+    assert.deepEqual([l.categoria, l.subcategoria], ['Transferência', 'Pagamento de fatura'], 'Pix para o Mercado Pago é a fatura, não compra de mercado');
+    assert.ok(l.obs.startsWith('Fatura Mercado Pago 2026-11 · '), l.obs); }
   assert.deepEqual(ln('Pagamento de Convênio - EMDEC DE CAMPINAS - FULANO', -176.08, 'conta', true), ['Necessidades', 'Carro e transporte', 'Multas'], 'multa da EMDEC não é transferência');
   assert.notEqual(ln('Pagamento de Convênio - SANASA FULANO', -80, 'conta', true)[0], 'Transferência', 'convênio com meu nome não é transferência');
   assert.deepEqual(ln('Salário recebido - Portabilidade', 5000), ['Renda', 'Salário CLT', 'Salário']);

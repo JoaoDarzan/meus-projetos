@@ -105,6 +105,15 @@ export function entreMinhas(desc, dono) {
 /* regras fixas (valem mais que a memória): o que é sempre a mesma coisa em qualquer banco */
 export function regraFixa(p) {
   const d = sem(p.desc);
+  /* pagamento da fatura do cartão saindo da conta: não é gasto (as compras já contam no cartão) nem transferência comum;
+     ganha a marca "Fatura <cartão> <mês>" para o app saber que aquela fatura foi paga (e não pedir para pagar de novo) */
+  /* Pix da conta para a "Mercado Pago Instituição de Pagamento" = pagar a fatura do cartão Mercado Pago (a conta do Mercado Pago não é usada);
+     sem esta regra o robô achava que era compra de mercado e o gasto contava 2 vezes */
+  if (p.tipo === 'conta' && p.valor < 0 && /mercado ?pago instituicao/.test(d)) return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Pagamento de fatura', fatura: `Fatura Mercado Pago ${String(p.data).slice(0, 7)}` };
+  if (p.tipo === 'conta' && p.valor < 0 && /(pagamento|pagto|pgto|pag)\.?\s*(efetuado\s*-?\s*)?(de\s+)?fatura|fatura\s+(do\s+)?cart/.test(d)) {
+    const cartao = /nubank|nu pagamentos/.test(d) ? 'Nubank' : /mercado ?pago/.test(d) ? 'Mercado Pago' : /picpay/.test(d) ? 'PicPay' : /\binter\b/.test(d) ? 'Inter' : p.banco;
+    return { grupo: 'Transferência', categoria: 'Transferência', subcategoria: 'Pagamento de fatura', fatura: `Fatura ${cartao} ${String(p.data).slice(0, 7)}` };
+  }
   /* multa de trânsito (EMDEC, DETRAN, DER, PRF): o banco às vezes manda como "pagamento de convênio" com o nome do João, mas é gasto do carro */
   if (p.valor < 0 && /\b(emdec|detran|dersa|prf|der sp|infracao|multa de transito)\b/.test(d)) return { grupo: 'Necessidades', categoria: 'Carro e transporte', subcategoria: 'Multas' };
   /* boleto/convênio pago nunca é transferência para mim mesmo, mesmo que o banco ponha o nome do João na descrição */
@@ -227,7 +236,7 @@ export function linhaNova(p, mem, prefixo = 'LOF-') {
   const grupo = s ? s.grupo : p.valor > 0 ? 'Renda' : 'Desejos';
   return { id: prefixo + p.pid, data: p.data, banco: p.banco, descricao: p.desc.slice(0, 120), grupo, tipo: p.tipo, valor: p.valor,
     categoria: s ? s.categoria : '', subcategoria: s ? s.subcategoria : '', status: 'Pago', parcela: p.parcela,
-    obs: `Open Finance · OF ${p.pid}${s ? '' : ' · conferir'}` }; /* só vai para o Revisar o que o robô não sabe o que é: transferência entre contas do João, caixinha, rendimento
+    obs: `${s && s.fatura ? s.fatura + ' · ' : ''}Open Finance · OF ${p.pid}${s ? '' : ' · conferir'}` }; /* só vai para o Revisar o que o robô não sabe o que é: transferência entre contas do João, caixinha, rendimento
        e o que já foi classificado antes (memória) entram prontos */
 }
 
