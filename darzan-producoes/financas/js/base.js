@@ -475,6 +475,35 @@ window.A = window.A || {};
     return u.r2(-u.sum(c.lancs().filter(l => l.grupo === 'Guardado' && c.paga(l) && l.data > de && l.data <= ate && u.sem(l.obs).split(' · ').some(p => p.trim() === nome)), l => l.valor)); };
   /* quanto rendeu desde um dia: o que cresceu menos o que você mesmo colocou (null sem foto daquele dia) */
   c.rendeu = (cx, de) => { const a = c.saldoEm(cx, de), h = c.saldo(cx); return a == null || h == null ? null : u.r2(h - a - c.aportes(cx, de, u.hoje())); };
+  /* balanço do mês (o "marco"): quanto tinha no começo, quanto tem no fim e de onde veio a diferença.
+     Começo = última foto dos saldos antes do mês (ou a 1ª do mês); fim = última foto do mês (ou de hoje).
+     Entrou/gastos/faturas = lançamentos pagos das contas entre as duas fotos; transferência e guardado não mudam o total.
+     Rendeu = o que as caixinhas cresceram menos o que saiu das contas para elas. O que sobra sem explicação = dinheiro a conferir. */
+  c.balancoMes = m => {
+    const todas = c.contas(), contas = todas.filter(x => String(x['CONTA']).toLowerCase() === 'conta'), cxs = c.caixinhas();
+    const hj = u.hoje(), fimM = u.addDias(u.addMes(m, 1) + '-01', -1), ate = fimM < hj ? fimM : hj, antes = u.addDias(m + '-01', -1);
+    const ds = [...new Set(todas.flatMap(cx => c.fotos(cx).map(z => z.data)))].sort();
+    const d0 = ds.filter(d => d <= antes).pop() || ds.find(d => d >= m + '-01' && d <= ate), d1 = ds.filter(d => d <= ate).pop();
+    if (!d0 || !d1 || d1 < d0) return null;
+    const tot = (xs, d) => u.r2(u.sum(xs, cx => c.saldoEm(cx, d) || 0));
+    const L = c.lancs().filter(l => l.tipo === 'conta' && c.paga(l) && l.data > d0 && l.data <= d1);
+    const fat = l => l.sub === 'Pagamento de fatura', neutro = l => (l.grupo === 'Transferência' || l.grupo === 'Guardado') && !fat(l);
+    const entrou = u.r2(u.sum(L.filter(l => l.valor > 0 && !neutro(l) && !fat(l)), l => l.valor));
+    const gastou = u.r2(-u.sum(L.filter(l => l.valor < 0 && !neutro(l) && !fat(l)), l => l.valor));
+    const faturas = u.r2(-u.sum(L.filter(fat), l => l.valor));
+    const guardou = u.r2(-u.sum(L.filter(neutro), l => l.valor));
+    const rendeu = u.r2(tot(cxs, d1) - tot(cxs, d0) - guardou);
+    const ini = tot(todas, d0), fim = tot(todas, d1), deveria = u.r2(ini + entrou - gastou - faturas + rendeu);
+    return { d0, d1, ini, fim, dif: u.r2(fim - ini), entrou, gastou, faturas, rendeu, deveria, sobra: u.r2(fim - deveria) };
+  };
+  /* o saldo que o próprio banco informou (o robô guarda escondido em "LOFS-<banco>") x o que o app calcula para a conta */
+  c.bancosInformam = () => c.L().filter(r => /^LOFS-/.test(r.ID || '')).map(r => {
+    const banco = r['BANCO'], conta = c.contas().find(x => x['BANCO'] === banco && String(x['CONTA']).toLowerCase() === 'conta');
+    const app = conta ? c.saldo(conta) : null, bancoV = c.num(r['VALOR']);
+    return { banco, data: String(r['DATA'] || '').slice(0, 10), banco_diz: bancoV, app, dif: app == null ? null : u.r2(bancoV - app) };
+  }).filter(x => x.app != null).sort((a, b) => a.banco < b.banco ? -1 : 1);
+  c.mesesComFotos = () => { const ds = c.contas().flatMap(cx => c.fotos(cx).map(z => z.data)).sort(); if (!ds.length) return [];
+    const r = []; for (let m = u.mes(ds[0]); m <= u.mes(u.hoje()); m = u.addMes(m, 1)) r.push(m); return r; };
   /* a soma de todas as caixinhas por dia (para o gráfico e para o fim do mês passado) */
   c.fotosTotal = () => { const ds = [...new Set(c.caixinhas().flatMap(cx => c.fotos(cx).map(z => z.data)))].sort();
     return ds.map(d => ({ data: d, saldo: u.r2(u.sum(c.caixinhas(), cx => c.saldoEm(cx, d) || 0)) })); };
