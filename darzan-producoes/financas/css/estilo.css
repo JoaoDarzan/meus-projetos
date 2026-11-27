@@ -1205,10 +1205,10 @@ body{min-height:100dvh}
 /* v70: número da versão no fim do menu (para conferir se o app atualizou) */
 .sver{display:block;margin-top:10px;text-align:center;font-size:.72rem;color:var(--faint)}
 /* v71: Balanço do mês (Bancos): começou, entrou, saiu, rendeu, deveria ter x tem */
-.bal{padding:14px 16px}
-.bal-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px}
+.bal{padding:12px 14px}
+.bal-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .bal-nav b{min-width:130px;text-align:center}
-.bal-l{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.92rem}
+.bal-l{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem}
 .bal-l small{color:var(--faint);font-size:.76rem}
 .bal-l.c-in b{color:var(--in)}.bal-l.c-out b{color:var(--out)}.bal-l.c-in span,.bal-l.c-out span{color:var(--muted)}
 .bal-l.bal-t{font-weight:700;border-bottom:0}.bal-l.bal-t+.bal-l.bal-t{border-top:1px solid rgba(255,255,255,.1)}
