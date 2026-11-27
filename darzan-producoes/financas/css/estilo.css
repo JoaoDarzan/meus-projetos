@@ -1202,3 +1202,5 @@ body{min-height:100dvh}
   .cal-pc>.cal-s{grid-area:cal}.cal-pc>.dias-s{grid-area:dias}.cal-pc>.emp-s{grid-area:emp}.cal-pc>.prox-s{grid-area:prox}.cal-pc>.ano-s{grid-area:ano}
 }
 @media (min-width:1600px){.ag-pc,.cal-pc{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+/* v70: número da versão no fim do menu (para conferir se o app atualizou) */
+.sver{display:block;margin-top:10px;text-align:center;font-size:.72rem;color:var(--faint)}

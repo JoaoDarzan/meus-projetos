@@ -1,5 +1,5 @@
 /* Deixa o app abrir mesmo sem internet: tenta buscar a versão nova e, se não der, usa a guardada. */
-const CACHE = 'darzan-financas-v69';
+const CACHE = 'darzan-financas-v70';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 /* Como busca cada arquivo:
